@@ -3,6 +3,7 @@ import UIKit
 class Second: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
+        navigationItem.hidesBackButton = true 
         setupUI()
     }
     private func setupUI() {
