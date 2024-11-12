@@ -15,7 +15,6 @@ struct DataModel {
         GuideItem(title: "Clinic D", imageName: "Clinic4", description: "Offers a wide range of outpatient services."),
         GuideItem(title: "Clinic E", imageName: "Clinic5", description: "Known for its orthopedic department.")
     ]
-
     static let hotels = [
         GuideItem(title: "Hotel X", imageName: "Hotel1", description: "A luxury hotel with a beautiful sea view."),
         GuideItem(title: "Hotel Y", imageName: "Hotel2", description: "Affordable hotel located in the city center."),
@@ -23,7 +22,6 @@ struct DataModel {
         GuideItem(title: "Hotel Y", imageName: "Hotel4", description: "Perfect for family vacations and gatherings."),
         GuideItem(title: "Hotel Z", imageName: "Hotel5", description: "Modern amenities with a rooftop pool.")
     ]
-
     static let hospitals = [
         GuideItem(title: "Hospital 1", imageName: "Hospital1", description: "A multi-specialty hospital with ICU services."),
         GuideItem(title: "Hospital 2", imageName: "Hospital2", description: "Famous for its cardiology department."),
@@ -31,7 +29,6 @@ struct DataModel {
         GuideItem(title: "Hospital 2", imageName: "Hospital4", description: "Provides top-notch surgical services."),
         GuideItem(title: "Hospital 3", imageName: "Hospital5", description: "24/7 emergency and trauma center.")
     ]
-
     static let pharmacies = [
         GuideItem(title: "Pharmacy P", imageName: "Pharmacy1", description: "Open 24/7 with home delivery services."),
         GuideItem(title: "Pharmacy Q", imageName: "Pharmacy2", description: "Known for its range of organic products."),

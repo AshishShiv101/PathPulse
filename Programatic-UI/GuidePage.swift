@@ -111,27 +111,23 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             searchContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
         ])
     }
-
     private func setupCarousels() {
         var previousCarousel: UIView? = nil
-        for (index, (title, items)) in carouselData.enumerated() {
+        for (index, (title, _)) in carouselData.enumerated() {
             let titleLabel = UILabel()
             titleLabel.text = title
             titleLabel.font = UIFont.boldSystemFont(ofSize: 18)
             titleLabel.textColor = .white
             titleLabel.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview(titleLabel)
-            
             NSLayoutConstraint.activate([
                 titleLabel.topAnchor.constraint(equalTo: previousCarousel?.bottomAnchor ?? searchTextField.bottomAnchor, constant: 20),
                 titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16)
             ])
-            
             let collectionViewLayout = UICollectionViewFlowLayout()
             collectionViewLayout.scrollDirection = .horizontal
-            collectionViewLayout.itemSize = CGSize(width: 150, height: 120)
+            collectionViewLayout.itemSize = CGSize(width: 170, height: 140)
             collectionViewLayout.minimumLineSpacing = 10
-            
             let collectionView = UICollectionView(frame: .zero, collectionViewLayout: collectionViewLayout)
             collectionView.tag = index
             collectionView.delegate = self
@@ -140,17 +136,16 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             collectionView.backgroundColor = .clear
             collectionView.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview(collectionView)
-            
+            collectionView.showsHorizontalScrollIndicator = false
+
             NSLayoutConstraint.activate([
                 collectionView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
                 collectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
                 collectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
                 collectionView.heightAnchor.constraint(equalToConstant: 120)
             ])
-            
             previousCarousel = collectionView
         }
-        
         if let previousCarousel = previousCarousel {
             NSLayoutConstraint.activate([
                 previousCarousel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: 20)
@@ -182,39 +177,120 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
 
 }
 
-// GuideItemCell UICollectionViewCell class
 class GuideItemCell: UICollectionViewCell {
+    private let cardView = UIView()
     private let imageView = UIImageView()
     private let titleLabel = UILabel()
-    
+    private let locationLabel = UILabel()
+    private let ratingLabel = UILabel()  // Keep this if you want to display the rating text
+
     override init(frame: CGRect) {
         super.init(frame: frame)
-        contentView.addSubview(imageView)
-        contentView.addSubview(titleLabel)
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 14)
-        titleLabel.textColor = .white
         
-        NSLayoutConstraint.activate([
-            imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            imageView.heightAnchor.constraint(equalToConstant: 100),
-            
-            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 5),
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
-        ])
+        setupCardView()
+        setupImageView()
+        setupTitleLabel()
+        setupLocationLabel()
+        setupRatingComponents() // We will keep this but remove the star icon setup
+        setupConstraints()
     }
     
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setupCardView() {
+        cardView.backgroundColor = UIColor(hex: "#333333") // Dark background for the card
+        cardView.layer.cornerRadius = 12
+        cardView.layer.shadowColor = UIColor.black.cgColor
+        cardView.layer.shadowOpacity = 0.2
+        cardView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cardView.layer.shadowRadius = 4
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(cardView)
+    }
+    
+    private func setupImageView() {
+        imageView.contentMode = .scaleAspectFill
+        imageView.layer.cornerRadius = 8
+        imageView.layer.masksToBounds = true
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(imageView)
+    }
+    
+    private func setupTitleLabel() {
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
+        titleLabel.textColor = .white
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(titleLabel)
+    }
+    
+    private func setupLocationLabel() {
+        locationLabel.font = UIFont.systemFont(ofSize: 14)
+        locationLabel.textColor = .lightGray
+        locationLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(locationLabel)
+    }
+    
+    private func setupRatingComponents() {
+        // We will skip the starImageView setup to remove the star icon
+        ratingLabel.font = UIFont.systemFont(ofSize: 14)
+        ratingLabel.textColor = .white
+        ratingLabel.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(ratingLabel)
+    }
+
+    private func setupConstraints() {
+        // Card view constraints
+        NSLayoutConstraint.activate([
+            cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8)
+        ])
+        
+        // Image view constraints
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 8),
+            imageView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
+            imageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -8),
+            imageView.heightAnchor.constraint(equalToConstant: 80)
+        ])
+        
+        // Title label constraints
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -8)
+        ])
+        
+        // Location label constraints
+        NSLayoutConstraint.activate([
+            locationLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            locationLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
+            locationLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -8)
+        ])
+        
+        // Rating label constraints (without the star icon)
+        NSLayoutConstraint.activate([
+            ratingLabel.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 4),
+            ratingLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
+            ratingLabel.trailingAnchor.constraint(lessThanOrEqualTo: cardView.trailingAnchor, constant: -8),
+            ratingLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -8)
+        ])
+    }
     
     func configure(with item: GuideItem) {
         imageView.image = UIImage(named: item.imageName)
         titleLabel.text = item.title
+        
+ 
     }
+
 }
+
+
+
 
 // Add padding to UITextField
 extension UITextField {

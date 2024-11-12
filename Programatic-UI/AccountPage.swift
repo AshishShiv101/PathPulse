@@ -37,7 +37,7 @@ class AccountPage: UIViewController {
        }
        
        private func setupProfileImageView() {
-           profileImageView.image = UIImage(named: "cbum")
+           profileImageView.image = UIImage(named: "USER")
            profileImageView.contentMode = .scaleAspectFill
            profileImageView.layer.cornerRadius = 50
            profileImageView.layer.masksToBounds = true
