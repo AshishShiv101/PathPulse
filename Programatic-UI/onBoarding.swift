@@ -1,6 +1,6 @@
 import UIKit
 
-class Second: UIViewController {
+class onBoarding: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationItem.hidesBackButton = true 
@@ -50,7 +50,6 @@ class Second: UIViewController {
     }
 }
 
-// Reusable CardView for each information card
 class CardView: UIView {
     
     init(imageName: String, text: String, isImageAsset: Bool) {
@@ -91,7 +90,6 @@ class CardView: UIView {
         stackView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stackView)
         
-        // Constraints
         NSLayoutConstraint.activate([
             stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
@@ -104,7 +102,6 @@ class CardView: UIView {
     }
 }
 
-// App Logo UIView (Placeholder)
 class AppLogoView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -116,7 +113,6 @@ class AppLogoView: UIView {
     }
     
     private func setupLogo() {
-        // Set up your app logo here
         let pathLabel = UILabel()
         pathLabel.text = "Path"
         pathLabel.font = UIFont.systemFont(ofSize: 40, weight: .bold)
@@ -140,20 +136,15 @@ class AppLogoView: UIView {
         roadImageView.contentMode = .scaleAspectFit
         roadImageView.translatesAutoresizingMaskIntoConstraints = false
 
-        // Add both stackView and roadImageView to the view
         addSubview(stackView)
         addSubview(roadImageView)
 
-        // Constraints
         NSLayoutConstraint.activate([
-            // Center stackView horizontally and vertically
             stackView.centerXAnchor.constraint(equalTo: centerXAnchor),
             stackView.centerYAnchor.constraint(equalTo: centerYAnchor),
             
-            // Position roadImageView below stackView
             roadImageView.centerXAnchor.constraint(equalTo: centerXAnchor),
-            // Position roadImageView below stackView with reduced top margin
-            roadImageView.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 1), // Reduced margin from 10 to 5
+            roadImageView.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 1),
 
             roadImageView.widthAnchor.constraint(equalToConstant: 80),
             roadImageView.heightAnchor.constraint(equalToConstant: 50)
@@ -163,7 +154,6 @@ class AppLogoView: UIView {
     }
 }
 
-// Utility extension to handle hex colors
 extension UIColor {
     convenience init(hex: String) {
         var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -1,155 +1,173 @@
-//
-//  AccountPage.swift
-//  Programatic-UI
-//
-//  Created by Anurag on 09/11/24.
-//
-
 import UIKit
 
 class AccountPage: UIViewController {
     private let scrollView = UIScrollView()
-    private let profileImageView = UIImageView()
-       private let nameLabel = UILabel()
-       private let phoneLabel = UILabel()
-       
-       private let privacyButton = UIButton()
-       private let editContactsButton = UIButton()
-       private let logoutButton = UIButton()
-       private let editProfileButton = UIButton()
-
+    private let contentView = UIView()
+    
+    private let infoCardView = UIView()
+    private let buttonsCardView = UIView()
+    
+    private let nameLabel = UILabel()
+    private let phoneLabel = UILabel()
+    
+    private let privacyButton = UIButton()
+    private let editContactsButton = UIButton()
+    private let logoutButton = UIButton()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-           view.backgroundColor = UIColor(hex: "#222222")
-           setupNavigationBar()
-           setupProfileImageView()
-           setupLabels()
-           setupButtons()
+        view.backgroundColor = UIColor(hex: "#222222")
+     
+        setupScrollView()
+        setupInfoCard()
+        setupButtonsCard()
+    }
 
+    private func setupScrollView() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+        ])
+    }
+     
+    private func setupInfoCard() {
+        infoCardView.backgroundColor = UIColor(hex: "#333333")
+        infoCardView.layer.cornerRadius = 15
+        infoCardView.layer.shadowColor = UIColor.black.cgColor
+        infoCardView.layer.shadowOpacity = 0.3
+        infoCardView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        infoCardView.layer.shadowRadius = 6
+        infoCardView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(infoCardView)
+        
+        nameLabel.text = "Anurag"
+        nameLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        nameLabel.textColor = UIColor(hex: "#40CBD8")
+        
+        phoneLabel.text = "Phone: 8595428901"
+        phoneLabel.font = UIFont.systemFont(ofSize: 16)
+        phoneLabel.textColor = UIColor.lightGray
+        
+        nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        phoneLabel.translatesAutoresizingMaskIntoConstraints = false
+        infoCardView.addSubview(nameLabel)
+        infoCardView.addSubview(phoneLabel)
+        
+        let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
+        arrowImageView.tintColor = .white
+        arrowImageView.translatesAutoresizingMaskIntoConstraints = false
+        infoCardView.addSubview(arrowImageView)
+        
+        NSLayoutConstraint.activate([
+            infoCardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 60),
+            infoCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            infoCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            infoCardView.heightAnchor.constraint(equalToConstant: 100),
+            
+            nameLabel.topAnchor.constraint(equalTo: infoCardView.topAnchor, constant: 20),
+            nameLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 16),
+            
+            phoneLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 20),
+            phoneLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 16),
+            
+            arrowImageView.centerYAnchor.constraint(equalTo: infoCardView.centerYAnchor),
+            arrowImageView.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -16)
+        ])
     }
     
-
-  
-    private func setupNavigationBar() {
-           navigationItem.title = "Account"
-           navigationController?.navigationBar.prefersLargeTitles = false
-           navigationItem.hidesBackButton = true
-       }
-       
-       private func setupProfileImageView() {
-           profileImageView.image = UIImage(named: "USER")
-           profileImageView.contentMode = .scaleAspectFill
-           profileImageView.layer.cornerRadius = 50
-           profileImageView.layer.masksToBounds = true
-           profileImageView.layer.borderWidth = 2
-           profileImageView.layer.borderColor = UIColor(hex: "#40CBD8").cgColor
-           profileImageView.translatesAutoresizingMaskIntoConstraints = false
-           view.addSubview(profileImageView)
-           
-           // Adding shadow
-           profileImageView.layer.shadowColor = UIColor.black.cgColor
-           profileImageView.layer.shadowOffset = CGSize(width: 0, height: 4)
-           profileImageView.layer.shadowOpacity = 0.3
-           profileImageView.layer.shadowRadius = 5
-           
-           NSLayoutConstraint.activate([
-               profileImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-               profileImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-               profileImageView.widthAnchor.constraint(equalToConstant: 100),
-               profileImageView.heightAnchor.constraint(equalToConstant: 100)
-           ])
-       }
-       
-       private func setupLabels() {
-           nameLabel.text = "Sarkar"
-           nameLabel.font = UIFont.systemFont(ofSize: 34, weight: .bold)
-           nameLabel.textColor = UIColor(hex: "#40CBD8")
-           nameLabel.translatesAutoresizingMaskIntoConstraints = false
-           view.addSubview(nameLabel)
-           
-           phoneLabel.text = "Phone: 8595428901"
-           phoneLabel.font = UIFont.systemFont(ofSize: 16)
-           phoneLabel.textColor = UIColor.lightGray
-           phoneLabel.translatesAutoresizingMaskIntoConstraints = false
-           view.addSubview(phoneLabel)
-           
-           NSLayoutConstraint.activate([
-               nameLabel.topAnchor.constraint(equalTo: profileImageView.bottomAnchor, constant: 15),
-               nameLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+    private func setupButtonsCard() {
+        buttonsCardView.backgroundColor = UIColor(hex: "#333333")
+        buttonsCardView.layer.cornerRadius = 15
+        buttonsCardView.layer.shadowColor = UIColor.black.cgColor
+        buttonsCardView.layer.shadowOpacity = 0.3
+        buttonsCardView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        buttonsCardView.layer.shadowRadius = 6
+        buttonsCardView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(buttonsCardView)
+        
+        configureButton(privacyButton, title: "Privacy Settings", systemImageName: "lock.fill")
+        configureButton(editContactsButton, title: "Edit Contacts", systemImageName: "person.2.fill")
+        configureButton(logoutButton, title: "Logout", systemImageName: "arrowshape.turn.up.left.fill")
+        
+        // Add targets for each button to call respective methods when tapped
+               privacyButton.addTarget(self, action: #selector(privacyButtonTapped), for: .touchUpInside)
+               editContactsButton.addTarget(self, action: #selector(editContactsButtonTapped), for: .touchUpInside)
+               logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
                
-               phoneLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 5),
-               phoneLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
-           ])
-       }
-       
-       private func setupButtons() {
-           let buttonStackView = UIStackView()
-           buttonStackView.axis = .vertical
-           buttonStackView.spacing = 30
-           buttonStackView.translatesAutoresizingMaskIntoConstraints = false
-           view.addSubview(buttonStackView)
-           
-           configureButton(privacyButton, title: "Privacy Settings")
-           configureButton(editContactsButton, title: "Edit Contacts")
-           configureButton(logoutButton, title: "Logout")
-           configureButton(editProfileButton, title: "Edit Profile")
+        let buttonStackView = UIStackView(arrangedSubviews: [privacyButton, editContactsButton, logoutButton])
+        buttonStackView.axis = .vertical
+        buttonStackView.spacing = 20
+        buttonStackView.translatesAutoresizingMaskIntoConstraints = false
+        buttonsCardView.addSubview(buttonStackView)
+        
+        NSLayoutConstraint.activate([
+            buttonsCardView.topAnchor.constraint(equalTo: infoCardView.bottomAnchor, constant: 40),
+            buttonsCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            buttonsCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            buttonsCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
+            
+            buttonStackView.topAnchor.constraint(equalTo: buttonsCardView.topAnchor, constant: 20),
+            buttonStackView.leadingAnchor.constraint(equalTo: buttonsCardView.leadingAnchor, constant: 16),
+            buttonStackView.trailingAnchor.constraint(equalTo: buttonsCardView.trailingAnchor, constant: -16),
+            buttonStackView.bottomAnchor.constraint(equalTo: buttonsCardView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    private func configureButton(_ button: UIButton, title: String, systemImageName: String) {
+        button.setTitle(title, for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        button.setImage(UIImage(systemName: systemImageName), for: .normal)
+        button.tintColor = .white
+        button.backgroundColor = UIColor(hex: "#818589").withAlphaComponent(0.8)
+        button.contentHorizontalAlignment = .left
+        button.layer.cornerRadius = 12
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOffset = CGSize(width: 0, height: 4)
+        button.layer.shadowOpacity = 0.3
+        button.layer.shadowRadius = 4
+        button.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        
+        var config = UIButton.Configuration.plain()
+                  config.imagePadding = 8
+                  config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 0)
+                  
+                  button.configuration = config
+        let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
+        arrowImageView.tintColor = .white
+        arrowImageView.translatesAutoresizingMaskIntoConstraints = false
+        button.addSubview(arrowImageView)
+        
+        NSLayoutConstraint.activate([
+            arrowImageView.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            arrowImageView.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -16)
+        ])
+    }
+   
+    @objc func privacyButtonTapped() {
+        
+    }
+    
+    @objc func editContactsButtonTapped() {
+        let editContactVC = EditContactViewController()
+        navigationController?.pushViewController(editContactVC, animated: true)
+    }
 
-           
-           buttonStackView.addArrangedSubview(privacyButton)
-           buttonStackView.addArrangedSubview(editContactsButton)
-           buttonStackView.addArrangedSubview(logoutButton)
-           buttonStackView.addArrangedSubview(editProfileButton)
-           
-           NSLayoutConstraint.activate([
-               buttonStackView.topAnchor.constraint(equalTo: phoneLabel.bottomAnchor, constant: 50),
-               buttonStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-               buttonStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
-           ])
-       }
-       
-       private func configureButton(_ button: UIButton, title: String) {
-           button.setTitle(title, for: .normal)
-           button.backgroundColor = UIColor(hex: "#818589").withAlphaComponent(0.8)
-           button.layer.cornerRadius = 12
-           button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-           button.setTitleColor(.white, for: .normal)
-           
-           // Adding shadow
-           button.layer.shadowColor = UIColor.black.cgColor
-           button.layer.shadowOffset = CGSize(width: 0, height: 4)
-           button.layer.shadowOpacity = 0.3
-           button.layer.shadowRadius = 4
-           
-           button.translatesAutoresizingMaskIntoConstraints = false
-           button.heightAnchor.constraint(equalToConstant: 50).isActive = true
-       }
-       
-       // Button Actions
-       @objc func privacyButtonTapped() {
-           // Handle Privacy Settings
-       }
-       
-       @objc func editContactsButtonTapped() {
-           // Navigate to Edit Contacts
-           let contactViewController = ContactViewController() // Replace with actual view controller
-           navigationController?.pushViewController(contactViewController, animated: true)
-       }
-       
-       @objc func logoutButtonTapped() {
-           // Handle Logout
-       }
-       
-       @objc func editProfileButtonTapped() {
-           // Handle Edit Profile
-       }
-   }
 
-   class ContactViewController: UIViewController {
-       override func viewDidLoad() {
-           super.viewDidLoad()
-           view.backgroundColor = .white
-           // Set up your Contact view here
-       }
-   }
-
-   // Utility extension to handle hex colors
+    
+    @objc func logoutButtonTapped() {
+        // Handle logout action
+    }
+}

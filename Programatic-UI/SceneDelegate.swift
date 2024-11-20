@@ -5,11 +5,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
 
-        // Initialize window
+        
         window = UIWindow(windowScene: windowScene)
 
-        // Set FirstScreen as the initial view controller
-        let firstScreenController = FirstScreen()
+        
+        let firstScreenController = splashScreen()
         let initialNavController = UINavigationController(rootViewController: firstScreenController)
         window?.rootViewController = initialNavController
         window?.makeKeyAndVisible()
