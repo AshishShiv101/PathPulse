@@ -1,6 +1,5 @@
 import UIKit
 
-// Example News data model
 struct News {
     let title: String
     let description: String

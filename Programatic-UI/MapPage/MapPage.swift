@@ -5,6 +5,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     let locationManager = CLLocationManager()
     let mapView = MKMapView()
     private let bottomSheetView = UIView()
+    var weatherInfoView: UIView?
     let searchBar = UISearchBar()
     private var bottomSheetTopConstraint: NSLayoutConstraint!
     var startLocationCoordinate: CLLocationCoordinate2D?
@@ -29,13 +30,13 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.showsHorizontalScrollIndicator = false
-        scrollView.alwaysBounceHorizontal = true // Enable horizontal scrolling
+        scrollView.alwaysBounceHorizontal = true
         view.addSubview(scrollView)
 
         let containerView = UIStackView()
         containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.axis = .horizontal // Arrange cards horizontally
-        containerView.spacing = 16 // Adjust spacing between cards
+        containerView.axis = .horizontal
+        containerView.spacing = 16
         containerView.alignment = .center
         containerView.distribution = .fill
         scrollView.addSubview(containerView)
@@ -44,24 +45,23 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             let dataView = UIView()
             dataView.translatesAutoresizingMaskIntoConstraints = false
             dataView.backgroundColor = UIColor(hex: "#222222")
-            dataView.layer.cornerRadius = 16 // Rounded corners for better design
+            dataView.layer.cornerRadius = 16
             dataView.layer.shadowColor = UIColor.black.cgColor
             dataView.layer.shadowOpacity = 0.3
             dataView.layer.shadowOffset = CGSize(width: 0, height: 4)
-            dataView.layer.shadowRadius = 8 // Softer shadows for depth
-            dataView.widthAnchor.constraint(equalToConstant: 120).isActive = true // Fixed width for each card
-            dataView.heightAnchor.constraint(equalToConstant: 150).isActive = true // Fixed height for each card
+            dataView.layer.shadowRadius = 8
+            dataView.widthAnchor.constraint(equalToConstant: 120).isActive = true
+            dataView.heightAnchor.constraint(equalToConstant: 150).isActive = true
 
-            // Create a vertical stack for the icon, time, and temperature
             let stackView = UIStackView()
             stackView.axis = .vertical
             stackView.spacing = 8
             stackView.alignment = .center
             stackView.distribution = .equalSpacing
             stackView.translatesAutoresizingMaskIntoConstraints = false
-
+            
             let weatherIcon = UIImageView()
-            weatherIcon.image = UIImage(systemName: "cloud.sun.fill") // Example weather icon
+            weatherIcon.image = UIImage(systemName: "cloud.sun.fill")
             weatherIcon.tintColor = .systemYellow
             weatherIcon.translatesAutoresizingMaskIntoConstraints = false
             weatherIcon.contentMode = .scaleAspectFit
@@ -69,25 +69,23 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             weatherIcon.widthAnchor.constraint(equalToConstant: 50).isActive = true
 
             let timeLabel = UILabel()
-            timeLabel.text = "\(i + 1) PM" // Example time, replace with actual data
+            timeLabel.text = "\(i + 1) PM"
             timeLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
             timeLabel.textColor = .white
             timeLabel.textAlignment = .center
             timeLabel.translatesAutoresizingMaskIntoConstraints = false
 
             let temperatureLabel = UILabel()
-            temperatureLabel.text = "\(20 + i)°C" // Example temperature, replace with actual data
+            temperatureLabel.text = "\(20 + i)°C"
             temperatureLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
             temperatureLabel.textColor = .white
             temperatureLabel.textAlignment = .center
             temperatureLabel.translatesAutoresizingMaskIntoConstraints = false
 
-            // Add components to the stack view
             stackView.addArrangedSubview(weatherIcon)
             stackView.addArrangedSubview(timeLabel)
             stackView.addArrangedSubview(temperatureLabel)
 
-            // Add stack view to the data view
             dataView.addSubview(stackView)
 
             NSLayoutConstraint.activate([
@@ -95,7 +93,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 stackView.centerYAnchor.constraint(equalTo: dataView.centerYAnchor)
             ])
 
-            // Add the data view to the horizontal container
             containerView.addArrangedSubview(dataView)
         }
 
@@ -112,7 +109,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             containerView.heightAnchor.constraint(equalTo: scrollView.heightAnchor)
         ])
 
-        view.heightAnchor.constraint(equalToConstant: 300).isActive = true // Adjust the height here
+        view.heightAnchor.constraint(equalToConstant: 300).isActive = true
 
         return view
     }()
@@ -128,34 +125,32 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.showsHorizontalScrollIndicator = false
-        scrollView.alwaysBounceHorizontal = true // Enable horizontal scrolling
-        scrollView.isPagingEnabled = false // Optional: enable smooth scrolling
+        scrollView.alwaysBounceHorizontal = true
+        scrollView.isPagingEnabled = false
         view.addSubview(scrollView)
 
         let containerView = UIStackView()
         containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.axis = .horizontal // Arrange cards horizontally
-        containerView.spacing = 16 // Adjust spacing between cards
+        containerView.axis = .horizontal
+        containerView.spacing = 16
         containerView.alignment = .center
         containerView.distribution = .fill
         scrollView.addSubview(containerView)
 
-        // Days of the week array
         let daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
         for i in 0..<7 {
             let dataView = UIView()
             dataView.translatesAutoresizingMaskIntoConstraints = false
             dataView.backgroundColor =  UIColor(hex: "#222222")
-            dataView.layer.cornerRadius = 16 // Rounded corners for better design
+            dataView.layer.cornerRadius = 16
             dataView.layer.shadowColor = UIColor.black.cgColor
             dataView.layer.shadowOpacity = 0.3
             dataView.layer.shadowOffset = CGSize(width: 0, height: 4)
-            dataView.layer.shadowRadius = 8 // Softer shadows for depth
-            dataView.widthAnchor.constraint(equalToConstant: 120).isActive = true // Fixed width for each card
-            dataView.heightAnchor.constraint(equalToConstant: 150).isActive = true // Fixed height for each card
+            dataView.layer.shadowRadius = 8
+            dataView.widthAnchor.constraint(equalToConstant: 120).isActive = true
+            dataView.heightAnchor.constraint(equalToConstant: 150).isActive = true
 
-            // Create vertical stack for icon, day, and temperature
             let stackView = UIStackView()
             stackView.axis = .vertical
             stackView.spacing = 8
@@ -164,7 +159,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             stackView.translatesAutoresizingMaskIntoConstraints = false
 
             let weatherIcon = UIImageView()
-            weatherIcon.image = UIImage(systemName: "cloud.sun.fill") // Example weather icon, replace with actual icon
+            weatherIcon.image = UIImage(systemName: "cloud.sun.fill") 
             weatherIcon.tintColor = .systemYellow
             weatherIcon.translatesAutoresizingMaskIntoConstraints = false
             weatherIcon.contentMode = .scaleAspectFit
@@ -185,12 +180,10 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             temperatureLabel.textAlignment = .center
             temperatureLabel.translatesAutoresizingMaskIntoConstraints = false
 
-            // Add components to the stack view
             stackView.addArrangedSubview(weatherIcon)
             stackView.addArrangedSubview(dayLabel)
             stackView.addArrangedSubview(temperatureLabel)
 
-            // Add stack view to the data view
             dataView.addSubview(stackView)
 
             NSLayoutConstraint.activate([
@@ -198,7 +191,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 stackView.centerYAnchor.constraint(equalTo: dataView.centerYAnchor)
             ])
 
-            // Add the data view to the horizontal container
             containerView.addArrangedSubview(dataView)
         }
 
@@ -216,16 +208,15 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         ])
 
         return view
-    }()
-
-
-
+    }()    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         setupViews()
         setupBottomSheet()
         setupSOSButton()
         setupSOSOverlay()
+  
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
@@ -239,11 +230,15 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weeklyButton.setTitleColor(UIColor(hex: "#333333"), for: .normal)
         hourlyView.isHidden = false
         weeklyView.isHidden = true
+
         view.bringSubviewToFront(bottomSheetView)
+
         sosOverlayView.translatesAutoresizingMaskIntoConstraints = false
+
         let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
         mapView.addGestureRecognizer(longPressGesture)
     }
+
     private let weatherView: UIView = {
             let view = UIView()
             view.backgroundColor = UIColor(hex: "#222222")
@@ -327,7 +322,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
 }
     private func setupSOSOverlay() {
         sosOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        sosOverlayView.isHidden = true // Initially hidden
+        sosOverlayView.isHidden = true
         view.addSubview(sosOverlayView)
         sosOverlayView.addContactIcon(iconName: "cross.circle.fill", label: "Ambulance", number: "102")
         sosOverlayView.addContactIcon(iconName: "shield.fill", label: "Police", number: "100")
@@ -336,11 +331,10 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         NSLayoutConstraint.activate([
             sosOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             sosOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            sosOverlayView.topAnchor.constraint(equalTo: view.topAnchor, constant: 120),
+            sosOverlayView.topAnchor.constraint(equalTo: view.topAnchor, constant: 170),
             sosOverlayView.heightAnchor.constraint(equalToConstant: 200)
         ])
     }
-
     func updateWeatherUI(with weatherData: WeatherData) {
         self.temperatureLabel.text = "\(Int(weatherData.temperature))°C"
         self.humidityLabel.text = "Humidity: \(weatherData.humidity)%"
@@ -371,7 +365,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         view.addSubview(bottomSheetView)
         bottomSheetView.translatesAutoresizingMaskIntoConstraints = false
 
-        // Set a higher zPosition to ensure it appears above the SOSOverlayView
+
         bottomSheetView.layer.zPosition = 1
         let defaultOffset: CGFloat = 170
         bottomSheetTopConstraint = bottomSheetView.topAnchor.constraint(equalTo: view.bottomAnchor, constant: -(bottomSheetCollapsedHeight + defaultOffset))
@@ -397,7 +391,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             rectangleView.widthAnchor.constraint(equalToConstant: 60),
             rectangleView.heightAnchor.constraint(equalToConstant: 5)
         ])
-        
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetView.addSubview(searchBar)
         searchBar.barStyle = .default
@@ -460,7 +453,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         hourlyButton.addTarget(self, action: #selector(hourlyButtonTapped), for: .touchUpInside)
         bottomSheetView.addSubview(hourlyButton)
         
-  
         weeklyButton.translatesAutoresizingMaskIntoConstraints = false
         weeklyButton.setTitle("Weekly", for: .normal)
         weeklyButton.setTitleColor(UIColor(hex: "#333333"), for: .normal)
@@ -474,12 +466,12 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         
         NSLayoutConstraint.activate([
             hourlyButton.heightAnchor.constraint(equalToConstant: 44),
-            hourlyButton.topAnchor.constraint(equalTo: weatherView.bottomAnchor, constant: 20),
+            hourlyButton.topAnchor.constraint(equalTo: weatherView.bottomAnchor, constant: 60),
             hourlyButton.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
             hourlyButton.trailingAnchor.constraint(equalTo: bottomSheetView.centerXAnchor, constant: -8),
             
             weeklyButton.heightAnchor.constraint(equalToConstant: 44),
-            weeklyButton.topAnchor.constraint(equalTo: weatherView.bottomAnchor, constant: 20),
+            weeklyButton.topAnchor.constraint(equalTo: weatherView.bottomAnchor, constant: 60),
             weeklyButton.leadingAnchor.constraint(equalTo: bottomSheetView.centerXAnchor, constant: 8),
             weeklyButton.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16)
         ])
@@ -489,7 +481,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             hourlyView.topAnchor.constraint(equalTo: hourlyButton.bottomAnchor, constant: 20),
             hourlyView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
             hourlyView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16),
-            hourlyView.heightAnchor.constraint(equalToConstant: 170) // Reduced height
+            hourlyView.heightAnchor.constraint(equalToConstant: 170)
         ])
         weeklyView.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetView.addSubview(weeklyView)
@@ -497,7 +489,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             weeklyView.topAnchor.constraint(equalTo: weeklyButton.bottomAnchor, constant: 20),
             weeklyView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
             weeklyView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16),
-            weeklyView.heightAnchor.constraint(equalToConstant: 170) // Reduced height
+            weeklyView.heightAnchor.constraint(equalToConstant: 170)
         ])
 
         
@@ -514,35 +506,29 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         
         NSLayoutConstraint.activate([
             showMoreButton.heightAnchor.constraint(equalToConstant: 44),
-            showMoreButton.topAnchor.constraint(equalTo: weeklyButton.bottomAnchor, constant: 200),
+            showMoreButton.topAnchor.constraint(equalTo: weeklyButton.bottomAnchor, constant: 220),
             showMoreButton.widthAnchor.constraint(equalToConstant: 200),
             showMoreButton.centerXAnchor.constraint(equalTo: bottomSheetView.centerXAnchor)
         ])
     }
     @objc private func hourlyButtonTapped() {
-        // Set Hourly button to selected state
         hourlyButton.backgroundColor = UIColor(hex: "#40cbd8")
         hourlyButton.setTitleColor(.white, for: .normal)
         
-        // Reset Weekly button to default state
         weeklyButton.backgroundColor = .white
         weeklyButton.setTitleColor(UIColor(hex: "#333333"), for: .normal)
         
-        // Show Hourly view and hide Weekly view
         hourlyView.isHidden = false
         weeklyView.isHidden = true
     }
 
     @objc private func weeklyButtonTapped() {
-        // Set Weekly button to selected state
         weeklyButton.backgroundColor = UIColor(hex: "#40cbd8")
         weeklyButton.setTitleColor(.white, for: .normal)
         
-        // Reset Hourly button to default state
         hourlyButton.backgroundColor = .white
         hourlyButton.setTitleColor(UIColor(hex: "#333333"), for: .normal)
         
-        // Show Weekly view and hide Hourly view
         weeklyView.isHidden = false
         hourlyView.isHidden = true
     }
@@ -606,7 +592,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                }
            }
        }
-       
     private func setupLocationButton() {
         let locationButton = UIButton(type: .system)
         let largeConfig = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular, scale: .medium)
@@ -634,7 +619,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             fetchWeather(for: coordinate)
         }
         
-        // CLLocationManager delegate method for authorization change
         func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
             if status == .authorizedWhenInUse || status == .authorizedAlways {
                 locationManager.startUpdatingLocation()
@@ -662,18 +646,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
         searchBar.resignFirstResponder()
     }
-    func addSearchResultAnnotation(for coordinate: CLLocationCoordinate2D) {
-        mapView.removeAnnotations(mapView.annotations)
-        let annotation = MKPointAnnotation()
-        annotation.coordinate = coordinate
-        mapView.addAnnotation(annotation)
-        let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
-        mapView.setRegion(region, animated: true)
-    }
-    @objc private func directionButtonTapped() {
-        guard let startCoordinate = startLocationCoordinate, let destinationCoordinate = destinationCoordinate else { return }
-        CitySearchHelper.getDirections(from: startCoordinate, to: destinationCoordinate, mapView: mapView)
-    }
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(polyline: polyline)
@@ -683,22 +655,100 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
         return MKOverlayRenderer()
     }
-    
     @objc func handleLongPress(_ gestureRecognizer: UILongPressGestureRecognizer) {
-        // Only handle the gesture when it ends (on release)
-        if gestureRecognizer.state == .ended {
-            // Get the point where the gesture was pressed
-            let location = gestureRecognizer.location(in: mapView)
-            let coordinate = mapView.convert(location, toCoordinateFrom: mapView)
-            let annotation = MKPointAnnotation()
-            
-            annotation.coordinate = coordinate
-            annotation.title = "Location: (\(coordinate.latitude), \(coordinate.longitude))"
-            annotation.subtitle = "You tapped here!"
-            mapView.addAnnotation(annotation)
-        }
+           if gestureRecognizer.state == .ended {
+               let location = gestureRecognizer.location(in: mapView)
+               let coordinate = mapView.convert(location, toCoordinateFrom: mapView)
+               
+               weatherInfoView?.removeFromSuperview()
+               
+               weatherInfoView = createWeatherInfoView(at: location)
+               if let weatherInfoView = weatherInfoView {
+                   view.addSubview(weatherInfoView)
+               }
+
+               fetchWeather(for: coordinate) { [weak self] weatherData in
+                   DispatchQueue.main.async {
+                       if let weatherData = weatherData {
+                           self?.updateWeatherInfoView(weatherData)
+                       } else {
+                           self?.updateWeatherInfoViewWithError()
+                       }
+                   }
+               }
+           }
+       }
+
+    private func createWeatherInfoView(at location: CGPoint) -> UIView {
+        let weatherView = UIView()
+        weatherView.backgroundColor = .white
+        weatherView.layer.cornerRadius = 10
+        weatherView.layer.shadowColor = UIColor.black.cgColor
+        weatherView.layer.shadowOpacity = 0.2
+        weatherView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        weatherView.layer.shadowRadius = 5
+        weatherView.frame = CGRect(x: location.x - 100, y: location.y - 60, width: 200, height: 120)
+        
+        let closeButton = UIButton(type: .system)
+        closeButton.setTitle("×", for: .normal)
+        closeButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+        closeButton.setTitleColor(.black, for: .normal)
+        closeButton.frame = CGRect(x: weatherView.frame.width - 30, y: 10, width: 20, height: 20)
+        closeButton.addTarget(self, action: #selector(dismissWeatherInfoView), for: .touchUpInside)
+        weatherView.addSubview(closeButton)
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "Fetching weather..."
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 14)
+        titleLabel.textAlignment = .center
+        titleLabel.frame = CGRect(x: 0, y: 40, width: weatherView.frame.width, height: 20)
+        weatherView.addSubview(titleLabel)
+        
+        let descriptionLabel = UILabel()
+        descriptionLabel.text = ""
+        descriptionLabel.font = UIFont.systemFont(ofSize: 12)
+        descriptionLabel.textAlignment = .center
+        descriptionLabel.frame = CGRect(x: 0, y: 70, width: weatherView.frame.width, height: 20)
+        weatherView.addSubview(descriptionLabel)
+        
+        return weatherView
     }
 
+    @objc private func dismissWeatherInfoView() {
+        weatherInfoView?.removeFromSuperview()
+    }
+       private func updateWeatherInfoView(_ weatherData: WeatherData) {
+           guard let weatherInfoView = weatherInfoView else { return }
+           
+           if let titleLabel = weatherInfoView.subviews.first(where: { $0 is UILabel }) as? UILabel {
+               titleLabel.text = "Temp: \(weatherData.temperature)°C"
+           }
+           
+           if let descriptionLabel = weatherInfoView.subviews.last(where: { $0 is UILabel }) as? UILabel {
+               descriptionLabel.text = weatherData.description.capitalized
+           }
+       }
+    
+       private func updateWeatherInfoViewWithError() {
+           guard let weatherInfoView = weatherInfoView else { return }
+           if let titleLabel = weatherInfoView.subviews.first(where: { $0 is UILabel }) as? UILabel {
+               titleLabel.text = "Weather unavailable"
+           }
+           
+           if let descriptionLabel = weatherInfoView.subviews.last(where: { $0 is UILabel }) as? UILabel {
+               descriptionLabel.text = "Please try again later."
+           }
+       }
+       private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
+           WeatherService.shared.fetchWeather(for: coordinate) { weatherData, error in
+               if let error = error {
+                   print("Error fetching weather: \(error.localizedDescription)")
+                   completion(nil)
+               } else {
+                   completion(weatherData)
+               }
+           }
+       }
     @objc private func searchButtonTapped() {
         searchBar.becomeFirstResponder()
     }

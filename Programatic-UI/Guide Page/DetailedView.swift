@@ -4,7 +4,6 @@ class DetailedView: UIViewController {
     
     private let selectedItem: GuideItem
     
-    // MARK: - Initializer
     init(selectedItem: GuideItem) {
         self.selectedItem = selectedItem
         super.init(nibName: nil, bundle: nil)
@@ -13,28 +12,24 @@ class DetailedView: UIViewController {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    // MARK: - View Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
         configureView()
     }
-    
-    // MARK: - Configuration
+
     private func configureView() {
         view.backgroundColor = UIColor(hex: "#222222")
         setupLayout()
     }
     
     private func setupLayout() {
-        // Top Image Section
         let imageView = createImageView(with: selectedItem.imageName)
         view.addSubview(imageView)
         
         let titleLabel = createTitleLabel(with: selectedItem.title)
         view.addSubview(titleLabel)
         
-        // Info Section
         let infoContainer = createInfoContainer()
         let infoStackView = createInfoStackView()
         
@@ -44,14 +39,12 @@ class DetailedView: UIViewController {
         infoContainer.addSubview(infoStackView)
         view.addSubview(infoContainer)
         
-        // Action Buttons
         let buttonStack = createButtonStack()
         buttonStack.addArrangedSubview(createActionButton(imageName: "location.fill", action: #selector(handleLocationTapped)))
         buttonStack.addArrangedSubview(createActionButton(imageName: "square.and.arrow.up", action: #selector(handleShareTapped)))
         buttonStack.addArrangedSubview(createActionButton(imageName: "phone.fill", action: #selector(handleCallTapped)))
         view.addSubview(buttonStack)
         
-        // MARK: - Constraints
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: view.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -78,7 +71,6 @@ class DetailedView: UIViewController {
         ])
     }
     
-    // MARK: - UI Elements
     private func createImageView(with imageName: String) -> UIImageView {
         let imageView = UIImageView()
         imageView.image = UIImage(named: imageName)
@@ -114,7 +106,6 @@ class DetailedView: UIViewController {
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }
-    
     private func createInfoStackView() -> UIStackView {
         let stackView = UIStackView()
         stackView.axis = .vertical
@@ -156,7 +147,6 @@ class DetailedView: UIViewController {
         return button
     }
     
-    // MARK: - Actions
     @objc private func handleLocationTapped() {
         print("Location button tapped")
     }

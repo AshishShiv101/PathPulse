@@ -13,20 +13,19 @@ class onBoarding: UIViewController {
         view.addSubview(logoImageView)
         let cardStack = UIStackView(arrangedSubviews: [
             CardView(imageName: "Clouds", text: "Why worry about the weather when we can do it on your behalf.", isImageAsset: true),
-            CardView(imageName: "News", text: "Unsure about your plans? Don’t worry, we’ve got that covered as well.", isImageAsset: true),
+            CardView(imageName: "News", text: "Uncertain about your plans? Stay informed with the latest updates—we’ve got you covered!", isImageAsset: true),
             CardView(imageName: "Hotels", text: "Uncertain about the plans you’ve made? We’ve got you covered there too.", isImageAsset: true)
         ])
         cardStack.axis = .vertical
         cardStack.spacing = 40
         cardStack.layoutMargins = UIEdgeInsets(top: 90, left: 16, bottom: 0, right: 16)
         cardStack.isLayoutMarginsRelativeArrangement = true
-        
         cardStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cardStack)
         let getStartedButton = UIButton(type: .system)
         getStartedButton.setTitle("Get Started", for: .normal)
         getStartedButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
-        getStartedButton.setTitleColor(.white, for: .normal)
+        getStartedButton.setTitleColor(.black, for: .normal)
         getStartedButton.backgroundColor = UIColor(hex: "40CBD8")
         getStartedButton.layer.cornerRadius = 10
         getStartedButton.translatesAutoresizingMaskIntoConstraints = false

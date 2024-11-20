@@ -1,8 +1,6 @@
 import MapKit
 import CoreLocation
-
 class CitySearchHelper {
-
     static func searchForCity(city: String, mapView: MKMapView, locationManager: CLLocationManager, completion: @escaping (WeatherData?, Error?) -> Void) {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = city
@@ -31,7 +29,6 @@ class CitySearchHelper {
             annotation.title = mapItem.name
             mapView.addAnnotation(annotation)
             
-            // Fetch weather for the destination coordinate
             WeatherService.shared.fetchWeather(for: destinationCoordinate) { (weatherData, error) in
                 if let error = error {
                     print("Error fetching weather: \(error.localizedDescription)")
@@ -52,6 +49,8 @@ class CitySearchHelper {
         }
     }
     static func calculateRoute(from startCoordinate: CLLocationCoordinate2D, to destinationCoordinate: CLLocationCoordinate2D, mapView: MKMapView) {
+        mapView.removeOverlays(mapView.overlays)
+        
         let startPlacemark = MKPlacemark(coordinate: startCoordinate)
         let destinationPlacemark = MKPlacemark(coordinate: destinationCoordinate)
         
@@ -75,37 +74,11 @@ class CitySearchHelper {
                 return
             }
             
-            // Show the route on the map
             mapView.addOverlay(route.polyline, level: .aboveRoads)
             
-            // Adjust map to fit the route
             let rect = route.polyline.boundingMapRect
             mapView.setRegion(MKCoordinateRegion(rect), animated: true)
         }
     }
 
-    // New function added to the helper class
-    static func getDirections(from startCoordinate: CLLocationCoordinate2D, to destinationCoordinate: CLLocationCoordinate2D, mapView: MKMapView) {
-        let startPlacemark = MKPlacemark(coordinate: startCoordinate)
-        let destinationPlacemark = MKPlacemark(coordinate: destinationCoordinate)
-        
-        let startMapItem = MKMapItem(placemark: startPlacemark)
-        let destinationMapItem = MKMapItem(placemark: destinationPlacemark)
-        
-        let request = MKDirections.Request()
-        request.source = startMapItem
-        request.destination = destinationMapItem
-        request.transportType = .automobile
-        
-        let directions = MKDirections(request: request)
-        directions.calculate { response, error in
-            guard let response = response, error == nil else { return }
-            
-            mapView.removeOverlays(mapView.overlays)
-            if let route = response.routes.first {
-                mapView.addOverlay(route.polyline)
-                mapView.setVisibleMapRect(route.polyline.boundingMapRect, animated: true)
-            }
-        }
-    }
 }

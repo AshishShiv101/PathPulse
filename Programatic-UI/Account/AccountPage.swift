@@ -6,18 +6,14 @@ class AccountPage: UIViewController {
     
     private let infoCardView = UIView()
     private let buttonsCardView = UIView()
-    
     private let nameLabel = UILabel()
     private let phoneLabel = UILabel()
-    
     private let privacyButton = UIButton()
     private let editContactsButton = UIButton()
     private let logoutButton = UIButton()
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(hex: "#222222")
-     
         setupScrollView()
         setupInfoCard()
         setupButtonsCard()
@@ -69,7 +65,10 @@ class AccountPage: UIViewController {
         arrowImageView.tintColor = .white
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
         infoCardView.addSubview(arrowImageView)
+
         
+
+
         NSLayoutConstraint.activate([
             infoCardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 60),
             infoCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
@@ -83,10 +82,9 @@ class AccountPage: UIViewController {
             phoneLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 16),
             
             arrowImageView.centerYAnchor.constraint(equalTo: infoCardView.centerYAnchor),
-            arrowImageView.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -16)
+            arrowImageView.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -16),
         ])
     }
-    
     private func setupButtonsCard() {
         buttonsCardView.backgroundColor = UIColor(hex: "#333333")
         buttonsCardView.layer.cornerRadius = 15
@@ -101,7 +99,6 @@ class AccountPage: UIViewController {
         configureButton(editContactsButton, title: "Edit Contacts", systemImageName: "person.2.fill")
         configureButton(logoutButton, title: "Logout", systemImageName: "arrowshape.turn.up.left.fill")
         
-        // Add targets for each button to call respective methods when tapped
                privacyButton.addTarget(self, action: #selector(privacyButtonTapped), for: .touchUpInside)
                editContactsButton.addTarget(self, action: #selector(editContactsButtonTapped), for: .touchUpInside)
                logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
@@ -157,17 +154,34 @@ class AccountPage: UIViewController {
     }
    
     @objc func privacyButtonTapped() {
-        
+        if let appSettingsURL = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(appSettingsURL, options: [:], completionHandler: nil)
+        }
     }
-    
     @objc func editContactsButtonTapped() {
         let editContactVC = EditContactViewController()
         navigationController?.pushViewController(editContactVC, animated: true)
     }
-
-
-    
     @objc func logoutButtonTapped() {
-        // Handle logout action
+        let alertController = UIAlertController(
+            title: "Logout",
+            message: "Are you sure you want to log out?",
+            preferredStyle: .alert
+        )
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        alertController.addAction(cancelAction)
+
+        let logoutAction = UIAlertAction(title: "Logout", style: .destructive) { _ in
+            self.performLogout()
+        }
+        alertController.addAction(logoutAction)
+
+        present(alertController, animated: true, completion: nil)
     }
+
+    private func performLogout() {
+        print("User logged out")
+        navigationController?.popToRootViewController(animated: true)
+    }
+
 }

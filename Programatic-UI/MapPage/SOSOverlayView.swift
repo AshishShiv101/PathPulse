@@ -62,19 +62,16 @@ class SOSOverlayView: UIView {
 
         addSubview(mainStackView)
         mainStackView.addArrangedSubview(contactsStackView)
-        
-        // Add the Add Contact box between the emergency contacts and the other buttons
+ 
         mainStackView.addArrangedSubview(addContactBox)
 
         addContactBox.addSubview(addContactLabel)
         addContactBox.addSubview(appleIconImageView)
 
-        // Set zPosition for proper layering
         layer.zPosition = 1
         mainStackView.layer.zPosition = 2
         addContactBox.layer.zPosition = 3
 
-        // Adjust constraints for mainStackView
         NSLayoutConstraint.activate([
             mainStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             mainStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
@@ -82,7 +79,6 @@ class SOSOverlayView: UIView {
             mainStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16) // Ensure space at the bottom
         ])
         
-        // Set height constraints for the addContactBox
         NSLayoutConstraint.activate([
             addContactBox.heightAnchor.constraint(equalToConstant: 50),
             
@@ -96,21 +92,18 @@ class SOSOverlayView: UIView {
             appleIconImageView.heightAnchor.constraint(equalToConstant: 24)
         ])
 
-        // Adjust the contactsStackView's constraints so it can expand and not get clipped
         NSLayoutConstraint.activate([
             contactsStackView.leadingAnchor.constraint(equalTo: mainStackView.leadingAnchor),
             contactsStackView.trailingAnchor.constraint(equalTo: mainStackView.trailingAnchor)
         ])
     }
 
-    // Ensure contacts are properly layered
     public func addContactIcon(iconName: String, label: String, number: String) {
         let contactIcon = createContactIcon(with: iconName, label: label, number: number)
         contactsStackView.addArrangedSubview(contactIcon)
         bringSubviewToFront(contactIcon)
     }
 
-    // Adjust zPosition for dynamically added views
     private func createContactIcon(with systemImageName: String, label: String, number: String) -> UIView {
         let button = UIButton(type: .system)
         button.setImage(UIImage(systemName: systemImageName), for: .normal)
@@ -124,9 +117,8 @@ class SOSOverlayView: UIView {
         button.imageView?.contentMode = .scaleAspectFit
         button.translatesAutoresizingMaskIntoConstraints = false
         button.addTarget(self, action: #selector(contactTapped(_:)), for: .touchUpInside)
-        button.accessibilityLabel = number // Store the number in the button for later use
+        button.accessibilityLabel = number
 
-        // Ensure button zPosition
         button.layer.zPosition = 4
 
         let labelView = UILabel()

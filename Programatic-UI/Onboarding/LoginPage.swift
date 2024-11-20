@@ -1,22 +1,43 @@
 import UIKit
-
 class LoginPage: UIViewController {
-    private let usernameTextField: UITextField = {
+    private let emailTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "  Enter ID or Phone number"
+        textField.placeholder = "Enter Username"
         textField.backgroundColor = UIColor(white: 1.0, alpha: 0.7)
         textField.layer.cornerRadius = 12
         textField.textColor = .black
         textField.layer.borderColor = UIColor.gray.cgColor
         textField.layer.borderWidth = 1
         textField.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 50))
+        textField.leftView = paddingView
+        textField.leftViewMode = .always
         return textField
     }()
+
+    private let usernameTextField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = "Phone number"
+        textField.backgroundColor = UIColor(white: 1.0, alpha: 0.7)
+        textField.layer.cornerRadius = 12
+        textField.textColor = .black
+        textField.layer.borderColor = UIColor.gray.cgColor
+        textField.layer.borderWidth = 1
+        textField.heightAnchor.constraint(equalToConstant: 50).isActive = true
+
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 50))
+        textField.leftView = paddingView
+        textField.leftViewMode = .always
+
+        return textField
+    }()
+
     
     private let continueButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Continue", for: .normal)
-        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(.black, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold) 
         button.backgroundColor = UIColor(hex: "#40CBD8")
         button.layer.cornerRadius = 12
         button.layer.shadowColor = UIColor.black.cgColor
@@ -26,7 +47,6 @@ class LoginPage: UIViewController {
         button.heightAnchor.constraint(equalToConstant: 50).isActive = true
         return button
     }()
-    
     private let googleButton: UIButton = createSocialButton(imageName: "Google", backgroundColor: .white)
     private let appleButton: UIButton = createSocialButton(imageName: "Apple", backgroundColor: .white)
     
@@ -59,40 +79,44 @@ class LoginPage: UIViewController {
         buttonStack.axis = .horizontal
         buttonStack.spacing = 24
         
-        [appLogo, titleLabel, usernameTextField, continueButton, separatorContainer, connectLabel, buttonStack].forEach {
+        [appLogo, titleLabel, emailTextField, usernameTextField, continueButton, separatorContainer, connectLabel, buttonStack].forEach {
             view.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
         
         NSLayoutConstraint.activate([
-            appLogo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 60),
-            appLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            appLogo.widthAnchor.constraint(equalToConstant: 120),
-            appLogo.heightAnchor.constraint(equalToConstant: 120),
-            
-            titleLabel.topAnchor.constraint(equalTo: appLogo.bottomAnchor, constant: 40),
-            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            usernameTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 30),
-            usernameTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            usernameTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            
-            continueButton.topAnchor.constraint(equalTo: usernameTextField.bottomAnchor, constant: 24),
-            continueButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            continueButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            
-            separatorContainer.topAnchor.constraint(equalTo: continueButton.bottomAnchor, constant: 32),
-            separatorContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            separatorContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            separatorContainer.heightAnchor.constraint(equalToConstant: 30),
-            
-            connectLabel.topAnchor.constraint(equalTo: separatorContainer.bottomAnchor, constant: 20),
-            connectLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            buttonStack.topAnchor.constraint(equalTo: connectLabel.bottomAnchor, constant: 20),
-            buttonStack.centerXAnchor.constraint(equalTo: view.centerXAnchor)
-        ])
-    }
+               appLogo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+               appLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+               appLogo.widthAnchor.constraint(equalToConstant: 120),
+               appLogo.heightAnchor.constraint(equalToConstant: 120),
+               
+               titleLabel.topAnchor.constraint(equalTo: appLogo.bottomAnchor, constant: 40),
+               titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+               
+               emailTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 30),
+               emailTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+               emailTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+               
+               usernameTextField.topAnchor.constraint(equalTo: emailTextField.bottomAnchor, constant: 16),
+               usernameTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+               usernameTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+               
+               continueButton.topAnchor.constraint(equalTo: usernameTextField.bottomAnchor, constant: 24),
+               continueButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+               continueButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+               
+               separatorContainer.topAnchor.constraint(equalTo: continueButton.bottomAnchor, constant: 32),
+               separatorContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+               separatorContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+               separatorContainer.heightAnchor.constraint(equalToConstant: 30),
+               
+               connectLabel.topAnchor.constraint(equalTo: separatorContainer.bottomAnchor, constant: 20),
+               connectLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+               
+               buttonStack.topAnchor.constraint(equalTo: connectLabel.bottomAnchor, constant: 20),
+               buttonStack.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+           ])
+       }
     
     private func createSeparatorWithOrLabel() -> UIView {
         let separatorContainer = UIView()
@@ -143,7 +167,6 @@ class LoginPage: UIViewController {
         imageView.contentMode = .scaleAspectFit
         imageView.translatesAutoresizingMaskIntoConstraints = false
         button.addSubview(imageView)
-        
         NSLayoutConstraint.activate([
             imageView.centerXAnchor.constraint(equalTo: button.centerXAnchor),
             imageView.centerYAnchor.constraint(equalTo: button.centerYAnchor),
@@ -162,11 +185,9 @@ class LoginPage: UIViewController {
         line.translatesAutoresizingMaskIntoConstraints = false
         return line
     }
-    
     @objc private func handleContinueButton() {
         let mapPage = MapPage()
         mapPage.tabBarItem = UITabBarItem(title: "Map", image: UIImage(systemName: "map.fill"), tag: 0)
-        
         let guidePage = GuidePage()
         guidePage.tabBarItem = UITabBarItem(title: "Guide", image: UIImage(systemName: "bookmark.fill"), tag: 1)
         let guideNavigationController = UINavigationController(rootViewController: guidePage)

@@ -27,7 +27,6 @@ class EditContactViewController: UIViewController {
         stackView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stackView)
 
-        // Add cards for existing contacts
         for name in contactNames {
             let contactCard = createContactCard(title: name)
             stackView.addArrangedSubview(contactCard)
@@ -35,7 +34,7 @@ class EditContactViewController: UIViewController {
 
         let addContactButton = UIButton(type: .system)
         addContactButton.setTitle("Add Contact", for: .normal)
-        addContactButton.setTitleColor(.white, for: .normal)
+        addContactButton.setTitleColor(.black, for: .normal)
         addContactButton.backgroundColor = UIColor(named: "buttonColor") ?? UIColor(hex: "#40cbd8")
         addContactButton.layer.cornerRadius = 25
         addContactButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
@@ -82,7 +81,6 @@ class EditContactViewController: UIViewController {
         cardView.addSubview(titleLabel)
         cardView.addSubview(addButton)
 
-        // Constraints
         NSLayoutConstraint.activate([
             titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
             titleLabel.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
@@ -95,7 +93,6 @@ class EditContactViewController: UIViewController {
     }
     @objc private func addButtonTapped() {
         print("Add button tapped!")
-        // Implement additional functionality here, such as navigating to another screen or adding a contact.
     }
 
 

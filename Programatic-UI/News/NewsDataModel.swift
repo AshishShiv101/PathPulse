@@ -11,7 +11,6 @@ class NewsDataModel: Equatable {
         self.image = image
     }
 
-    // Conformance to Equatable
     static func ==(lhs: NewsDataModel, rhs: NewsDataModel) -> Bool {
         return lhs.headline == rhs.headline && lhs.link == rhs.link
     }

@@ -3,7 +3,6 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let locationView = UIView()
-
     private let carousels = ["Clinics", "Hotels", "Hospitals", "Pharmacies"]
     private var originalCarouselData: [String: [GuideItem]] = [
         "Clinics": GuideItem.DataModel.clinics,
@@ -13,7 +12,6 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
     ]
     private var carouselCollectionViews: [UICollectionView] = []
     private var carouselData: [String: [GuideItem]] = [:]
-
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(hex: "#222222")
@@ -23,7 +21,6 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         setupScrollView()
         setupCarousels()
     }
-
     private func setupNavigationBar() {
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
@@ -74,12 +71,11 @@ private func reloadAllCarousels() {
 
             let locationLabel = UILabel()
             locationLabel.text = "Chennai"
-            locationLabel.font = UIFont.systemFont(ofSize: 24, weight: .medium)
+            locationLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
             locationLabel.textColor = .white
             locationLabel.translatesAutoresizingMaskIntoConstraints = false
             locationContainer.addSubview(locationLabel)
 
-            // Background color for the location container
             locationContainer.backgroundColor = .black
             locationContainer.layer.cornerRadius = 10
 
@@ -90,15 +86,15 @@ private func reloadAllCarousels() {
 
                 locationIcon.leadingAnchor.constraint(equalTo: locationContainer.leadingAnchor, constant: 10),
                 locationIcon.centerYAnchor.constraint(equalTo: locationContainer.centerYAnchor),
-                locationIcon.widthAnchor.constraint(equalToConstant: 25),
-                locationIcon.heightAnchor.constraint(equalToConstant: 25),
+                locationIcon.widthAnchor.constraint(equalToConstant: 20),
+                locationIcon.heightAnchor.constraint(equalToConstant: 20),
 
                 locationLabel.leadingAnchor.constraint(equalTo: locationIcon.trailingAnchor, constant: 8),
                 locationLabel.centerYAnchor.constraint(equalTo: locationContainer.centerYAnchor),
                 locationLabel.trailingAnchor.constraint(equalTo: locationContainer.trailingAnchor, constant: -10)
             ])
 
-            previousCarousel = locationContainer // Set as the reference for the next component
+            previousCarousel = locationContainer 
 
         for (index, (title, _)) in carouselData.enumerated() {
             let titleLabel = UILabel()
@@ -267,13 +263,14 @@ private func reloadAllCarousels() {
                 ratingLabel.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 1),
                 ratingLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 10),
                 ratingLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
+                ratingLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -30),
                 
                 starImageView.leadingAnchor.constraint(equalTo: ratingLabel.trailingAnchor, constant: -110),
-                starImageView.topAnchor.constraint(equalTo: ratingLabel.topAnchor,constant: -1.2),
+                starImageView.topAnchor.constraint(equalTo: locationLabel.bottomAnchor,constant: 2),
                 starImageView.widthAnchor.constraint(equalToConstant: 14),
-                starImageView.heightAnchor.constraint(equalToConstant: 14),
+                starImageView.heightAnchor.constraint(equalToConstant: 14)
                 
-                ratingLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -30)
+               
             ])
         }
         
@@ -284,12 +281,5 @@ private func reloadAllCarousels() {
             hoursLabel.text = item.hours
             ratingLabel.text = String(format: "%.1f", item.rating)
         }
-    }
-}
-extension UITextField {
-    func setCustomLeftPadding(_ amount: CGFloat) {
-        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: amount, height: self.frame.size.height))
-        self.leftView = paddingView
-        self.leftViewMode = .always
     }
 }

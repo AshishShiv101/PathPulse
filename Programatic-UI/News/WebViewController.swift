@@ -2,13 +2,13 @@ import UIKit
 import WebKit
 
 class WebViewController: UIViewController {
-    var urlString: String? // Make sure this is an optional type
+    var urlString: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         guard let urlString = urlString, let url = URL(string: urlString) else {
-            print("Invalid URL string: \(urlString ?? "nil")")  // Debug log
+            print("Invalid URL string: \(urlString ?? "nil")") 
             return
         }
 
