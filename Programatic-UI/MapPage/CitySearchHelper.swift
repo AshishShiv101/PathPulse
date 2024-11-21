@@ -1,6 +1,7 @@
 import MapKit
 import CoreLocation
 class CitySearchHelper {
+    static let shared = CitySearchHelper()
     static func searchForCity(city: String, mapView: MKMapView, locationManager: CLLocationManager, completion: @escaping (WeatherData?, Error?) -> Void) {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = city
