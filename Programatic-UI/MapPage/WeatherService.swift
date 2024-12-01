@@ -55,9 +55,10 @@ class WeatherService {
     }
 }
 struct WeatherData {
-    let temperature: Double
-    let humidity: Int
-    let windSpeed: Double
-    let description: String
-    let icon: String
+    var temperature: Double
+    var humidity: Int
+    var windSpeed: Double
+    var description: String
+    var icon: String // The icon code used to fetch the weather icon
 }
+

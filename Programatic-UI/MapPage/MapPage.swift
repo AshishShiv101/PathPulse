@@ -216,7 +216,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         setupBottomSheet()
         setupSOSButton()
         setupSOSOverlay()
-  
+        
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
@@ -230,14 +230,18 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weeklyButton.setTitleColor(UIColor(hex: "#333333"), for: .normal)
         hourlyView.isHidden = false
         weeklyView.isHidden = true
-
+        
         view.bringSubviewToFront(bottomSheetView)
 
         sosOverlayView.translatesAutoresizingMaskIntoConstraints = false
 
         let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
         mapView.addGestureRecognizer(longPressGesture)
+        
+
+    
     }
+
 
     private let weatherView: UIView = {
             let view = UIView()
@@ -339,7 +343,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         self.temperatureLabel.text = "\(Int(weatherData.temperature))°C"
         self.humidityLabel.text = "Humidity: \(weatherData.humidity)%"
         self.windSpeedLabel.text = "Wind: \(weatherData.windSpeed) m/s"
-        
         if let iconUrl = URL(string: "https://openweathermap.org/img/wn/\(weatherData.icon)@2x.png"),
            let data = try? Data(contentsOf: iconUrl) {
             self.weatherIcon.image = UIImage(data: data)
@@ -681,64 +684,117 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
 
     private func createWeatherInfoView(at location: CGPoint) -> UIView {
         let weatherView = UIView()
-        weatherView.backgroundColor = .white
-        weatherView.layer.cornerRadius = 10
+        weatherView.backgroundColor = UIColor(hex: "#222222") // Background color
+        weatherView.layer.cornerRadius = 12
         weatherView.layer.shadowColor = UIColor.black.cgColor
         weatherView.layer.shadowOpacity = 0.2
-        weatherView.layer.shadowOffset = CGSize(width: 0, height: 2)
-        weatherView.layer.shadowRadius = 5
-        weatherView.frame = CGRect(x: location.x - 100, y: location.y - 60, width: 200, height: 120)
+        weatherView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        weatherView.layer.shadowRadius = 6
+        weatherView.frame = CGRect(x: location.x - 110, y: location.y - 100, width: 220, height: 180) // Increased height for better spacing
         
         let closeButton = UIButton(type: .system)
         closeButton.setTitle("×", for: .normal)
         closeButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
-        closeButton.setTitleColor(.black, for: .normal)
+        closeButton.setTitleColor(.white, for: .normal)
         closeButton.frame = CGRect(x: weatherView.frame.width - 30, y: 10, width: 20, height: 20)
         closeButton.addTarget(self, action: #selector(dismissWeatherInfoView), for: .touchUpInside)
         weatherView.addSubview(closeButton)
         
+        let weatherIcon = UIImageView()
+        weatherIcon.frame = CGRect(x: (weatherView.frame.width - 80) / 2, y: 90, width: 150, height: 150) // Increased size to 80x80
+        weatherIcon.contentMode = .scaleAspectFit
+        weatherIcon.tintColor = .white 
+        weatherView.addSubview(weatherIcon)
+        
         let titleLabel = UILabel()
         titleLabel.text = "Fetching weather..."
-        titleLabel.font = UIFont.boldSystemFont(ofSize: 14)
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
         titleLabel.textAlignment = .center
-        titleLabel.frame = CGRect(x: 0, y: 40, width: weatherView.frame.width, height: 20)
+        titleLabel.textColor = .white // Text color set to white
+        titleLabel.frame = CGRect(x: 10, y: 110, width: weatherView.frame.width - 20, height: 20) // Adjusted position
         weatherView.addSubview(titleLabel)
         
         let descriptionLabel = UILabel()
         descriptionLabel.text = ""
-        descriptionLabel.font = UIFont.systemFont(ofSize: 12)
+        descriptionLabel.font = UIFont.systemFont(ofSize: 14)
         descriptionLabel.textAlignment = .center
-        descriptionLabel.frame = CGRect(x: 0, y: 70, width: weatherView.frame.width, height: 20)
+        descriptionLabel.textColor = .white // Text color set to white
+        descriptionLabel.frame = CGRect(x: 10, y: 135, width: weatherView.frame.width - 20, height: 20) // Adjusted position
         weatherView.addSubview(descriptionLabel)
+        
+        weatherInfoView?.tag = 1000
         
         return weatherView
     }
 
+
     @objc private func dismissWeatherInfoView() {
         weatherInfoView?.removeFromSuperview()
     }
-       private func updateWeatherInfoView(_ weatherData: WeatherData) {
-           guard let weatherInfoView = weatherInfoView else { return }
-           
-           if let titleLabel = weatherInfoView.subviews.first(where: { $0 is UILabel }) as? UILabel {
-               titleLabel.text = "Temp: \(weatherData.temperature)°C"
-           }
-           
-           if let descriptionLabel = weatherInfoView.subviews.last(where: { $0 is UILabel }) as? UILabel {
-               descriptionLabel.text = weatherData.description.capitalized
-           }
-       }
-    
-       private func updateWeatherInfoViewWithError() {
-           guard let weatherInfoView = weatherInfoView else { return }
-           if let titleLabel = weatherInfoView.subviews.first(where: { $0 is UILabel }) as? UILabel {
-               titleLabel.text = "Weather unavailable"
-           }
-           
-           if let descriptionLabel = weatherInfoView.subviews.last(where: { $0 is UILabel }) as? UILabel {
-               descriptionLabel.text = "Please try again later."
-           }
-       }
+    private func updateWeatherInfoView(_ weatherData: WeatherData) {
+        guard let weatherInfoView = weatherInfoView else { return }
+
+        // Update the temperature label
+        if let titleLabel = weatherInfoView.subviews.first(where: { $0 is UILabel }) as? UILabel {
+            titleLabel.text = "Temp: \(weatherData.temperature)°C"
+        }
+
+        // Update the description label
+        if let descriptionLabel = weatherInfoView.subviews.last(where: { $0 is UILabel }) as? UILabel {
+            descriptionLabel.text = weatherData.description.capitalized
+        }
+
+        // Add or update the weather icon
+        let iconTag = 101 // Unique tag for the image view
+        if let iconImageView = weatherInfoView.viewWithTag(iconTag) as? UIImageView {
+            // If the image view exists, update its image
+            updateWeatherIcon(iconImageView, with: weatherData.icon)
+        } else {
+            // If the image view doesn't exist, create and add it
+            let iconImageView = UIImageView(frame: CGRect(x: weatherInfoView.bounds.width / 2 - 25, y: 10, width: 50, height: 50))
+            iconImageView.contentMode = .scaleAspectFit
+            iconImageView.tag = iconTag
+            weatherInfoView.addSubview(iconImageView)
+
+            // Fetch and set the image
+            updateWeatherIcon(iconImageView, with: weatherData.icon)
+        }
+    }
+
+    private func updateWeatherIcon(_ imageView: UIImageView, with iconCode: String) {
+        let iconUrlString = "https://openweathermap.org/img/wn/\(iconCode)@2x.png"
+        guard let iconUrl = URL(string: iconUrlString) else { return }
+
+        // Fetch the image asynchronously
+        DispatchQueue.global().async {
+            if let data = try? Data(contentsOf: iconUrl), let image = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    imageView.image = image
+                }
+            }
+        }
+    }
+
+    private func updateWeatherInfoViewWithError() {
+        guard let weatherInfoView = weatherInfoView else { return }
+
+        // Update the temperature label
+        if let titleLabel = weatherInfoView.subviews.first(where: { $0 is UILabel }) as? UILabel {
+            titleLabel.text = "Weather unavailable"
+        }
+
+        // Update the description label
+        if let descriptionLabel = weatherInfoView.subviews.last(where: { $0 is UILabel }) as? UILabel {
+            descriptionLabel.text = "Please try again later."
+        }
+
+        // Remove the weather icon if it exists
+        let iconTag = 101
+        if let iconImageView = weatherInfoView.viewWithTag(iconTag) as? UIImageView {
+            iconImageView.removeFromSuperview()
+        }
+    }
+
        private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
            WeatherService.shared.fetchWeather(for: coordinate) { weatherData, error in
                if let error = error {
