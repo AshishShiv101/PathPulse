@@ -230,19 +230,11 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weeklyButton.setTitleColor(UIColor(hex: "#333333"), for: .normal)
         hourlyView.isHidden = false
         weeklyView.isHidden = true
-        
         view.bringSubviewToFront(bottomSheetView)
-
         sosOverlayView.translatesAutoresizingMaskIntoConstraints = false
-
         let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
         mapView.addGestureRecognizer(longPressGesture)
-        
-
-    
     }
-
-
     private let weatherView: UIView = {
             let view = UIView()
             view.backgroundColor = UIColor(hex: "#222222")
@@ -359,7 +351,13 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+        
+        
+        mapView.mapType = .standard // Traffic is best displayed on the standard map type
+        mapView.showsTraffic = true
+        mapView.showsUserLocation = true // Optional: Show the user's location if relevant
     }
+
     private func setupBottomSheet() {
         bottomSheetView.backgroundColor = UIColor(hex: "#151515").withAlphaComponent(0.85)
         bottomSheetView.layer.cornerRadius = 18
@@ -658,6 +656,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
         return MKOverlayRenderer()
     }
+
     @objc func handleLongPress(_ gestureRecognizer: UILongPressGestureRecognizer) {
            if gestureRecognizer.state == .ended {
                let location = gestureRecognizer.location(in: mapView)
@@ -703,7 +702,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         let weatherIcon = UIImageView()
         weatherIcon.frame = CGRect(x: (weatherView.frame.width - 80) / 2, y: 90, width: 150, height: 150) // Increased size to 80x80
         weatherIcon.contentMode = .scaleAspectFit
-        weatherIcon.tintColor = .white 
+        weatherIcon.tintColor = .white
         weatherView.addSubview(weatherIcon)
         
         let titleLabel = UILabel()
@@ -774,7 +773,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             }
         }
     }
-
     private func updateWeatherInfoViewWithError() {
         guard let weatherInfoView = weatherInfoView else { return }
 

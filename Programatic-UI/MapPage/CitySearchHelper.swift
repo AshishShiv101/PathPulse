@@ -82,6 +82,7 @@ class CitySearchHelper {
         request.source = startItem
         request.destination = destinationItem
         request.transportType = .automobile
+        request.requestsAlternateRoutes = true // Request alternate routes
         
         let directions = MKDirections(request: request)
         directions.calculate { (response, error) in
@@ -89,17 +90,91 @@ class CitySearchHelper {
                 print("Error calculating directions: \(error.localizedDescription)")
                 return
             }
-            
-            guard let route = response?.routes.first else {
+            guard let routes = response?.routes else {
                 print("No routes found")
                 return
             }
+            let shortestRoute = routes.min(by: { $0.distance < $1.distance })
             
-            mapView.addOverlay(route.polyline, level: .aboveRoads)
-            
-            let rect = route.polyline.boundingMapRect
-            mapView.setRegion(MKCoordinateRegion(rect), animated: true)
+            for route in routes {
+                mapView.addOverlay(route.polyline, level: .aboveRoads)
+            }
+            if let shortestRoute = shortestRoute {
+                print("Shortest route distance: \(shortestRoute.distance / 1000) km")
+                
+                // Set the shortest route as a property for reference in the delegate
+                mapView.addOverlay(shortestRoute.polyline, level: .aboveRoads)
+                
+                // Zoom in to the shortest route
+                let rect = shortestRoute.polyline.boundingMapRect
+                mapView.setRegion(MKCoordinateRegion(rect), animated: true)
+            }
         }
     }
 
-}
+
+        
+        var mapView: MKMapView!
+        var shortestRoutePolyline: MKPolyline?
+        
+        // Other methods for setup, map view handling, etc.
+        
+        func calculateMultipleRoutes(from startCoordinate: CLLocationCoordinate2D, to destinationCoordinate: CLLocationCoordinate2D) {
+            mapView.removeOverlays(mapView.overlays)
+            
+            let startPlacemark = MKPlacemark(coordinate: startCoordinate)
+            let destinationPlacemark = MKPlacemark(coordinate: destinationCoordinate)
+            
+            let startItem = MKMapItem(placemark: startPlacemark)
+            let destinationItem = MKMapItem(placemark: destinationPlacemark)
+            
+            let request = MKDirections.Request()
+            request.source = startItem
+            request.destination = destinationItem
+            request.transportType = .automobile
+            
+            let directions = MKDirections(request: request)
+            directions.calculate { [weak self] (response, error) in
+                if let error = error {
+                    print("Error calculating directions: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let routes = response?.routes else {
+                    print("No routes found")
+                    return
+                }
+                
+                // Find the shortest route based on distance
+                if let shortestRoute = routes.min(by: { $0.distance < $1.distance }) {
+                    self?.shortestRoutePolyline = shortestRoute.polyline
+                }
+                
+                // Add all routes to map
+                for route in routes {
+                    let polyline = route.polyline
+                    self?.mapView.addOverlay(polyline)
+                }
+            }
+        }
+
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let polyline = overlay as? MKPolyline {
+                let renderer = MKPolylineRenderer(polyline: polyline)
+                
+                // Highlight the shortest route with a different color
+                if polyline == shortestRoutePolyline {
+                    renderer.strokeColor = .red // Shortest route in red
+                } else {
+                    renderer.strokeColor = .blue // Other routes in blue
+                }
+                
+                renderer.lineWidth = 4
+                return renderer
+            }
+            
+            return MKOverlayRenderer()
+        }
+    }
+
+
