@@ -186,37 +186,9 @@ class LoginPage: UIViewController {
         return line
     }
     @objc private func handleContinueButton() {
-        let mapPage = MapPage()
-        mapPage.tabBarItem = UITabBarItem(title: "Map", image: UIImage(systemName: "map.fill"), tag: 0)
-        let guidePage = GuidePage()
-        guidePage.tabBarItem = UITabBarItem(title: "Guide", image: UIImage(systemName: "bookmark.fill"), tag: 1)
-        let guideNavigationController = UINavigationController(rootViewController: guidePage)
-        
-        let accountPage = AccountPage()
-        accountPage.tabBarItem = UITabBarItem(title: "Account", image: UIImage(systemName: "person.crop.circle"), tag: 2)
-        let accNav = UINavigationController(rootViewController: accountPage)
-        
-        let tabBarController = UITabBarController()
-        tabBarController.viewControllers = [mapPage, guideNavigationController, accNav]
-        
-        if #available(iOS 15.0, *) {
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = UIColor(hex: "#333333")
-            appearance.stackedLayoutAppearance.selected.iconColor = UIColor(hex: "#40cbd8")
-            appearance.stackedLayoutAppearance.selected.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor(hex: "#40cbd8")]
-            appearance.stackedLayoutAppearance.normal.iconColor = .white
-            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
-            
-            tabBarController.tabBar.standardAppearance = appearance
-            tabBarController.tabBar.scrollEdgeAppearance = appearance
-        } else {
-            tabBarController.tabBar.barTintColor = UIColor(hex: "#151515")
-            tabBarController.tabBar.tintColor = UIColor(hex: "#40cbd8")
-            tabBarController.tabBar.unselectedItemTintColor = .white
-        }
-        
-        tabBarController.modalPresentationStyle = .fullScreen
-        present(tabBarController, animated: true, completion: nil)
+        let authenticateVC = OTPPage() // Replace with your initialization logic if needed
+
+//         Navigate to Authenticate page
+        self.navigationController?.pushViewController(authenticateVC, animated: true)
     }
 }
