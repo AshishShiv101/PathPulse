@@ -24,18 +24,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		3B222C732CD769A3008087EF /* Programatic-UI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Programatic-UI.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3B222C892CD769A4008087EF /* Programatic-UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Programatic-UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3B222C932CD769A4008087EF /* Programatic-UIUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Programatic-UIUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B222C732CD769A3008087EF /* Pathpulse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pathpulse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B222C892CD769A4008087EF /* PathpulseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PathpulseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B222C932CD769A4008087EF /* PathpulseUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PathpulseUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		3B222C9B2CD769A4008087EF /* Exceptions for "Programatic-UI" folder in "Programatic-UI" target */ = {
+		3B222C9B2CD769A4008087EF /* Exceptions for "Programatic-UI" folder in "Pathpulse" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 3B222C722CD769A3008087EF /* Programatic-UI */;
+			target = 3B222C722CD769A3008087EF /* Pathpulse */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -43,7 +43,7 @@
 		3B222C752CD769A3008087EF /* Programatic-UI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				3B222C9B2CD769A4008087EF /* Exceptions for "Programatic-UI" folder in "Programatic-UI" target */,
+				3B222C9B2CD769A4008087EF /* Exceptions for "Programatic-UI" folder in "Pathpulse" target */,
 			);
 			path = "Programatic-UI";
 			sourceTree = "<group>";
@@ -98,9 +98,9 @@
 		3B222C742CD769A3008087EF /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3B222C732CD769A3008087EF /* Programatic-UI.app */,
-				3B222C892CD769A4008087EF /* Programatic-UITests.xctest */,
-				3B222C932CD769A4008087EF /* Programatic-UIUITests.xctest */,
+				3B222C732CD769A3008087EF /* Pathpulse.app */,
+				3B222C892CD769A4008087EF /* PathpulseTests.xctest */,
+				3B222C932CD769A4008087EF /* PathpulseUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,9 +108,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3B222C722CD769A3008087EF /* Programatic-UI */ = {
+		3B222C722CD769A3008087EF /* Pathpulse */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3B222C9C2CD769A4008087EF /* Build configuration list for PBXNativeTarget "Programatic-UI" */;
+			buildConfigurationList = 3B222C9C2CD769A4008087EF /* Build configuration list for PBXNativeTarget "Pathpulse" */;
 			buildPhases = (
 				3B222C6F2CD769A3008087EF /* Sources */,
 				3B222C702CD769A3008087EF /* Frameworks */,
@@ -123,16 +123,16 @@
 			fileSystemSynchronizedGroups = (
 				3B222C752CD769A3008087EF /* Programatic-UI */,
 			);
-			name = "Programatic-UI";
+			name = Pathpulse;
 			packageProductDependencies = (
 			);
 			productName = "Programatic-UI";
-			productReference = 3B222C732CD769A3008087EF /* Programatic-UI.app */;
+			productReference = 3B222C732CD769A3008087EF /* Pathpulse.app */;
 			productType = "com.apple.product-type.application";
 		};
-		3B222C882CD769A4008087EF /* Programatic-UITests */ = {
+		3B222C882CD769A4008087EF /* PathpulseTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3B222CA12CD769A4008087EF /* Build configuration list for PBXNativeTarget "Programatic-UITests" */;
+			buildConfigurationList = 3B222CA12CD769A4008087EF /* Build configuration list for PBXNativeTarget "PathpulseTests" */;
 			buildPhases = (
 				3B222C852CD769A4008087EF /* Sources */,
 				3B222C862CD769A4008087EF /* Frameworks */,
@@ -146,16 +146,16 @@
 			fileSystemSynchronizedGroups = (
 				3B222C8C2CD769A4008087EF /* Programatic-UITests */,
 			);
-			name = "Programatic-UITests";
+			name = PathpulseTests;
 			packageProductDependencies = (
 			);
 			productName = "Programatic-UITests";
-			productReference = 3B222C892CD769A4008087EF /* Programatic-UITests.xctest */;
+			productReference = 3B222C892CD769A4008087EF /* PathpulseTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		3B222C922CD769A4008087EF /* Programatic-UIUITests */ = {
+		3B222C922CD769A4008087EF /* PathpulseUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3B222CA42CD769A4008087EF /* Build configuration list for PBXNativeTarget "Programatic-UIUITests" */;
+			buildConfigurationList = 3B222CA42CD769A4008087EF /* Build configuration list for PBXNativeTarget "PathpulseUITests" */;
 			buildPhases = (
 				3B222C8F2CD769A4008087EF /* Sources */,
 				3B222C902CD769A4008087EF /* Frameworks */,
@@ -169,11 +169,11 @@
 			fileSystemSynchronizedGroups = (
 				3B222C962CD769A4008087EF /* Programatic-UIUITests */,
 			);
-			name = "Programatic-UIUITests";
+			name = PathpulseUITests;
 			packageProductDependencies = (
 			);
 			productName = "Programatic-UIUITests";
-			productReference = 3B222C932CD769A4008087EF /* Programatic-UIUITests.xctest */;
+			productReference = 3B222C932CD769A4008087EF /* PathpulseUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -199,7 +199,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 3B222C6E2CD769A3008087EF /* Build configuration list for PBXProject "Programatic-UI" */;
+			buildConfigurationList = 3B222C6E2CD769A3008087EF /* Build configuration list for PBXProject "Pathpulse" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -208,14 +208,17 @@
 			);
 			mainGroup = 3B222C6A2CD769A3008087EF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3BC661842D0ED1E900AC514F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B222C742CD769A3008087EF /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3B222C722CD769A3008087EF /* Programatic-UI */,
-				3B222C882CD769A4008087EF /* Programatic-UITests */,
-				3B222C922CD769A4008087EF /* Programatic-UIUITests */,
+				3B222C722CD769A3008087EF /* Pathpulse */,
+				3B222C882CD769A4008087EF /* PathpulseTests */,
+				3B222C922CD769A4008087EF /* PathpulseUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -271,12 +274,12 @@
 /* Begin PBXTargetDependency section */
 		3B222C8B2CD769A4008087EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 3B222C722CD769A3008087EF /* Programatic-UI */;
+			target = 3B222C722CD769A3008087EF /* Pathpulse */;
 			targetProxy = 3B222C8A2CD769A4008087EF /* PBXContainerItemProxy */;
 		};
 		3B222C952CD769A4008087EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 3B222C722CD769A3008087EF /* Programatic-UI */;
+			target = 3B222C722CD769A3008087EF /* Pathpulse */;
 			targetProxy = 3B222C942CD769A4008087EF /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -303,7 +306,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Programatic-UI";
+				PRODUCT_BUNDLE_IDENTIFIER = Pathpulse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -332,7 +335,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.Programatic-UI";
+				PRODUCT_BUNDLE_IDENTIFIER = Pathpulse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -396,6 +399,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
+				NEW_SETTING = "";
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -453,6 +457,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				NEW_SETTING = "";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
@@ -473,7 +478,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Programatic-UI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Programatic-UI";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pathpulse.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pathpulse";
 			};
 			name = Debug;
 		};
@@ -491,7 +496,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Programatic-UI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Programatic-UI";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pathpulse.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pathpulse";
 			};
 			name = Release;
 		};
@@ -530,7 +535,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3B222C6E2CD769A3008087EF /* Build configuration list for PBXProject "Programatic-UI" */ = {
+		3B222C6E2CD769A3008087EF /* Build configuration list for PBXProject "Pathpulse" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3B222C9F2CD769A4008087EF /* Debug */,
@@ -539,7 +544,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3B222C9C2CD769A4008087EF /* Build configuration list for PBXNativeTarget "Programatic-UI" */ = {
+		3B222C9C2CD769A4008087EF /* Build configuration list for PBXNativeTarget "Pathpulse" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3B222C9D2CD769A4008087EF /* Debug */,
@@ -548,7 +553,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3B222CA12CD769A4008087EF /* Build configuration list for PBXNativeTarget "Programatic-UITests" */ = {
+		3B222CA12CD769A4008087EF /* Build configuration list for PBXNativeTarget "PathpulseTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3B222CA22CD769A4008087EF /* Debug */,
@@ -557,7 +562,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3B222CA42CD769A4008087EF /* Build configuration list for PBXNativeTarget "Programatic-UIUITests" */ = {
+		3B222CA42CD769A4008087EF /* Build configuration list for PBXNativeTarget "PathpulseUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3B222CA52CD769A4008087EF /* Debug */,
@@ -567,6 +572,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3BC661842D0ED1E900AC514F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = 3B222C6B2CD769A3008087EF /* Project object */;
 }

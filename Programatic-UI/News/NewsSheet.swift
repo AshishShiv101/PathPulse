@@ -1,6 +1,24 @@
 import UIKit
 import WebKit
 
+struct NewsResponse: Decodable {
+    let articles: [NewsDataModel]
+}
+
+struct NewsDataModel: Decodable {
+    let headline: String
+    let link: String
+    let imageUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case headline = "title"
+        case link = "url"
+        case imageUrl = "urlToImage"
+    }
+}
+
+var location = "Delhi"
+
 class NewsSheet: UIView {
     let backButton: UIButton
     let scrollView: UIScrollView
@@ -20,14 +38,16 @@ class NewsSheet: UIView {
         last7DaysButton = UIButton()
         super.init(frame: frame)
         setupView()
+        fetchNewsData(query: "\(location)-road-accident")
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
     private func updateNewsData(with newData: [NewsDataModel]) {
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
+
         for newsData in newData {
             let newsCard = createNewsCard(newsData: newsData)
             stackView.addArrangedSubview(newsCard)
@@ -47,30 +67,30 @@ class NewsSheet: UIView {
             rectangleView.widthAnchor.constraint(equalToConstant: 60),
             rectangleView.heightAnchor.constraint(equalToConstant: 5)
         ])
-        
+
         self.translatesAutoresizingMaskIntoConstraints = false
-        
+
         backButton.translatesAutoresizingMaskIntoConstraints = false
         let backImage = UIImage(systemName: "chevron.left")
         backButton.setImage(backImage, for: .normal)
         backButton.tintColor = .white
         backButton.backgroundColor = .clear
         self.addSubview(backButton)
-        
+
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Latest Updates"
         titleLabel.textColor = .white
         titleLabel.font = UIFont.boldSystemFont(ofSize: 20)
         titleLabel.textAlignment = .center
         self.addSubview(titleLabel)
-        
+
         buttonStackView.translatesAutoresizingMaskIntoConstraints = false
         buttonStackView.axis = .horizontal
         buttonStackView.spacing = 12
         buttonStackView.alignment = .center
         buttonStackView.distribution = .fillEqually
         self.addSubview(buttonStackView)
-        
+
         let buttonTitles = ["Last 7 Days", "Latest", "Weather"]
         for (index, title) in buttonTitles.enumerated() {
             let button = UIButton()
@@ -84,7 +104,7 @@ class NewsSheet: UIView {
             button.layer.shadowOpacity = 0.1
             button.layer.shadowOffset = CGSize(width: 0, height: 2)
             button.layer.shadowRadius = 4
-            
+
             if index == 0 {
                 button.backgroundColor = UIColor.darkGray
                 button.setTitleColor(.white, for: .normal)
@@ -96,46 +116,40 @@ class NewsSheet: UIView {
             buttonStackView.addArrangedSubview(button)
         }
 
-        
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.showsVerticalScrollIndicator = false
         scrollView.backgroundColor = .clear
         self.addSubview(scrollView)
-        
+
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.axis = .vertical
         stackView.spacing = 20
         stackView.alignment = .fill
         stackView.distribution = .fill
         scrollView.addSubview(stackView)
-        
-        for newsData in newsDataArray {
-            let newsCard = createNewsCard(newsData: newsData)
-            stackView.addArrangedSubview(newsCard)
-        }
-        
+
         NSLayoutConstraint.activate([
             backButton.topAnchor.constraint(equalTo: self.topAnchor, constant: 20),
             backButton.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
             backButton.heightAnchor.constraint(equalToConstant: 40),
             backButton.widthAnchor.constraint(equalToConstant: 40),
-            
+
             titleLabel.topAnchor.constraint(equalTo: self.topAnchor, constant: 20),
             titleLabel.leadingAnchor.constraint(equalTo: self.leadingAnchor),
             titleLabel.trailingAnchor.constraint(equalTo: self.trailingAnchor),
             titleLabel.heightAnchor.constraint(equalToConstant: 40),
-            
+
             buttonStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
             buttonStackView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
             buttonStackView.heightAnchor.constraint(equalToConstant: 40),
             buttonStackView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
             buttonStackView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20),
-            
+
             scrollView.topAnchor.constraint(equalTo: buttonStackView.bottomAnchor, constant: 20),
             scrollView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
             scrollView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20),
             scrollView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -20),
-            
+
             stackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
             stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
             stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
@@ -144,24 +158,43 @@ class NewsSheet: UIView {
         ])
     }
 
-    private func openArticle(link: String) {
-    
-        guard let url = URL(string: link) else {
-            print("Invalid URL string: \(link)")
+    private func fetchNewsData(query: String) {
+        let apiKey = "30e36402849c414a9a78de022db36455"
+        let urlString = "https://newsapi.org/v2/everything?q=\(query)&apiKey=\(apiKey)"
+
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
             return
         }
-        
-        print("Opening URL: \(url.absoluteString)")
-        
-        let webViewController = WebViewController()
-        webViewController.urlString = link
-        
-        if let viewController = self.viewController(), let navigationController = viewController.navigationController {
-            navigationController.pushViewController(webViewController, animated: true)
-        } else {
-            self.viewController()?.present(webViewController, animated: true, completion: nil)
-        }
+
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            if let error = error {
+                print("Error fetching news: \(error.localizedDescription)")
+                return
+            }
+
+            guard let data = data else {
+                print("No data received")
+                return
+            }
+
+            // Print the raw JSON response for debugging
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("Raw JSON Response: \(jsonString)")
+            }
+
+            do {
+                let decoder = JSONDecoder()
+                let response = try decoder.decode(NewsResponse.self, from: data)
+                DispatchQueue.main.async {
+                    self?.updateNewsData(with: response.articles)
+                }
+            } catch {
+                print("Error parsing JSON: \(error.localizedDescription)")
+            }
+        }.resume()
     }
+
 
     @objc private func buttonPressed(sender: UIButton) {
         buttonStackView.arrangedSubviews.forEach { view in
@@ -170,25 +203,23 @@ class NewsSheet: UIView {
                 button.setTitleColor(.black, for: .normal)
             }
         }
-        
+
         sender.backgroundColor = UIColor.darkGray
         sender.setTitleColor(.white, for: .normal)
-        
+
         if let buttonIndex = buttonStackView.arrangedSubviews.firstIndex(of: sender) {
             switch buttonIndex {
             case 0:
-                updateNewsData(with: newsDataArray)
+                fetchNewsData(query: "\(location)-road-accident")
             case 1:
-                updateNewsData(with: last24HoursNews)
+                fetchNewsData(query: "\(location)-election")
             case 2:
-                updateNewsData(with: weatherNews)
+                fetchNewsData(query: "\(location)-air-pollution")
             default:
                 break
             }
         }
     }
-
-
 
     private func createNewsCard(newsData: NewsDataModel) -> UIView {
         let card = UIView()
@@ -201,11 +232,21 @@ class NewsSheet: UIView {
         card.layer.shadowRadius = 6
         card.clipsToBounds = false
 
-        let imageView = UIImageView(image: newsData.image)
+        let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.layer.cornerRadius = 6
+        if let imageUrl = newsData.imageUrl, let url = URL(string: imageUrl) {
+            // Load image asynchronously
+            URLSession.shared.dataTask(with: url) { data, _, _ in
+                if let data = data, let image = UIImage(data: data) {
+                    DispatchQueue.main.async {
+                        imageView.image = image
+                    }
+                }
+            }.resume()
+        }
 
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -233,7 +274,7 @@ class NewsSheet: UIView {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(newsCardTapped(_:)))
         card.addGestureRecognizer(tapGesture)
         card.isUserInteractionEnabled = true
-        card.tag = newsDataArray.firstIndex(of: newsData) ?? 0
+        card.tag = stackView.arrangedSubviews.count
 
         NSLayoutConstraint.activate([
             imageView.widthAnchor.constraint(equalToConstant: 60),
@@ -248,14 +289,32 @@ class NewsSheet: UIView {
 
         return card
     }
-    
+
     @objc private func newsCardTapped(_ sender: UITapGestureRecognizer) {
         guard let card = sender.view else { return }
-        let newsData = newsDataArray[card.tag]
-        openArticle(link: newsData.link)
+        if ((stackView.arrangedSubviews[card.tag] as? UIView)?.tag) != nil {
+            openArticle(link: "newsData.link")
+        }
+    }
+
+    private func openArticle(link: String) {
+        guard let url = URL(string: link) else {
+            print("Invalid URL string: \(link)")
+            return
+        }
+
+        print("Opening URL: \(url.absoluteString)")
+
+        let webViewController = WebViewController()
+        webViewController.urlString = link
+
+        if let viewController = self.viewController(), let navigationController = viewController.navigationController {
+            navigationController.pushViewController(webViewController, animated: true)
+        } else {
+            self.viewController()?.present(webViewController, animated: true, completion: nil)
+        }
     }
 }
-
 extension UIView {
     func viewController() -> UIViewController? {
         var nextResponder: UIResponder? = self

@@ -1,6 +1,12 @@
 import UIKit
 
+protocol SOSOverlayViewDelegate: AnyObject {
+    func didTapAddContact()
+}
+
 class SOSOverlayView: UIView {
+
+    weak var delegate: SOSOverlayViewDelegate?
 
     private let mainStackView: UIStackView = {
         let stackView = UIStackView()
@@ -44,27 +50,24 @@ class SOSOverlayView: UIView {
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
-    
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupView()
     }
-
+    
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupView()
     }
-
+    
     private func setupView() {
         backgroundColor = UIColor.black.withAlphaComponent(0.85)
         layer.cornerRadius = 16
         clipsToBounds = true
-
         addSubview(mainStackView)
         mainStackView.addArrangedSubview(contactsStackView)
- 
         mainStackView.addArrangedSubview(addContactBox)
-
         addContactBox.addSubview(addContactLabel)
         addContactBox.addSubview(appleIconImageView)
 
@@ -76,15 +79,13 @@ class SOSOverlayView: UIView {
             mainStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             mainStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             mainStackView.topAnchor.constraint(equalTo: topAnchor, constant: 16),
-            mainStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16) // Ensure space at the bottom
+            mainStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
         ])
         
         NSLayoutConstraint.activate([
             addContactBox.heightAnchor.constraint(equalToConstant: 50),
-            
             addContactLabel.centerYAnchor.constraint(equalTo: addContactBox.centerYAnchor),
             addContactLabel.leadingAnchor.constraint(equalTo: addContactBox.leadingAnchor, constant: 16),
-            
             appleIconImageView.centerYAnchor.constraint(equalTo: addContactBox.centerYAnchor),
             appleIconImageView.leadingAnchor.constraint(equalTo: addContactLabel.trailingAnchor, constant: 8),
             appleIconImageView.trailingAnchor.constraint(equalTo: addContactBox.trailingAnchor, constant: -16),
@@ -96,6 +97,15 @@ class SOSOverlayView: UIView {
             contactsStackView.leadingAnchor.constraint(equalTo: mainStackView.leadingAnchor),
             contactsStackView.trailingAnchor.constraint(equalTo: mainStackView.trailingAnchor)
         ])
+
+        // Add tap gesture to Add Contact Box
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(addContactTapped))
+        addContactBox.addGestureRecognizer(tapGesture)
+    }
+
+    @objc private func addContactTapped() {
+        
+        delegate?.didTapAddContact()
     }
 
     public func addContactIcon(iconName: String, label: String, number: String) {
@@ -119,8 +129,6 @@ class SOSOverlayView: UIView {
         button.addTarget(self, action: #selector(contactTapped(_:)), for: .touchUpInside)
         button.accessibilityLabel = number
 
-        button.layer.zPosition = 4
-
         let labelView = UILabel()
         labelView.text = label
         labelView.font = UIFont.systemFont(ofSize: 14, weight: .medium)
@@ -138,10 +146,9 @@ class SOSOverlayView: UIView {
             button.heightAnchor.constraint(equalToConstant: 50),
             button.widthAnchor.constraint(equalToConstant: 50)
         ])
-        
+
         return stackView
     }
-
 
     @objc private func contactTapped(_ sender: UIButton) {
         guard let number = sender.accessibilityLabel,
@@ -150,7 +157,6 @@ class SOSOverlayView: UIView {
             print("Invalid phone number")
             return
         }
-
         if UIApplication.shared.canOpenURL(url) {
             DispatchQueue.main.async {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
@@ -159,5 +165,4 @@ class SOSOverlayView: UIView {
             print("This device cannot make calls.")
         }
     }
-
 }

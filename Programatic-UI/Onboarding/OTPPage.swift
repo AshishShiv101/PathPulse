@@ -10,7 +10,6 @@ class OTPPage: UIViewController {
         label.textAlignment = .center
         return label
     }()
-
     private lazy var otpStackView: UIStackView = {
         let stackView = UIStackView()
         stackView.axis = .horizontal

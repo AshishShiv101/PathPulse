@@ -1,7 +1,11 @@
 import UIKit
 import MapKit
 import CoreLocation
-class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate, MKMapViewDelegate {
+class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate, MKMapViewDelegate,SOSOverlayViewDelegate {
+    func didTapAddContact() {
+           let editContactVC = EditContactViewController()
+           navigationController?.pushViewController(editContactVC, animated: true)
+       }
     let locationManager = CLLocationManager()
     let mapView = MKMapView()
     private let bottomSheetView = UIView()
@@ -216,7 +220,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         setupBottomSheet()
         setupSOSButton()
         setupSOSOverlay()
-        
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
@@ -319,6 +322,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     private func setupSOSOverlay() {
         sosOverlayView.translatesAutoresizingMaskIntoConstraints = false
         sosOverlayView.isHidden = true
+        sosOverlayView.delegate = self
         view.addSubview(sosOverlayView)
         sosOverlayView.addContactIcon(iconName: "cross.circle.fill", label: "Ambulance", number: "102")
         sosOverlayView.addContactIcon(iconName: "shield.fill", label: "Police", number: "100")
@@ -330,6 +334,10 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             sosOverlayView.topAnchor.constraint(equalTo: view.topAnchor, constant: 170),
             sosOverlayView.heightAnchor.constraint(equalToConstant: 200)
         ])
+        func didTapAddContact() {
+            let editContactVC = EditContactViewController()
+            navigationController?.pushViewController(editContactVC, animated: true)
+        }
     }
     func updateWeatherUI(with weatherData: WeatherData) {
         self.temperatureLabel.text = "\(Int(weatherData.temperature))°C"

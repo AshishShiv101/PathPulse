@@ -52,10 +52,16 @@ class LoginPage: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.hidesBackButton = true
+        navigationItem.hidesBackButton = true 
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
         setupUI()
     }
-    
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
     private func setupUI() {
         view.backgroundColor = UIColor(hex: "#222222")
         
@@ -186,9 +192,21 @@ class LoginPage: UIViewController {
         return line
     }
     @objc private func handleContinueButton() {
-        let authenticateVC = OTPPage() // Replace with your initialization logic if needed
-
-//         Navigate to Authenticate page
+        guard let email = emailTextField.text, !email.isEmpty,
+              let phone = usernameTextField.text, !phone.isEmpty else {
+            showAlert(message: "Please fill in all fields.")
+            return
+        }
+        
+        // Navigate to OTPPage
+        let authenticateVC = OTPPage()
         self.navigationController?.pushViewController(authenticateVC, animated: true)
     }
+
+    private func showAlert(message: String) {
+        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+
 }

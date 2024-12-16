@@ -18,7 +18,6 @@ class AccountPage: UIViewController {
         setupInfoCard()
         setupButtonsCard()
     }
-
     private func setupScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -181,7 +180,11 @@ class AccountPage: UIViewController {
 
     private func performLogout() {
         print("User logged out")
-        navigationController?.popToRootViewController(animated: true)
+        
+        // Navigate to LoginPage
+        let loginPage = LoginPage() // Initialize the LoginPage view controller
+        navigationController?.pushViewController(loginPage, animated: true)
     }
+
 
 }
