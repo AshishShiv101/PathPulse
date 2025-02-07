@@ -5,14 +5,58 @@ import GoogleSignInSwift
 import Firebase
 
 class LoginPage: UIViewController {
-    
+    private let logoStack: UIStackView = {
+           let stackView = UIStackView()
+           stackView.axis = .horizontal
+           stackView.alignment = .center
+           stackView.spacing = 8
+           stackView.translatesAutoresizingMaskIntoConstraints = false
+           
+           let pathLabel = UILabel()
+           pathLabel.text = "Path"
+           pathLabel.font = UIFont.boldSystemFont(ofSize: 40)
+           pathLabel.textColor = UIColor(hex: "40CBD8")
+           
+           let pulseLabel = UILabel()
+           pulseLabel.text = "Pulse"
+           pulseLabel.font = UIFont.systemFont(ofSize: 40, weight: .light)
+           pulseLabel.textColor = .white
+           
+           stackView.addArrangedSubview(pathLabel)
+           stackView.addArrangedSubview(pulseLabel)
+           return stackView
+       }()
+    private let roadImageView: UIImageView = {
+           let imageView = UIImageView(image: UIImage(systemName: "road.lanes.curved.right"))
+           imageView.tintColor = UIColor(hex: "40CBD8")
+           imageView.contentMode = .scaleAspectFit
+           imageView.translatesAutoresizingMaskIntoConstraints = false
+           return imageView
+       }()
+    private let logoStackContainer: UIStackView = {
+            let stackView = UIStackView()
+            stackView.axis = .vertical
+            stackView.alignment = .center
+            stackView.spacing = -25
+            stackView.translatesAutoresizingMaskIntoConstraints = false
+            return stackView
+        }()
     private let logoImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "Pathpulse") // Replace "AppLogo" with your actual logo asset name
+        imageView.image = UIImage(named: "Pathpulse")
         imageView.contentMode = .scaleAspectFit
         imageView.clipsToBounds = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
+    }()
+    
+    private let cardView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor(hex: "#333333")
+        view.layer.cornerRadius = 30
+        view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
     }()
 
     private let phoneTextField: UITextField = {
@@ -47,8 +91,19 @@ class LoginPage: UIViewController {
         return button
     }()
 
-    private let googleSignInButton: GIDSignInButton = {
-        let button = GIDSignInButton()
+    private let googleSignInButton: UIButton = {
+        let button = UIButton(type: .system)
+        let googleLogo = UIImage(named: "Google")?.withRenderingMode(.alwaysOriginal)
+        button.setImage(googleLogo, for: .normal)
+        button.imageView?.contentMode = .scaleAspectFit
+        button.contentHorizontalAlignment = .center
+        button.imageEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        button.backgroundColor = .white
+        button.layer.cornerRadius = 25
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.3
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 4
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
@@ -56,16 +111,33 @@ class LoginPage: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        
-        // Remove the back button
+        setupGradientBackground()
         navigationItem.hidesBackButton = true
+    }
+ 
+    private func setupGradientBackground() {
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.frame = view.bounds
+        
+        let topColor = UIColor(hex: "#222222").cgColor
+        let bottomColor = UIColor(hex: "#1A1A1A").cgColor
+        
+        gradientLayer.colors = [topColor, bottomColor]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        
+        view.layer.insertSublayer(gradientLayer, at: 0)
     }
 
     private func setupUI() {
-        view.backgroundColor = UIColor(hex: "#222222") // Dark background color
+        logoStackContainer.addArrangedSubview(logoStack)
+                logoStackContainer.addArrangedSubview(roadImageView)
+                view.addSubview(logoStackContainer)
+        view.backgroundColor = UIColor(hex: "#222222")
 
         let titleLabel = UILabel()
-        titleLabel.text = "Welcome to Pathpulse" // Update with your app name
+        titleLabel.text = "Welcome to Pathpulse"
         titleLabel.font = UIFont.boldSystemFont(ofSize: 28)
         titleLabel.textColor = .white
         titleLabel.textAlignment = .center
@@ -73,44 +145,64 @@ class LoginPage: UIViewController {
         let subtitleLabel = UILabel()
         subtitleLabel.text = "Enter your phone number to continue"
         subtitleLabel.font = UIFont.systemFont(ofSize: 16)
-        subtitleLabel.textColor = .lightGray
+        subtitleLabel.textColor = .gray
         subtitleLabel.textAlignment = .center
 
-        [logoImageView, titleLabel, subtitleLabel, phoneTextField, continueButton, googleSignInButton].forEach {
+        view.addSubview(cardView)
+        
+        [logoImageView].forEach {
             view.addSubview($0)
+            $0.translatesAutoresizingMaskIntoConstraints = false
+        }
+        
+        [titleLabel, subtitleLabel, phoneTextField, continueButton, googleSignInButton].forEach {
+            cardView.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
 
         NSLayoutConstraint.activate([
-            logoImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
+            
+            logoStackContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
+                        logoStackContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                        
+                        roadImageView.widthAnchor.constraint(equalToConstant: 100),
+                        roadImageView.heightAnchor.constraint(equalToConstant: 100),
+            logoImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 60),
             logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            logoImageView.widthAnchor.constraint(equalToConstant: 120),
-            logoImageView.heightAnchor.constraint(equalToConstant: 120),
+            logoImageView.widthAnchor.constraint(equalToConstant: 150),
+            logoImageView.heightAnchor.constraint(equalToConstant: 150),
+            
+            cardView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.50),
+            cardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            cardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            cardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
 
-            titleLabel.topAnchor.constraint(equalTo: logoImageView.bottomAnchor, constant: 20),
-            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            // Elements inside card view
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 30),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
 
             subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
-            subtitleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            subtitleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            subtitleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+            subtitleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
 
             phoneTextField.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 30),
-            phoneTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            phoneTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            phoneTextField.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+            phoneTextField.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
 
             continueButton.topAnchor.constraint(equalTo: phoneTextField.bottomAnchor, constant: 30),
-            continueButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            continueButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            continueButton.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+            continueButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
 
             googleSignInButton.topAnchor.constraint(equalTo: continueButton.bottomAnchor, constant: 30),
-            googleSignInButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            googleSignInButton.widthAnchor.constraint(equalToConstant: 240),
+            googleSignInButton.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
+            googleSignInButton.widthAnchor.constraint(equalToConstant: 200),
             googleSignInButton.heightAnchor.constraint(equalToConstant: 50)
         ])
 
         googleSignInButton.addTarget(self, action: #selector(handleGoogleSignIn), for: .touchUpInside)
     }
+
     
     @objc private func handleContinueButton() {
         guard let phoneNumber = phoneTextField.text, !phoneNumber.isEmpty else {
@@ -118,7 +210,7 @@ class LoginPage: UIViewController {
             return
         }
         
-        let fullPhoneNumber = "+91\(phoneNumber)" // Assuming India (+91)
+        let fullPhoneNumber = "+91\(phoneNumber)"
         PhoneAuthProvider.provider().verifyPhoneNumber(fullPhoneNumber, uiDelegate: nil) { verificationID, error in
             if let error = error {
                 self.showAlert(message: "Failed to send OTP: \(error.localizedDescription)")
@@ -171,14 +263,12 @@ class LoginPage: UIViewController {
                     return
                 }
 
-                // Navigate to the next screen upon successful sign-in
                 let mapPage = MapPage() // Replace with your target ViewController
                 self.navigationController?.pushViewController(mapPage, animated: true)
             }
         }
     }
 
-    // Show Alert
     private func showAlert(message: String) {
         let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
