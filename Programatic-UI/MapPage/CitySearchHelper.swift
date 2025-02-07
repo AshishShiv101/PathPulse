@@ -1,14 +1,9 @@
 import MapKit
 import CoreLocation
-import NotificationCenter
 
 class CitySearchHelper {
     static let shared = CitySearchHelper()
-    
-    var destinationCoordinate: CLLocationCoordinate2D?
-    
     private static var routeInfoViews: [UIView] = []
-    
     static func searchForCity(
         city: String,
         mapView: MKMapView,
@@ -26,19 +21,14 @@ class CitySearchHelper {
                 completion(nil, error)
                 return
             }
+            
             guard let response = response, let mapItem = response.mapItems.first else {
                 print("No results found")
                 completion(nil, nil)
                 return
             }
             
-            
             let destinationCoordinate = mapItem.placemark.coordinate
-
-            CitySearchHelper.shared.destinationCoordinate = destinationCoordinate
-
-            
-            
             let region = MKCoordinateRegion(
                 center: destinationCoordinate,
                 latitudinalMeters: 10000,
@@ -51,13 +41,6 @@ class CitySearchHelper {
             annotation.title = mapItem.name
             mapView.addAnnotation(annotation)
             
-            NotificationCenter.default.post(
-                name: NSNotification.Name("DestinationCoordinateUpdated"),
-                object: nil,
-                userInfo: ["coordinate": destinationCoordinate]
-            )
-            
-            // Fetch weather data for the destination
             WeatherService.shared.fetchWeather(for: destinationCoordinate) { (weatherData, error) in
                 if let error = error {
                     print("Error fetching weather: \(error.localizedDescription)")
@@ -69,11 +52,9 @@ class CitySearchHelper {
                     completion(nil, nil)
                     return
                 }
-                
                 completion(weatherData, nil)
             }
             
-            // Calculate distance from current location
             if let currentLocation = locationManager.location?.coordinate {
                 let distance = calculateDistance(from: currentLocation, to: destinationCoordinate)
                 print("Distance to destination: \(distance) km")
@@ -81,13 +62,11 @@ class CitySearchHelper {
                 annotation.subtitle = String(format: "Distance: %.2f km", distance)
                 mapView.addAnnotation(annotation)
                 
-                // Calculate and display route
                 calculateRoute(from: currentLocation, to: destinationCoordinate, mapView: mapView)
             }
         }
     }
     
-    // Helper function to calculate distance between two coordinates
     private static func calculateDistance(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D) -> Double {
         let startLocation = CLLocation(latitude: start.latitude, longitude: start.longitude)
         let endLocation = CLLocation(latitude: end.latitude, longitude: end.longitude)
@@ -95,7 +74,6 @@ class CitySearchHelper {
         return distanceInMeters / 1000.0 // Convert meters to kilometers
     }
     
-    // Method to calculate and display multiple routes
     static func calculateRoute(from startCoordinate: CLLocationCoordinate2D, to destinationCoordinate: CLLocationCoordinate2D, mapView: MKMapView) {
         mapView.removeOverlays(mapView.overlays)
         
@@ -109,7 +87,7 @@ class CitySearchHelper {
         request.source = startItem
         request.destination = destinationItem
         request.transportType = .automobile
-        request.requestsAlternateRoutes = true // Request alternate routes
+        request.requestsAlternateRoutes = true
         
         let directions = MKDirections(request: request)
         directions.calculate { (response, error) in
@@ -123,61 +101,111 @@ class CitySearchHelper {
                 return
             }
             
-            // Sort routes by distance (shortest first)
             let sortedRoutes = routes.sorted { $0.distance < $1.distance }
+            let shortestRoute = sortedRoutes.first
+            let longestRoute = sortedRoutes.last
             
-            // Clear previous route info views
             routeInfoViews.forEach { $0.removeFromSuperview() }
             routeInfoViews.removeAll()
             
-            // Add overlays for all routes and show corresponding info views
             for (index, route) in sortedRoutes.enumerated() {
                 mapView.addOverlay(route.polyline, level: .aboveRoads)
-                displayRouteInfoView(for: route, at: index, mapView: mapView)
+                let isShortest = route == shortestRoute
+                let isLongest = route == longestRoute
+                displayRouteInfoView(for: route, at: index, mapView: mapView, isShortest: isShortest, isLongest: isLongest)
             }
             
-            // Highlight the shortest route as default
-            if let shortestRoute = sortedRoutes.first {
+            if let shortestRoute = shortestRoute {
                 mapView.setVisibleMapRect(shortestRoute.polyline.boundingMapRect, animated: true)
             }
         }
     }
     
-    // Method to display the route information (distance and time) in a table-like view
-    static func displayRouteInfoView(for route: MKRoute, at index: Int, mapView: MKMapView) {
-        // Create the view for route info
+    static func displayRouteInfoView(for route: MKRoute, at index: Int, mapView: MKMapView, isShortest: Bool, isLongest: Bool) {
         let routeInfoView = UIView()
-        routeInfoView.backgroundColor = UIColor.white.withAlphaComponent(0.9)
+
+        routeInfoView.backgroundColor = UIColor(hex: "#ffffff").withAlphaComponent(0.9)
+
+        routeInfoView.layer.borderWidth = 2
+        if isShortest {
+            routeInfoView.layer.borderColor = UIColor.systemGreen.cgColor
+        } else if isLongest {
+            routeInfoView.layer.borderColor = UIColor.systemRed.cgColor
+        } else {
+            routeInfoView.layer.borderColor = UIColor.clear.cgColor
+        }
+
         routeInfoView.layer.cornerRadius = 8
-        routeInfoView.layer.shadowColor = UIColor.black.cgColor
+        routeInfoView.layer.shadowColor = UIColor.white.cgColor
         routeInfoView.layer.shadowOpacity = 0.3
         routeInfoView.layer.shadowOffset = CGSize(width: 0, height: 4)
         routeInfoView.layer.shadowRadius = 6
-        
-        // Add additional top margin
-        let topMargin: Int = 70 // Adjust this value as needed
-        routeInfoView.frame = CGRect(x: 10, y: topMargin + (index * 100), width: 250, height: 80)
-        
-        // Add distance label
-        let distanceLabel = UILabel()
-        distanceLabel.text = String(format: "Distance: %.2f km", route.distance / 1000)
-        distanceLabel.font = UIFont.systemFont(ofSize: 14)
-        distanceLabel.frame = CGRect(x: 10, y: 10, width: routeInfoView.frame.width - 20, height: 20)
-        routeInfoView.addSubview(distanceLabel)
-        
-        // Add time label in hours and minutes
+
+        let topMargin: Int = 70
+        routeInfoView.frame = CGRect(x: 10, y: topMargin + (index * 90), width: 200, height: 80)
+
+        let distanceAndTimeLabel = UILabel()
         let timeInHours = route.expectedTravelTime / 3600
         let timeInMinutes = (route.expectedTravelTime.truncatingRemainder(dividingBy: 3600)) / 60
-        let timeLabel = UILabel()
-        timeLabel.text = String(format: "Time: %.0f hr %.0f min", timeInHours, timeInMinutes)
-        timeLabel.font = UIFont.systemFont(ofSize: 14)
-        timeLabel.frame = CGRect(x: 10, y: 40, width: routeInfoView.frame.width - 20, height: 20)
-        routeInfoView.addSubview(timeLabel)
-        
-        // Add the route info view to the map's superview
+
+        distanceAndTimeLabel.text = String(format: "%.2f km   %.0f hr %.0f min", route.distance / 1000, timeInHours, timeInMinutes)
+        distanceAndTimeLabel.textColor = .black
+        distanceAndTimeLabel.font = UIFont.systemFont(ofSize: 14)
+        distanceAndTimeLabel.frame = CGRect(x: 10, y: 10, width: routeInfoView.frame.width - 20, height: 40)
+        distanceAndTimeLabel.numberOfLines = 2
+        distanceAndTimeLabel.textAlignment = .left
+        routeInfoView.addSubview(distanceAndTimeLabel)
+
+        let walkingTimeLabel = UILabel()
+                let walkingSpeed: Double = 5.0 // Average walking speed in km/h
+
+                let routeDistance = route.distance
+                let walkingTimeInterval = (routeDistance / 1000.0) / walkingSpeed
+
+                let hours = Int(walkingTimeInterval)
+                let minutes = Int((walkingTimeInterval - Double(hours)) * 60)
+
+                walkingTimeLabel.text = "Walking Time: \(hours) hr \(minutes) min"
+                walkingTimeLabel.font = UIFont.systemFont(ofSize: 14)
+                walkingTimeLabel.frame = CGRect(x: 10, y: 50, width: routeInfoView.frame.width - 20, height: 20)
+                routeInfoView.addSubview(walkingTimeLabel)
+
+        let closeButton = UIButton(type: .system)
+        closeButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+        closeButton.tintColor = .black
+        closeButton.frame = CGRect(x: routeInfoView.frame.width - 30, y: 10, width: 20, height: 20)
+        closeButton.addAction(UIAction { _ in
+            if let index = mapView.overlays.firstIndex(where: { ($0 as? MKPolyline)?.userInfo as? Int == index }) {
+                mapView.removeOverlay(mapView.overlays[index])
+            }
+            routeInfoView.removeFromSuperview()
+        }, for: .touchUpInside)
+        routeInfoView.addSubview(closeButton)
+
         mapView.superview?.addSubview(routeInfoView)
-        
-        // Store the view in the static container for later removal
+        route.polyline.userInfo = index
         routeInfoViews.append(routeInfoView)
+    }
+}
+func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+    if let polyline = overlay as? MKPolyline {
+        let renderer = MKPolylineRenderer(polyline: polyline)
+        renderer.strokeColor = .blue
+        renderer.lineWidth = 4
+        return renderer
+    }
+    return MKOverlayRenderer()
+}
+extension MKPolyline {
+    private struct AssociatedKeys {
+        static var userInfo = "userInfo"
+    }
+    var userInfo: Any? {
+        get {
+            return objc_getAssociatedObject(self, &AssociatedKeys.userInfo)
+        }
+        set {
+            objc_setAssociatedObject(self, &AssociatedKeys.userInfo, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
     }
 }

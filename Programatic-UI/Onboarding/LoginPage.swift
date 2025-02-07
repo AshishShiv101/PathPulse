@@ -1,212 +1,187 @@
 import UIKit
+import FirebaseAuth
+import GoogleSignIn
+import GoogleSignInSwift
+import Firebase
+
 class LoginPage: UIViewController {
-    private let emailTextField: UITextField = {
-        let textField = UITextField()
-        textField.placeholder = "Enter Username"
-        textField.backgroundColor = UIColor(white: 1.0, alpha: 0.7)
-        textField.layer.cornerRadius = 12
-        textField.textColor = .black
-        textField.layer.borderColor = UIColor.gray.cgColor
-        textField.layer.borderWidth = 1
-        textField.heightAnchor.constraint(equalToConstant: 50).isActive = true
-        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 50))
-        textField.leftView = paddingView
-        textField.leftViewMode = .always
-        return textField
-    }()
-
-    private let usernameTextField: UITextField = {
-        let textField = UITextField()
-        textField.placeholder = "Phone number"
-        textField.backgroundColor = UIColor(white: 1.0, alpha: 0.7)
-        textField.layer.cornerRadius = 12
-        textField.textColor = .black
-        textField.layer.borderColor = UIColor.gray.cgColor
-        textField.layer.borderWidth = 1
-        textField.heightAnchor.constraint(equalToConstant: 50).isActive = true
-
-        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 50))
-        textField.leftView = paddingView
-        textField.leftViewMode = .always
-
-        return textField
-    }()
-
     
+    private let logoImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(named: "Pathpulse") // Replace "AppLogo" with your actual logo asset name
+        imageView.contentMode = .scaleAspectFit
+        imageView.clipsToBounds = true
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+
+    private let phoneTextField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = "Enter Phone Number (India)"
+        textField.keyboardType = .phonePad
+        textField.backgroundColor = UIColor(white: 1.0, alpha: 0.9)
+        textField.layer.cornerRadius = 12
+        textField.textColor = .black
+        textField.layer.borderColor = UIColor.lightGray.cgColor
+        textField.layer.borderWidth = 1
+        textField.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 50))
+        textField.leftView = paddingView
+        textField.leftViewMode = .always
+        return textField
+    }()
+
     private let continueButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Continue", for: .normal)
-        button.setTitleColor(.black, for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold) 
+        button.setTitle("Send OTP", for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold)
         button.backgroundColor = UIColor(hex: "#40CBD8")
         button.layer.cornerRadius = 12
         button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOffset = CGSize(width: 0, height: 3)
         button.layer.shadowOpacity = 0.3
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 4
         button.addTarget(self, action: #selector(handleContinueButton), for: .touchUpInside)
         button.heightAnchor.constraint(equalToConstant: 50).isActive = true
         return button
     }()
-    private let googleButton: UIButton = createSocialButton(imageName: "Google", backgroundColor: .white)
-    private let appleButton: UIButton = createSocialButton(imageName: "Apple", backgroundColor: .white)
-    
+
+    private let googleSignInButton: GIDSignInButton = {
+        let button = GIDSignInButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.hidesBackButton = true 
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        view.addGestureRecognizer(tapGesture)
         setupUI()
-    }
-
-    @objc private func dismissKeyboard() {
-        view.endEditing(true)
+        
+        // Remove the back button
+        navigationItem.hidesBackButton = true
     }
 
     private func setupUI() {
-        view.backgroundColor = UIColor(hex: "#222222")
-        
-        let appLogo = AppLogoView()
-        appLogo.contentMode = .scaleAspectFit
-        
+        view.backgroundColor = UIColor(hex: "#222222") // Dark background color
+
         let titleLabel = UILabel()
-        titleLabel.text = "Log in or Sign Up"
+        titleLabel.text = "Welcome to Pathpulse" // Update with your app name
         titleLabel.font = UIFont.boldSystemFont(ofSize: 28)
-        titleLabel.textColor = UIColor(hex: "#F2F1F1")
+        titleLabel.textColor = .white
         titleLabel.textAlignment = .center
-        
-        let connectLabel = UILabel()
-        connectLabel.text = "Connect with"
-        connectLabel.font = UIFont.boldSystemFont(ofSize: 14)
-        connectLabel.textColor = UIColor(hex: "#F2F1F1")
-        
-        let separatorContainer = createSeparatorWithOrLabel()
-        
-        let buttonStack = UIStackView(arrangedSubviews: [googleButton, appleButton])
-        buttonStack.axis = .horizontal
-        buttonStack.spacing = 24
-        
-        [appLogo, titleLabel, emailTextField, usernameTextField, continueButton, separatorContainer, connectLabel, buttonStack].forEach {
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = "Enter your phone number to continue"
+        subtitleLabel.font = UIFont.systemFont(ofSize: 16)
+        subtitleLabel.textColor = .lightGray
+        subtitleLabel.textAlignment = .center
+
+        [logoImageView, titleLabel, subtitleLabel, phoneTextField, continueButton, googleSignInButton].forEach {
             view.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
-        
+
         NSLayoutConstraint.activate([
-               appLogo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-               appLogo.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-               appLogo.widthAnchor.constraint(equalToConstant: 120),
-               appLogo.heightAnchor.constraint(equalToConstant: 120),
-               
-               titleLabel.topAnchor.constraint(equalTo: appLogo.bottomAnchor, constant: 40),
-               titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-               
-               emailTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 30),
-               emailTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-               emailTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-               
-               usernameTextField.topAnchor.constraint(equalTo: emailTextField.bottomAnchor, constant: 16),
-               usernameTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-               usernameTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-               
-               continueButton.topAnchor.constraint(equalTo: usernameTextField.bottomAnchor, constant: 24),
-               continueButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-               continueButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-               
-               separatorContainer.topAnchor.constraint(equalTo: continueButton.bottomAnchor, constant: 32),
-               separatorContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-               separatorContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-               separatorContainer.heightAnchor.constraint(equalToConstant: 30),
-               
-               connectLabel.topAnchor.constraint(equalTo: separatorContainer.bottomAnchor, constant: 20),
-               connectLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-               
-               buttonStack.topAnchor.constraint(equalTo: connectLabel.bottomAnchor, constant: 20),
-               buttonStack.centerXAnchor.constraint(equalTo: view.centerXAnchor)
-           ])
-       }
-    
-    private func createSeparatorWithOrLabel() -> UIView {
-        let separatorContainer = UIView()
-        separatorContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        let separatorLine1 = createSeparatorLine()
-        let separatorLine2 = createSeparatorLine()
-        
-        let orLabel = UILabel()
-        orLabel.text = "Or"
-        orLabel.font = UIFont.boldSystemFont(ofSize: 14)
-        orLabel.textColor = UIColor(hex: "#F2F1F1")
-        orLabel.backgroundColor = view.backgroundColor
-        orLabel.textAlignment = .center
-        orLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        separatorContainer.addSubview(separatorLine1)
-        separatorContainer.addSubview(orLabel)
-        separatorContainer.addSubview(separatorLine2)
-        
-        NSLayoutConstraint.activate([
-            separatorLine1.leadingAnchor.constraint(equalTo: separatorContainer.leadingAnchor),
-            separatorLine1.trailingAnchor.constraint(equalTo: orLabel.leadingAnchor, constant: -8),
-            separatorLine1.centerYAnchor.constraint(equalTo: separatorContainer.centerYAnchor),
-            separatorLine1.heightAnchor.constraint(equalToConstant: 1),
-            
-            orLabel.centerYAnchor.constraint(equalTo: separatorContainer.centerYAnchor),
-            orLabel.centerXAnchor.constraint(equalTo: separatorContainer.centerXAnchor),
-            
-            separatorLine2.leadingAnchor.constraint(equalTo: orLabel.trailingAnchor, constant: 8),
-            separatorLine2.trailingAnchor.constraint(equalTo: separatorContainer.trailingAnchor),
-            separatorLine2.centerYAnchor.constraint(equalTo: separatorContainer.centerYAnchor),
-            separatorLine2.heightAnchor.constraint(equalToConstant: 1)
+            logoImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
+            logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            logoImageView.widthAnchor.constraint(equalToConstant: 120),
+            logoImageView.heightAnchor.constraint(equalToConstant: 120),
+
+            titleLabel.topAnchor.constraint(equalTo: logoImageView.bottomAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
+            subtitleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            subtitleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+
+            phoneTextField.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 30),
+            phoneTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            phoneTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+
+            continueButton.topAnchor.constraint(equalTo: phoneTextField.bottomAnchor, constant: 30),
+            continueButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            continueButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+
+            googleSignInButton.topAnchor.constraint(equalTo: continueButton.bottomAnchor, constant: 30),
+            googleSignInButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            googleSignInButton.widthAnchor.constraint(equalToConstant: 240),
+            googleSignInButton.heightAnchor.constraint(equalToConstant: 50)
         ])
-        
-        return separatorContainer
+
+        googleSignInButton.addTarget(self, action: #selector(handleGoogleSignIn), for: .touchUpInside)
     }
     
-    private static func createSocialButton(imageName: String, backgroundColor: UIColor) -> UIButton {
-        let button = UIButton(type: .system)
-        button.backgroundColor = backgroundColor
-        button.layer.cornerRadius = 12
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOffset = CGSize(width: 0, height: 2)
-        button.layer.shadowOpacity = 0.3
-        
-        let imageView = UIImageView(image: UIImage(named: imageName))
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        button.addSubview(imageView)
-        NSLayoutConstraint.activate([
-            imageView.centerXAnchor.constraint(equalTo: button.centerXAnchor),
-            imageView.centerYAnchor.constraint(equalTo: button.centerYAnchor),
-            imageView.widthAnchor.constraint(equalToConstant: 24),
-            imageView.heightAnchor.constraint(equalToConstant: 24)
-        ])
-        
-        button.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width / 4).isActive = true
-        button.heightAnchor.constraint(equalToConstant: 50).isActive = true
-        return button
-    }
-    
-    private func createSeparatorLine() -> UIView {
-        let line = UIView()
-        line.backgroundColor = UIColor(hex: "#F2F1F1").withAlphaComponent(0.5)
-        line.translatesAutoresizingMaskIntoConstraints = false
-        return line
-    }
     @objc private func handleContinueButton() {
-        guard let email = emailTextField.text, !email.isEmpty,
-              let phone = usernameTextField.text, !phone.isEmpty else {
-            showAlert(message: "Please fill in all fields.")
+        guard let phoneNumber = phoneTextField.text, !phoneNumber.isEmpty else {
+            showAlert(message: "Please enter a phone number.")
             return
         }
         
-        // Navigate to OTPPage
-        let authenticateVC = OTPPage()
-        self.navigationController?.pushViewController(authenticateVC, animated: true)
+        let fullPhoneNumber = "+91\(phoneNumber)" // Assuming India (+91)
+        PhoneAuthProvider.provider().verifyPhoneNumber(fullPhoneNumber, uiDelegate: nil) { verificationID, error in
+            if let error = error {
+                self.showAlert(message: "Failed to send OTP: \(error.localizedDescription)")
+                return
+            }
+            
+            // Store the phone number and verification ID for the OTP page
+            UserDefaults.standard.set(fullPhoneNumber, forKey: "authPhoneNumber")
+            UserDefaults.standard.set(verificationID, forKey: "authVerificationID")
+            
+            // Navigate to OTP Page
+            let otpVC = OTPPage()
+            self.navigationController?.pushViewController(otpVC, animated: true)
+        }
+    }
+    
+    @objc private func handleGoogleSignIn() {
+        // Ensure FirebaseApp is initialized
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            showAlert(message: "Client ID not found. Check Firebase configuration.")
+            return
+        }
+
+        // Set up Google Sign-In Configuration
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+
+        // Present Google Sign-In
+        GIDSignIn.sharedInstance.signIn(withPresenting: self) { result, error in
+            if let error = error {
+                self.showAlert(message: "Google Sign-In failed: \(error.localizedDescription)")
+                return
+            }
+
+            // Extract the user and ID token
+            guard let user = result?.user,
+                  let idToken = user.idToken?.tokenString else {
+                self.showAlert(message: "Failed to get user data.")
+                return
+            }
+
+            // Create Firebase credential
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken,
+                                                           accessToken: user.accessToken.tokenString)
+
+            // Authenticate with Firebase
+            Auth.auth().signIn(with: credential) { authResult, error in
+                if let error = error {
+                    self.showAlert(message: "Firebase sign-in failed: \(error.localizedDescription)")
+                    return
+                }
+
+                // Navigate to the next screen upon successful sign-in
+                let mapPage = MapPage() // Replace with your target ViewController
+                self.navigationController?.pushViewController(mapPage, animated: true)
+            }
+        }
     }
 
+    // Show Alert
     private func showAlert(message: String) {
         let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
-
 }

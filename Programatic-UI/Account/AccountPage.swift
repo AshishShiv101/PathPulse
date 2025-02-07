@@ -1,9 +1,10 @@
 import UIKit
+import FirebaseFirestore
+import FirebaseAuth
 
 class AccountPage: UIViewController {
     private let scrollView = UIScrollView()
     private let contentView = UIView()
-    
     private let infoCardView = UIView()
     private let buttonsCardView = UIView()
     private let nameLabel = UILabel()
@@ -11,13 +12,16 @@ class AccountPage: UIViewController {
     private let privacyButton = UIButton()
     private let editContactsButton = UIButton()
     private let logoutButton = UIButton()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(hex: "#222222")
         setupScrollView()
         setupInfoCard()
         setupButtonsCard()
+        fetchUserData()
     }
+
     private func setupScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -47,11 +51,9 @@ class AccountPage: UIViewController {
         infoCardView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(infoCardView)
         
-        nameLabel.text = "Anurag"
         nameLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
         nameLabel.textColor = UIColor(hex: "#40CBD8")
         
-        phoneLabel.text = "Phone: 8595428901"
         phoneLabel.font = UIFont.systemFont(ofSize: 16)
         phoneLabel.textColor = UIColor.lightGray
         
@@ -64,9 +66,6 @@ class AccountPage: UIViewController {
         arrowImageView.tintColor = .white
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
         infoCardView.addSubview(arrowImageView)
-
-        
-
 
         NSLayoutConstraint.activate([
             infoCardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 60),
@@ -84,6 +83,7 @@ class AccountPage: UIViewController {
             arrowImageView.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -16),
         ])
     }
+    
     private func setupButtonsCard() {
         buttonsCardView.backgroundColor = UIColor(hex: "#333333")
         buttonsCardView.layer.cornerRadius = 15
@@ -93,14 +93,13 @@ class AccountPage: UIViewController {
         buttonsCardView.layer.shadowRadius = 6
         buttonsCardView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(buttonsCardView)
-        
         configureButton(privacyButton, title: "Privacy Settings", systemImageName: "lock.fill")
-        configureButton(editContactsButton, title: "Edit Contacts", systemImageName: "person.2.fill")
+        configureButton(editContactsButton, title: "Emergency Contacts", systemImageName: "person.2.fill")
         configureButton(logoutButton, title: "Logout", systemImageName: "arrowshape.turn.up.left.fill")
         
-               privacyButton.addTarget(self, action: #selector(privacyButtonTapped), for: .touchUpInside)
-               editContactsButton.addTarget(self, action: #selector(editContactsButtonTapped), for: .touchUpInside)
-               logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
+        privacyButton.addTarget(self, action: #selector(privacyButtonTapped), for: .touchUpInside)
+        editContactsButton.addTarget(self, action: #selector(editContactsButtonTapped), for: .touchUpInside)
+        logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
                
         let buttonStackView = UIStackView(arrangedSubviews: [privacyButton, editContactsButton, logoutButton])
         buttonStackView.axis = .vertical
@@ -121,6 +120,22 @@ class AccountPage: UIViewController {
         ])
     }
     
+    private func fetchUserData() {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let db = Firestore.firestore()
+        db.collection("users").document(uid).getDocument { [weak self] (document, error) in
+            guard let self = self, let document = document, document.exists, error == nil else {
+                print("Error fetching user data: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+            
+            if let data = document.data() {
+                self.nameLabel.text = data["name"] as? String ?? "Name not available"
+                self.phoneLabel.text = "Phone: \(data["phone"] as? String ?? "Phone not available")"
+            }
+        }
+    }
+    
     private func configureButton(_ button: UIButton, title: String, systemImageName: String) {
         button.setTitle(title, for: .normal)
         button.setTitleColor(.white, for: .normal)
@@ -137,10 +152,9 @@ class AccountPage: UIViewController {
         button.heightAnchor.constraint(equalToConstant: 50).isActive = true
         
         var config = UIButton.Configuration.plain()
-                  config.imagePadding = 8
-                  config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 0)
-                  
-                  button.configuration = config
+        config.imagePadding = 8
+        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 0)
+        button.configuration = config
         let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
         arrowImageView.tintColor = .white
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -151,16 +165,17 @@ class AccountPage: UIViewController {
             arrowImageView.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -16)
         ])
     }
-   
     @objc func privacyButtonTapped() {
         if let appSettingsURL = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(appSettingsURL, options: [:], completionHandler: nil)
         }
     }
+    
     @objc func editContactsButtonTapped() {
         let editContactVC = EditContactViewController()
         navigationController?.pushViewController(editContactVC, animated: true)
     }
+    
     @objc func logoutButtonTapped() {
         let alertController = UIAlertController(
             title: "Logout",
@@ -177,14 +192,28 @@ class AccountPage: UIViewController {
 
         present(alertController, animated: true, completion: nil)
     }
-
+    
     private func performLogout() {
-        print("User logged out")
-        
-        // Navigate to LoginPage
-        let loginPage = LoginPage() // Initialize the LoginPage view controller
-        navigationController?.pushViewController(loginPage, animated: true)
+        do {
+            try Auth.auth().signOut()
+            
+            // Create an instance of LoginViewController
+            let loginVC = LoginPage()
+            loginVC.modalPresentationStyle = .fullScreen
+            
+            // Replace the root view controller
+            if let window = UIApplication.shared.windows.first {
+                window.rootViewController = loginVC
+                UIView.transition(
+                    with: window,
+                    duration: 0.5,
+                    options: .transitionCrossDissolve,
+                    animations: nil,
+                    completion: nil
+                )
+            }
+        } catch {
+            print("Error signing out: \(error.localizedDescription)")
+        }
     }
-
-
 }

@@ -4,7 +4,6 @@ import WebKit
 struct NewsResponse: Decodable {
     let articles: [NewsDataModel]
 }
-
 struct NewsDataModel: Decodable {
     let headline: String
     let link: String
@@ -18,18 +17,16 @@ struct NewsDataModel: Decodable {
 }
 
 var location = "Delhi"
-
 class NewsSheet: UIView {
-    let backButton: UIButton
     let scrollView: UIScrollView
     let stackView: UIStackView
     let titleLabel: UILabel
     let buttonStackView: UIStackView
     let last24HrsButton: UIButton
     let last7DaysButton: UIButton
-
+    
     override init(frame: CGRect) {
-        backButton = UIButton()
+       // backButton = UIButton()
         scrollView = UIScrollView()
         stackView = UIStackView()
         titleLabel = UILabel()
@@ -47,117 +44,95 @@ class NewsSheet: UIView {
 
     private func updateNewsData(with newData: [NewsDataModel]) {
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-
-        for newsData in newData {
+        
+        // Filter articles to exclude blank or invalid data
+        let validArticles = newData.filter { !$0.headline.isEmpty && !$0.link.isEmpty && $0.imageUrl != nil }
+        
+        for newsData in validArticles {
             let newsCard = createNewsCard(newsData: newsData)
             stackView.addArrangedSubview(newsCard)
         }
     }
 
+
     private func setupView() {
-        let rectangleView = UIView()
-        rectangleView.backgroundColor = .systemGray
-        rectangleView.layer.cornerRadius = 10
-        rectangleView.translatesAutoresizingMaskIntoConstraints = false
-        self.addSubview(rectangleView)
+            self.translatesAutoresizingMaskIntoConstraints = false
 
-        NSLayoutConstraint.activate([
-            rectangleView.topAnchor.constraint(equalTo: self.topAnchor, constant: 10),
-            rectangleView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
-            rectangleView.widthAnchor.constraint(equalToConstant: 60),
-            rectangleView.heightAnchor.constraint(equalToConstant: 5)
-        ])
+            titleLabel.translatesAutoresizingMaskIntoConstraints = false
+            titleLabel.text = "Latest Updates"
+            titleLabel.textColor = .white
+            titleLabel.font = UIFont.boldSystemFont(ofSize: 20)
+            titleLabel.textAlignment = .center
+            self.addSubview(titleLabel)
 
-        self.translatesAutoresizingMaskIntoConstraints = false
+            buttonStackView.translatesAutoresizingMaskIntoConstraints = false
+            buttonStackView.axis = .horizontal
+            buttonStackView.spacing = 12
+            buttonStackView.alignment = .center
+            buttonStackView.distribution = .fillEqually
+            self.addSubview(buttonStackView)
 
-        backButton.translatesAutoresizingMaskIntoConstraints = false
-        let backImage = UIImage(systemName: "chevron.left")
-        backButton.setImage(backImage, for: .normal)
-        backButton.tintColor = .white
-        backButton.backgroundColor = .clear
-        self.addSubview(backButton)
+            let buttonTitles = ["Last 7 Days", "Latest", "Weather"]
+            for (index, title) in buttonTitles.enumerated() {
+                let button = UIButton()
+                button.translatesAutoresizingMaskIntoConstraints = false
+                button.setTitle(title, for: .normal)
+                button.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+                button.setTitleColor(.black, for: .normal)
+                button.layer.cornerRadius = 5
+                button.layer.masksToBounds = true
+                button.layer.shadowColor = UIColor.black.cgColor
+                button.layer.shadowOpacity = 0.1
+                button.layer.shadowOffset = CGSize(width: 0, height: 2)
+                button.layer.shadowRadius = 4
 
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "Latest Updates"
-        titleLabel.textColor = .white
-        titleLabel.font = UIFont.boldSystemFont(ofSize: 20)
-        titleLabel.textAlignment = .center
-        self.addSubview(titleLabel)
+                if index == 0 {
+                    button.backgroundColor = UIColor.darkGray
+                    button.setTitleColor(.white, for: .normal)
+                } else {
+                    button.backgroundColor = UIColor.systemGray6
+                }
 
-        buttonStackView.translatesAutoresizingMaskIntoConstraints = false
-        buttonStackView.axis = .horizontal
-        buttonStackView.spacing = 12
-        buttonStackView.alignment = .center
-        buttonStackView.distribution = .fillEqually
-        self.addSubview(buttonStackView)
-
-        let buttonTitles = ["Last 7 Days", "Latest", "Weather"]
-        for (index, title) in buttonTitles.enumerated() {
-            let button = UIButton()
-            button.translatesAutoresizingMaskIntoConstraints = false
-            button.setTitle(title, for: .normal)
-            button.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-            button.setTitleColor(.black, for: .normal)
-            button.layer.cornerRadius = 5
-            button.layer.masksToBounds = true
-            button.layer.shadowColor = UIColor.black.cgColor
-            button.layer.shadowOpacity = 0.1
-            button.layer.shadowOffset = CGSize(width: 0, height: 2)
-            button.layer.shadowRadius = 4
-
-            if index == 0 {
-                button.backgroundColor = UIColor.darkGray
-                button.setTitleColor(.white, for: .normal)
-            } else {
-                button.backgroundColor = UIColor.systemGray6
+                button.addTarget(self, action: #selector(buttonPressed), for: .touchDown)
+                buttonStackView.addArrangedSubview(button)
             }
 
-            button.addTarget(self, action: #selector(buttonPressed), for: .touchDown)
-            buttonStackView.addArrangedSubview(button)
+            scrollView.translatesAutoresizingMaskIntoConstraints = false
+            scrollView.showsVerticalScrollIndicator = false
+            scrollView.backgroundColor = .clear
+            self.addSubview(scrollView)
+
+            stackView.translatesAutoresizingMaskIntoConstraints = false
+            stackView.axis = .vertical
+            stackView.spacing = 20
+            stackView.alignment = .fill
+            stackView.distribution = .fill
+            scrollView.addSubview(stackView)
+
+            NSLayoutConstraint.activate([
+                titleLabel.topAnchor.constraint(equalTo: self.topAnchor, constant: 20),
+                titleLabel.leadingAnchor.constraint(equalTo: self.leadingAnchor),
+                titleLabel.trailingAnchor.constraint(equalTo: self.trailingAnchor),
+                titleLabel.heightAnchor.constraint(equalToConstant: 40),
+
+                buttonStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
+                buttonStackView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
+                buttonStackView.heightAnchor.constraint(equalToConstant: 40),
+                buttonStackView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
+                buttonStackView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20),
+
+                scrollView.topAnchor.constraint(equalTo: buttonStackView.bottomAnchor, constant: 20),
+                scrollView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
+                scrollView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20),
+                scrollView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -20),
+
+                stackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+                stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+                stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+                stackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+                stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+            ])
         }
-
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.showsVerticalScrollIndicator = false
-        scrollView.backgroundColor = .clear
-        self.addSubview(scrollView)
-
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        stackView.axis = .vertical
-        stackView.spacing = 20
-        stackView.alignment = .fill
-        stackView.distribution = .fill
-        scrollView.addSubview(stackView)
-
-        NSLayoutConstraint.activate([
-            backButton.topAnchor.constraint(equalTo: self.topAnchor, constant: 20),
-            backButton.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
-            backButton.heightAnchor.constraint(equalToConstant: 40),
-            backButton.widthAnchor.constraint(equalToConstant: 40),
-
-            titleLabel.topAnchor.constraint(equalTo: self.topAnchor, constant: 20),
-            titleLabel.leadingAnchor.constraint(equalTo: self.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: self.trailingAnchor),
-            titleLabel.heightAnchor.constraint(equalToConstant: 40),
-
-            buttonStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
-            buttonStackView.centerXAnchor.constraint(equalTo: self.centerXAnchor),
-            buttonStackView.heightAnchor.constraint(equalToConstant: 40),
-            buttonStackView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
-            buttonStackView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20),
-
-            scrollView.topAnchor.constraint(equalTo: buttonStackView.bottomAnchor, constant: 20),
-            scrollView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 20),
-            scrollView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20),
-            scrollView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -20),
-
-            stackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
-        ])
-    }
-
     private func fetchNewsData(query: String) {
         let apiKey = "30e36402849c414a9a78de022db36455"
         let urlString = "https://newsapi.org/v2/everything?q=\(query)&apiKey=\(apiKey)"
@@ -203,18 +178,25 @@ class NewsSheet: UIView {
                 button.setTitleColor(.black, for: .normal)
             }
         }
-
         sender.backgroundColor = UIColor.darkGray
         sender.setTitleColor(.white, for: .normal)
 
         if let buttonIndex = buttonStackView.arrangedSubviews.firstIndex(of: sender) {
             switch buttonIndex {
             case 0:
-                fetchNewsData(query: "\(location)-road-accident")
+              
+                let last7Days = DateFormatter.localizedString(from: Calendar.current.date(byAdding: .day, value: -7, to: Date())!, dateStyle: .short, timeStyle: .short)
+                fetchNewsData(query: "\(location)-road-accident")  // Add a time filter for the last 7 days
+                
             case 1:
-                fetchNewsData(query: "\(location)-election")
+              
+                let last24Hours = DateFormatter.localizedString(from: Calendar.current.date(byAdding: .hour, value: -24, to: Date())!, dateStyle: .short, timeStyle: .short)
+                fetchNewsData(query: "\(location)-rail-accident")  // Add a time filter for the last 24 hours
+                
             case 2:
-                fetchNewsData(query: "\(location)-air-pollution")
+               
+                fetchNewsData(query: "\(location)-air-pollution&latest=true")
+                
             default:
                 break
             }
@@ -237,15 +219,9 @@ class NewsSheet: UIView {
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.layer.cornerRadius = 6
-        if let imageUrl = newsData.imageUrl, let url = URL(string: imageUrl) {
-            // Load image asynchronously
-            URLSession.shared.dataTask(with: url) { data, _, _ in
-                if let data = data, let image = UIImage(data: data) {
-                    DispatchQueue.main.async {
-                        imageView.image = image
-                    }
-                }
-            }.resume()
+        
+        if let imageUrl = newsData.imageUrl {
+            imageView.loadImage(from: imageUrl) // Lazy load image using URL
         }
 
         let titleLabel = UILabel()
@@ -270,11 +246,13 @@ class NewsSheet: UIView {
         horizontalStackView.distribution = .fill
 
         card.addSubview(horizontalStackView)
+        
+        // Set the article's link to the card's accessibilityValue
+        card.accessibilityValue = newsData.link
 
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(newsCardTapped(_:)))
         card.addGestureRecognizer(tapGesture)
         card.isUserInteractionEnabled = true
-        card.tag = stackView.arrangedSubviews.count
 
         NSLayoutConstraint.activate([
             imageView.widthAnchor.constraint(equalToConstant: 60),
@@ -290,11 +268,14 @@ class NewsSheet: UIView {
         return card
     }
 
+
+
     @objc private func newsCardTapped(_ sender: UITapGestureRecognizer) {
-        guard let card = sender.view else { return }
-        if ((stackView.arrangedSubviews[card.tag] as? UIView)?.tag) != nil {
-            openArticle(link: "newsData.link")
+        guard let card = sender.view, let link = card.accessibilityValue else {
+            print("No link associated with this card.")
+            return
         }
+        openArticle(link: link)
     }
 
     private func openArticle(link: String) {
@@ -327,3 +308,25 @@ extension UIView {
         return nil
     }
 }
+extension UIImageView {
+    func loadImage(from urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        
+        // Check if the image is already cached
+        if let cachedImage = ImageNewsCache.shared.getImage(for: url) {
+            self.image = cachedImage
+            return
+        }
+        
+        // Fetch and cache the image
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            if let data = data, let image = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    self.image = image
+                }
+                ImageNewsCache.shared.saveImage(image, for: url)
+            }
+        }.resume()
+    }
+}
+
