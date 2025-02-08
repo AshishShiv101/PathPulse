@@ -57,7 +57,7 @@ class LoginPage: UIViewController {
         super.viewDidLoad()
         setupUI()
         
-        // Remove the back button
+
         navigationItem.hidesBackButton = true
     }
 
@@ -171,9 +171,45 @@ class LoginPage: UIViewController {
                     return
                 }
 
-                // Navigate to the next screen upon successful sign-in
-                let mapPage = MapPage() // Replace with your target ViewController
-                self.navigationController?.pushViewController(mapPage, animated: true)
+                // Setting up the TabBarController after successful login
+                let mapPage = MapPage()
+                mapPage.tabBarItem = UITabBarItem(title: "Map", image: UIImage(systemName: "map.fill"), tag: 0)
+
+                let guidePage = GuidePage()
+                guidePage.tabBarItem = UITabBarItem(title: "Guide", image: UIImage(systemName: "bookmark.fill"), tag: 1)
+                let guideNavigationController = UINavigationController(rootViewController: guidePage)
+
+                let accountPage = AccountPage()
+                accountPage.tabBarItem = UITabBarItem(title: "Account", image: UIImage(systemName: "person.crop.circle"), tag: 2)
+                let accNav = UINavigationController(rootViewController: accountPage)
+
+                let tabBarController = UITabBarController()
+                tabBarController.viewControllers = [mapPage, guideNavigationController, accNav]
+
+                // Customizing TabBar Appearance
+                if #available(iOS 15.0, *) {
+                    let appearance = UITabBarAppearance()
+                    appearance.configureWithOpaqueBackground()
+                    appearance.backgroundColor = UIColor(hex: "#333333")
+
+                    let selectedColor = UIColor(hex: "#40cbd8") ?? .systemTeal
+                    let normalColor = UIColor.white
+
+                    appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
+                    appearance.stackedLayoutAppearance.selected.titleTextAttributes = [NSAttributedString.Key.foregroundColor: selectedColor]
+                    appearance.stackedLayoutAppearance.normal.iconColor = normalColor
+                    appearance.stackedLayoutAppearance.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: normalColor]
+
+                    tabBarController.tabBar.standardAppearance = appearance
+                    tabBarController.tabBar.scrollEdgeAppearance = appearance
+                } else {
+                    tabBarController.tabBar.barTintColor = UIColor(hex: "#151515")
+                    tabBarController.tabBar.tintColor = UIColor(hex: "#40cbd8")
+                    tabBarController.tabBar.unselectedItemTintColor = .white
+                }
+
+                tabBarController.modalPresentationStyle = .fullScreen
+                self.present(tabBarController, animated: true, completion: nil)
             }
         }
     }

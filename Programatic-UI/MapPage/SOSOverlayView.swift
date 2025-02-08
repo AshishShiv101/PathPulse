@@ -20,7 +20,6 @@ class SOSOverlayView: UIView {
         stackView.translatesAutoresizingMaskIntoConstraints = false
         return stackView
     }()
-
     private let addContactBox: UIView = {
         let view = UIView()
         view.backgroundColor = UIColor(hex: "#444444")
@@ -28,7 +27,6 @@ class SOSOverlayView: UIView {
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
-    
     private let addContactLabel: UILabel = {
         let label = UILabel()
         label.text = "Add Contact"

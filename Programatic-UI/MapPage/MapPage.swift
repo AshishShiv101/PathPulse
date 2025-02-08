@@ -20,94 +20,7 @@ import CoreLocation
     var previousContentViews: [UIView] = []
     let sosButton = UIButton()
     private let sosOverlayView = SOSOverlayView()
-
-    private let hourlyView: UIView = {
-        let view = UIView()
-        view.backgroundColor = UIColor(hex: "#333333")
-        view.layer.cornerRadius = 16
-        view.layer.borderWidth = 1
-        view.clipsToBounds = true
-        view.isHidden = true
-        let scrollView = UIScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.showsHorizontalScrollIndicator = false
-        scrollView.alwaysBounceHorizontal = true
-        view.addSubview(scrollView)
-
-        let containerView = UIStackView()
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.axis = .horizontal
-        containerView.spacing = 16
-        containerView.alignment = .center
-        containerView.distribution = .fill
-        scrollView.addSubview(containerView)
-
-        for i in 0..<9 {
-            let dataView = UIView()
-            dataView.translatesAutoresizingMaskIntoConstraints = false
-            dataView.backgroundColor = UIColor(hex: "#222222")
-            dataView.layer.cornerRadius = 16
-            dataView.layer.shadowColor = UIColor.black.cgColor
-            dataView.layer.shadowOpacity = 0.3
-            dataView.layer.shadowOffset = CGSize(width: 0, height: 4)
-            dataView.layer.shadowRadius = 8
-            dataView.widthAnchor.constraint(equalToConstant: 120).isActive = true
-            dataView.heightAnchor.constraint(equalToConstant: 150).isActive = true
-
-            let stackView = UIStackView()
-            stackView.axis = .vertical
-            stackView.spacing = 8
-            stackView.alignment = .center
-            stackView.distribution = .equalSpacing
-            stackView.translatesAutoresizingMaskIntoConstraints = false
-            
-            let weatherIcon = UIImageView()
-            weatherIcon.image = UIImage(systemName: "cloud.sun.fill")
-            weatherIcon.tintColor = .systemYellow
-            weatherIcon.translatesAutoresizingMaskIntoConstraints = false
-            weatherIcon.contentMode = .scaleAspectFit
-            weatherIcon.heightAnchor.constraint(equalToConstant: 50).isActive = true
-            weatherIcon.widthAnchor.constraint(equalToConstant: 50).isActive = true
-
-            let timeLabel = UILabel()
-            timeLabel.text = "\(i + 1) PM"
-            timeLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-            timeLabel.textColor = .white
-            timeLabel.textAlignment = .center
-            timeLabel.translatesAutoresizingMaskIntoConstraints = false
-
-            let temperatureLabel = UILabel()
-            temperatureLabel.text = "\(20 + i)°C"
-            temperatureLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
-            temperatureLabel.textColor = .white
-            temperatureLabel.textAlignment = .center
-            temperatureLabel.translatesAutoresizingMaskIntoConstraints = false
-            
-            stackView.addArrangedSubview(weatherIcon)
-            stackView.addArrangedSubview(timeLabel)
-            stackView.addArrangedSubview(temperatureLabel)
-            dataView.addSubview(stackView)
-            NSLayoutConstraint.activate([
-                stackView.centerXAnchor.constraint(equalTo: dataView.centerXAnchor),
-                stackView.centerYAnchor.constraint(equalTo: dataView.centerYAnchor)
-            ])
-            containerView.addArrangedSubview(dataView)
-        }
-        NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: view.topAnchor, constant: 16),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16),
-
-            containerView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            containerView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            containerView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            containerView.heightAnchor.constraint(equalTo: scrollView.heightAnchor)
-        ])
-        view.heightAnchor.constraint(equalToConstant: 300).isActive = true
-        return view
-    }()
+    private let otherButton = UIButton()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -123,7 +36,8 @@ import CoreLocation
         mapView.showsUserLocation = true
         mapView.delegate = self
         setupLocationButton()
-       
+        setupOtherButton()
+        setupToggleView()
         view.bringSubviewToFront(bottomSheetView)
         sosOverlayView.translatesAutoresizingMaskIntoConstraints = false
         let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
@@ -204,6 +118,129 @@ import CoreLocation
         sosOverlayView.isHidden = !sosTappedButton
     }
 }
+        
+        private func setupOtherButton() {
+            otherButton.setTitle("Map", for: .normal)
+            otherButton.backgroundColor = UIColor(hex: "#333333")
+            otherButton.setTitleColor(.white, for: .normal)
+            otherButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+            otherButton.layer.cornerRadius = 35
+            otherButton.addTarget(self, action: #selector(otherButtonTapped), for: .touchUpInside)
+            
+            view.addSubview(otherButton)
+            otherButton.translatesAutoresizingMaskIntoConstraints = false
+            
+            NSLayoutConstraint.activate([
+                // Right-top corner position
+                otherButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+                otherButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+                otherButton.widthAnchor.constraint(equalToConstant: 70),
+                otherButton.heightAnchor.constraint(equalToConstant: 70)
+            ])
+        }
+
+        private var selectedButton: UIButton?
+        private let toggleView: UIView = {
+            let view = UIView()
+            view.backgroundColor = UIColor(hex: "#333333")
+            view.translatesAutoresizingMaskIntoConstraints = false
+            view.isHidden = true  // Start hidden.
+            view.layer.cornerRadius = 15
+            view.clipsToBounds = true
+            return view
+        }()
+        private func setupToggleView() {
+            view.addSubview(toggleView)
+            
+            NSLayoutConstraint.activate([
+                toggleView.trailingAnchor.constraint(equalTo: otherButton.trailingAnchor), // Align with otherButton
+                toggleView.widthAnchor.constraint(equalTo: otherButton.widthAnchor), // Set width same as otherButton
+                toggleView.topAnchor.constraint(equalTo: otherButton.bottomAnchor, constant: 10),
+                toggleView.heightAnchor.constraint(equalToConstant: 150) // Adjusted height
+            ])
+
+            // Standard Button
+            let standardButton = createButton(withIcon: "map", action: #selector(standardButtonTapped))
+            
+            // Satellite Button
+            let satelliteButton = createButton(withIcon: "globe.americas.fill", action: #selector(satelliteButtonTapped))
+            
+            // Hybrid Button
+            let hybridButton = createButton(withIcon: "map.fill", action: #selector(hybridButtonTapped))
+
+            // **Vertical StackView** for buttons
+            let buttonStackView = UIStackView(arrangedSubviews: [standardButton, satelliteButton, hybridButton])
+            buttonStackView.axis = .vertical // **Changed to vertical**
+            buttonStackView.distribution = .fillEqually
+            buttonStackView.spacing = 10
+            buttonStackView.translatesAutoresizingMaskIntoConstraints = false
+
+            toggleView.addSubview(buttonStackView)
+            NSLayoutConstraint.activate([
+                buttonStackView.topAnchor.constraint(equalTo: toggleView.topAnchor, constant: 10),
+                buttonStackView.leadingAnchor.constraint(equalTo: toggleView.leadingAnchor, constant: 5),
+                buttonStackView.trailingAnchor.constraint(equalTo: toggleView.trailingAnchor, constant: -5),
+                buttonStackView.bottomAnchor.constraint(equalTo: toggleView.bottomAnchor, constant: -10)
+            ])
+
+           
+            selectButton(standardButton)
+        }
+        
+        private func createButton(withIcon iconName: String, action: Selector) -> UIButton {
+            let button = UIButton(type: .system)
+            button.setImage(UIImage(systemName: iconName), for: .normal)
+            button.tintColor = .white
+            button.backgroundColor = .systemBlue
+            button.layer.cornerRadius = 8
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.addTarget(self, action: action, for: .touchUpInside)
+            return button
+        }
+
+        @objc private func otherButtonTapped() {
+            if toggleView.isHidden {
+                toggleView.transform = CGAffineTransform(translationX: 0, y: -20) // Start thoda upar se
+                toggleView.alpha = 0
+                toggleView.isHidden = false
+
+                UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
+                    self.toggleView.transform = .identity // Original position pe aayega
+                    self.toggleView.alpha = 1.0
+                })
+            } else {
+                UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
+                    self.toggleView.transform = CGAffineTransform(translationX: 0, y: -20) // Wapas upar chala jaye
+                    self.toggleView.alpha = 0
+                }) { _ in
+                    self.toggleView.isHidden = true
+                    self.toggleView.transform = .identity // Reset position
+                }
+            }
+        }
+        @objc private func standardButtonTapped(_ sender: UIButton) {
+            selectButton(sender)
+            mapView.mapType = .standard
+        }
+        @objc private func satelliteButtonTapped(_ sender: UIButton) {
+            selectButton(sender)
+            mapView.mapType = .satellite
+           
+        }
+
+        @objc private func hybridButtonTapped(_ sender: UIButton) {
+            selectButton(sender)
+            mapView.mapType = .hybrid
+        }
+        private func selectButton(_ button: UIButton) {
+            selectedButton?.backgroundColor = .systemBlue
+            selectedButton?.tintColor = .white
+
+            button.backgroundColor = .red
+            button.tintColor = .white
+
+            selectedButton = button
+        }
     private func setupSOSButton() {
     sosButton.setTitle("SOS", for: .normal)
     sosButton.backgroundColor = UIColor(hex: "#333333")
@@ -289,8 +326,8 @@ import CoreLocation
         private func applyBackgroundGradient(for icon: String) {
             let gradientLayer = CAGradientLayer()
             gradientLayer.frame = weatherView.bounds
-            gradientLayer.cornerRadius = 15 // Apply corner radius
-            gradientLayer.masksToBounds = true // Ensure gradient respects the corners
+            gradientLayer.cornerRadius = 15
+            gradientLayer.masksToBounds = true
             
             switch icon {
             case "01d": // ☀️ Clear day
@@ -355,11 +392,10 @@ import CoreLocation
                 ]
             }
             
-            gradientLayer.locations = [0.0, 1.0] // Smooth blend from top to bottom
-            gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0) // Start from top-center
-            gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)   // End at bottom-center
-
-            // Remove existing layers before adding a new one
+            gradientLayer.locations = [0.0, 1.0]
+            gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+            gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+            
             weatherView.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
             weatherView.layer.insertSublayer(gradientLayer, at: 0)
         }
@@ -437,8 +473,7 @@ import CoreLocation
             additionalCardView.layer.shadowOffset = CGSize(width: 0, height: 2)
             additionalCardView.layer.shadowRadius = 4
             additionalCardView.isUserInteractionEnabled = true
-            
-            // Add tap gesture
+          
             let additionalTapGesture = UITapGestureRecognizer(target: self, action: #selector(openAdditionalView))
             additionalCardView.addGestureRecognizer(additionalTapGesture)
             
@@ -684,14 +719,12 @@ import CoreLocation
            if gestureRecognizer.state == .ended {
                let location = gestureRecognizer.location(in: mapView)
                let coordinate = mapView.convert(location, toCoordinateFrom: mapView)
-               
                weatherInfoView?.removeFromSuperview()
                
                weatherInfoView = createWeatherInfoView(at: location)
                if let weatherInfoView = weatherInfoView {
                    view.addSubview(weatherInfoView)
                }
-
                fetchWeather(for: coordinate) { [weak self] weatherData in
                    DispatchQueue.main.async {
                        if let weatherData = weatherData {
@@ -704,150 +737,148 @@ import CoreLocation
            }
        }
         private func createWeatherInfoView(at location: CGPoint) -> UIView {
-            let weatherView = UIView()
-            weatherView.layer.cornerRadius = 12
-            weatherView.layer.shadowColor = UIColor.black.cgColor
-            weatherView.layer.shadowOpacity = 0.2
-            weatherView.layer.shadowOffset = CGSize(width: 0, height: 4)
-            weatherView.layer.shadowRadius = 6
-            weatherView.frame = CGRect(x: location.x - 110, y: location.y - 100, width: 220, height: 220)
-            
-            // Default Background
-            weatherView.backgroundColor = UIColor(hex: "#222222")
-            
-            let closeButton = UIButton(type: .system)
-            closeButton.setTitle("×", for: .normal)
-            closeButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
-            closeButton.setTitleColor(.white, for: .normal)
-            closeButton.frame = CGRect(x: weatherView.frame.width - 30, y: 10, width: 20, height: 20)
-            closeButton.addTarget(self, action: #selector(dismissWeatherInfoView), for: .touchUpInside)
-            weatherView.addSubview(closeButton)
-            
-            let weatherIcon = UIImageView()
-            weatherIcon.frame = CGRect(x: (weatherView.frame.width - 120) / 2, y: 30, width: 120, height: 120)
-            weatherIcon.contentMode = .scaleAspectFit
-            weatherIcon.tintColor = .white
-            weatherIcon.tag = 101
-            weatherView.addSubview(weatherIcon)
-            
-            let titleLabel = UILabel()
-            titleLabel.text = "Fetching weather..."
-            titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
-            titleLabel.textAlignment = .center
-            titleLabel.textColor = .white
-            titleLabel.tag = 201
-            titleLabel.frame = CGRect(x: 10, y: 160, width: weatherView.frame.width - 20, height: 20)
-            weatherView.addSubview(titleLabel)
-            
-            let descriptionLabel = UILabel()
-            descriptionLabel.text = ""
-            descriptionLabel.font = UIFont.systemFont(ofSize: 14)
-            descriptionLabel.textAlignment = .center
-            descriptionLabel.textColor = .white
-            descriptionLabel.tag = 202
-            descriptionLabel.frame = CGRect(x: 10, y: 185, width: weatherView.frame.width - 20, height: 20)
-            weatherView.addSubview(descriptionLabel)
+             let weatherView = UIView()
+             weatherView.layer.cornerRadius = 12
+             weatherView.layer.shadowColor = UIColor.black.cgColor
+             weatherView.layer.shadowOpacity = 0.2
+             weatherView.layer.shadowOffset = CGSize(width: 0, height: 4)
+             weatherView.layer.shadowRadius = 6
+             weatherView.frame = CGRect(x: location.x - 110, y: location.y - 100, width: 220, height: 220)
+             weatherView.backgroundColor = UIColor(hex: "#222222")
+             
+             let closeButton = UIButton(type: .system)
+             closeButton.setTitle("×", for: .normal)
+             closeButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
+             closeButton.setTitleColor(.white, for: .normal)
+             closeButton.frame = CGRect(x: weatherView.frame.width - 30, y: 10, width: 20, height: 20)
+             closeButton.addTarget(self, action: #selector(dismissWeatherInfoView), for: .touchUpInside)
+             weatherView.addSubview(closeButton)
+             
+             let weatherIcon = UIImageView()
+             weatherIcon.frame = CGRect(x: (weatherView.frame.width - 120) / 2, y: 30, width: 120, height: 120)
+             weatherIcon.contentMode = .scaleAspectFit
+             weatherIcon.tintColor = .white
+             weatherIcon.tag = 101
+             weatherView.addSubview(weatherIcon)
+    
+             let titleLabel = UILabel()
+             titleLabel.text = "Fetching weather..."
+             titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
+             titleLabel.textAlignment = .center
+             titleLabel.textColor = .white
+             titleLabel.tag = 201
+             titleLabel.frame = CGRect(x: 10, y: 160, width: weatherView.frame.width - 20, height: 20)
+             weatherView.addSubview(titleLabel)
+    
+             let descriptionLabel = UILabel()
+             descriptionLabel.text = ""
+             descriptionLabel.font = UIFont.systemFont(ofSize: 14)
+             descriptionLabel.textAlignment = .center
+             descriptionLabel.textColor = .white
+             descriptionLabel.tag = 202
+             descriptionLabel.frame = CGRect(x: 10, y: 185, width: weatherView.frame.width - 20, height: 20)
+             weatherView.addSubview(descriptionLabel)
 
-            weatherInfoView?.tag = 1000
-            return weatherView
-        }
+             weatherInfoView?.tag = 1000
+             return weatherView
+         }
 
-        @objc private func dismissWeatherInfoView() {
-            weatherInfoView?.removeFromSuperview()
-        }
+         @objc private func dismissWeatherInfoView() {
+             weatherInfoView?.removeFromSuperview()
+         }
 
-        private func updateWeatherInfoView(_ weatherData: WeatherData) {
-            guard let weatherInfoView = weatherInfoView else { return }
+         private func updateWeatherInfoView(_ weatherData: WeatherData) {
+             guard let weatherInfoView = weatherInfoView else { return }
 
-            if let titleLabel = weatherInfoView.viewWithTag(201) as? UILabel {
-                titleLabel.text = "Temp: \(weatherData.temperature)°C"
-            }
-            if let descriptionLabel = weatherInfoView.viewWithTag(202) as? UILabel {
-                descriptionLabel.text = weatherData.description.capitalized
-            }
-            
-            if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
-                updateWeatherIcon(iconImageView, with: weatherData.icon)
-            }
+             if let titleLabel = weatherInfoView.viewWithTag(201) as? UILabel {
+                 titleLabel.text = "Temp: \(weatherData.temperature)°C"
+             }
+             if let descriptionLabel = weatherInfoView.viewWithTag(202) as? UILabel {
+                 descriptionLabel.text = weatherData.description.capitalized
+             }
+             
+             if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
+                 updateWeatherIcon(iconImageView, with: weatherData.icon)
+             }
 
-            // Change background color based on weather condition
-            updateWeatherBackground(for: weatherInfoView, condition: weatherData.description.lowercased())
-        }
+             // Change background color based on weather condition
+             updateWeatherBackground(for: weatherInfoView, condition: weatherData.description.lowercased())
+         }
 
-        private func updateWeatherIcon(_ imageView: UIImageView, with iconCode: String) {
-            let iconUrlString = "https://openweathermap.org/img/wn/\(iconCode)@2x.png"
-            guard let iconUrl = URL(string: iconUrlString) else { return }
+         private func updateWeatherIcon(_ imageView: UIImageView, with iconCode: String) {
+             let iconUrlString = "https://openweathermap.org/img/wn/\(iconCode)@2x.png"
+             guard let iconUrl = URL(string: iconUrlString) else { return }
 
-            DispatchQueue.global().async {
-                if let data = try? Data(contentsOf: iconUrl), let image = UIImage(data: data) {
-                    DispatchQueue.main.async {
-                        imageView.image = image
-                    }
-                }
-            }
-        }
+             DispatchQueue.global().async {
+                 if let data = try? Data(contentsOf: iconUrl), let image = UIImage(data: data) {
+                     DispatchQueue.main.async {
+                         imageView.image = image
+                     }
+                 }
+             }
+         }
 
-        private func updateWeatherBackground(for view: UIView, condition: String) {
-            let gradientLayer = CAGradientLayer()
-            gradientLayer.frame = view.bounds
-            gradientLayer.cornerRadius = view.layer.cornerRadius
+         private func updateWeatherBackground(for view: UIView, condition: String) {
+             let gradientLayer = CAGradientLayer()
+             gradientLayer.frame = view.bounds
+             gradientLayer.cornerRadius = view.layer.cornerRadius
 
-            switch condition {
-            case let str where str.contains("clear"):
-                gradientLayer.colors = [UIColor(hex: "#FFD700").cgColor, UIColor(hex: "#FFA500").cgColor] // Sunny - Golden to Orange
-            case let str where str.contains("cloud"):
-                gradientLayer.colors = [UIColor(hex: "#B0BEC5").cgColor, UIColor(hex: "#78909C").cgColor] // Cloudy - Light to Dark Gray
-            case let str where str.contains("rain"):
-                gradientLayer.colors = [UIColor(hex: "#4682B4").cgColor, UIColor(hex: "#1E3A5F").cgColor] // Rainy - Blue Shades
-            case let str where str.contains("storm"):
-                gradientLayer.colors = [UIColor(hex: "#2C3E50").cgColor, UIColor(hex: "#000000").cgColor] // Stormy - Dark Blue to Black
-            case let str where str.contains("snow"):
-                gradientLayer.colors = [UIColor(hex: "#FFFFFF").cgColor, UIColor(hex: "#D3D3D3").cgColor] // Snowy - White to Light Gray
-            default:
-                gradientLayer.colors = [UIColor(hex: "#222222").cgColor, UIColor(hex: "#000000").cgColor] // Default Dark Theme
-            }
+             switch condition {
+             case let str where str.contains("clear"):
+                 gradientLayer.colors = [UIColor(hex: "#FFD700").cgColor, UIColor(hex: "#FFA500").cgColor] // Sunny - Golden to Orange
+             case let str where str.contains("cloud"):
+                 gradientLayer.colors = [UIColor(hex: "#B0BEC5").cgColor, UIColor(hex: "#78909C").cgColor] // Cloudy - Light to Dark Gray
+             case let str where str.contains("rain"):
+                 gradientLayer.colors = [UIColor(hex: "#4682B4").cgColor, UIColor(hex: "#1E3A5F").cgColor] // Rainy - Blue Shades
+             case let str where str.contains("storm"):
+                 gradientLayer.colors = [UIColor(hex: "#2C3E50").cgColor, UIColor(hex: "#000000").cgColor] // Stormy - Dark Blue to Black
+             case let str where str.contains("snow"):
+                 gradientLayer.colors = [UIColor(hex: "#FFFFFF").cgColor, UIColor(hex: "#D3D3D3").cgColor] // Snowy - White to Light Gray
+             default:
+                 gradientLayer.colors = [UIColor(hex: "#222222").cgColor, UIColor(hex: "#000000").cgColor] // Default Dark Theme
+             }
 
-            gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
-            gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
+             gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
+             gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
 
-            DispatchQueue.main.async {
-                // Remove existing gradient layers before adding a new one
-                view.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
-                view.layer.insertSublayer(gradientLayer, at: 0)
-            }
-        }
+             DispatchQueue.main.async {
+                 // Remove existing gradient layers before adding a new one
+                 view.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
+                 view.layer.insertSublayer(gradientLayer, at: 0)
+             }
+         }
 
 
-        private func updateWeatherInfoViewWithError() {
-            guard let weatherInfoView = weatherInfoView else { return }
-            
-            if let titleLabel = weatherInfoView.viewWithTag(201) as? UILabel {
-                titleLabel.text = "Weather unavailable"
-            }
-            if let descriptionLabel = weatherInfoView.viewWithTag(202) as? UILabel {
-                descriptionLabel.text = "Please try again later."
-            }
+         private func updateWeatherInfoViewWithError() {
+             guard let weatherInfoView = weatherInfoView else { return }
+             
+             if let titleLabel = weatherInfoView.viewWithTag(201) as? UILabel {
+                 titleLabel.text = "Weather unavailable"
+             }
+             if let descriptionLabel = weatherInfoView.viewWithTag(202) as? UILabel {
+                 descriptionLabel.text = "Please try again later."
+             }
 
-            if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
-                iconImageView.image = UIImage(systemName: "exclamationmark.triangle.fill")
-                iconImageView.tintColor = .red
-            }
+             if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
+                 iconImageView.image = UIImage(systemName: "exclamationmark.triangle.fill")
+                 iconImageView.tintColor = .red
+             }
 
-            updateWeatherBackground(for: weatherInfoView, condition: "error")
-        }
+             updateWeatherBackground(for: weatherInfoView, condition: "error")
+         }
 
-        private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
-            WeatherService.shared.fetchWeather(for: coordinate) { weatherData, error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        print("Error fetching weather: \(error.localizedDescription)")
-                        completion(nil)
-                    } else {
-                        completion(weatherData)
-                    }
-                }
-            }
-        }
+         private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
+             WeatherService.shared.fetchWeather(for: coordinate) { weatherData, error in
+                 DispatchQueue.main.async {
+                     if let error = error {
+                         print("Error fetching weather: \(error.localizedDescription)")
+                         completion(nil)
+                     } else {
+                         completion(weatherData)
+                     }
+                 }
+             }
+         }
     @objc private func searchButtonTapped() {
         searchBar.becomeFirstResponder()
     }
