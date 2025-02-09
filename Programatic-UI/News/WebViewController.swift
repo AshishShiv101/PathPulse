@@ -2,7 +2,6 @@ import UIKit
 import WebKit
 
 class WebViewController: UIViewController, WKNavigationDelegate {
-    
     var urlString: String?
     private var webView: WKWebView!
     private let progressView = UIProgressView(progressViewStyle: .default)
@@ -14,7 +13,6 @@ class WebViewController: UIViewController, WKNavigationDelegate {
         loadWebPage()
         setupBackButton()
     }
-    
     
     private func setupWebView() {
         let webConfiguration = WKWebViewConfiguration()
@@ -52,7 +50,6 @@ class WebViewController: UIViewController, WKNavigationDelegate {
         navigationItem.leftBarButtonItem = backButton
     }
     
-    
     private func loadWebPage() {
         guard let urlString = urlString, let url = URL(string: urlString) else {
             print("Invalid URL string: \(urlString ?? "nil")")
@@ -62,7 +59,6 @@ class WebViewController: UIViewController, WKNavigationDelegate {
         webView.load(request)
     }
     
-    
     @objc private func backButtonPressed() {
         if webView.canGoBack {
             webView.goBack()
@@ -70,7 +66,6 @@ class WebViewController: UIViewController, WKNavigationDelegate {
             navigationController?.popViewController(animated: true)
         }
     }
-    
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         progressView.isHidden = true

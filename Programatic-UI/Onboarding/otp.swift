@@ -2,71 +2,13 @@ import UIKit
 import FirebaseAuth
 
 class OTPPage: UIViewController {
-     
-    private let logoStack: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .horizontal
-        stackView.alignment = .center
-        stackView.spacing = 8
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        let pathLabel = UILabel()
-        pathLabel.text = "Path"
-        pathLabel.font = UIFont.boldSystemFont(ofSize: 40)
-        pathLabel.textColor = UIColor(hex: "40CBD8")
-        
-        let pulseLabel = UILabel()
-        pulseLabel.text = "Pulse"
-        pulseLabel.font = UIFont.systemFont(ofSize: 40, weight: .light)
-        pulseLabel.textColor = .white
-        
-        stackView.addArrangedSubview(pathLabel)
-        stackView.addArrangedSubview(pulseLabel)
-        return stackView
-    }()
-    
-    private let roadImageView: UIImageView = {
-        let imageView = UIImageView(image: UIImage(systemName: "road.lanes.curved.right"))
-        imageView.tintColor = UIColor(hex: "40CBD8")
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
-    }()
-    
-    private let logoStackContainer: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .vertical
-        stackView.alignment = .center
-        stackView.spacing = -25
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        return stackView
-    }()
-
-    private let cardView: UIView = {
-        let view = UIView()
-        view.backgroundColor = UIColor(hex: "#333333")
-        view.layer.cornerRadius = 30
-        view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
 
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Enter OTP"
         label.font = UIFont.boldSystemFont(ofSize: 28)
-        label.textColor = .white
+        label.textColor = UIColor(hex: "#F2F1F1")
         label.textAlignment = .center
-        return label
-    }()
-    
-    private let subtitleLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Please enter the verification code sent to your phone"
-        label.font = UIFont.systemFont(ofSize: 16)
-        label.textColor = .gray
-        label.textAlignment = .center
-        label.numberOfLines = 0
         return label
     }()
 
@@ -86,15 +28,10 @@ class OTPPage: UIViewController {
     private let verifyButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Verify", for: .normal)
-        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(.black, for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold)
         button.backgroundColor = UIColor(hex: "#40CBD8")
         button.layer.cornerRadius = 12
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.3
-        button.layer.shadowOffset = CGSize(width: 0, height: 2)
-        button.layer.shadowRadius = 4
-        button.heightAnchor.constraint(equalToConstant: 50).isActive = true
         button.addTarget(self, action: #selector(handleVerifyButton), for: .touchUpInside)
         return button
     }()
@@ -102,86 +39,43 @@ class OTPPage: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupGradientBackground()
-        navigationItem.hidesBackButton = true
-    }
-
-    private func setupGradientBackground() {
-        let gradientLayer = CAGradientLayer()
-        gradientLayer.frame = view.bounds
-        
-        let topColor = UIColor(hex: "#222222").cgColor
-        let bottomColor = UIColor(hex: "#1A1A1A").cgColor
-        
-        gradientLayer.colors = [topColor, bottomColor]
-        gradientLayer.locations = [0.0, 1.0]
-        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
-        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
-        
-        view.layer.insertSublayer(gradientLayer, at: 0)
     }
 
     private func setupUI() {
         view.backgroundColor = UIColor(hex: "#222222")
-        
-        // Set up logo stack
-        logoStackContainer.addArrangedSubview(logoStack)
-        logoStackContainer.addArrangedSubview(roadImageView)
-        view.addSubview(logoStackContainer)
-        
-        view.addSubview(cardView)
-        
-        [titleLabel, subtitleLabel, otpStackView, verifyButton].forEach {
-            cardView.addSubview($0)
+
+        [titleLabel, otpStackView, verifyButton].forEach {
+            view.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
 
         NSLayoutConstraint.activate([
-            // Logo stack container constraints
-            logoStackContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-            logoStackContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            // Road image constraints
-            roadImageView.widthAnchor.constraint(equalToConstant: 100),
-            roadImageView.heightAnchor.constraint(equalToConstant: 100),
-            
-            // Card view
-            cardView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.50),
-            cardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            cardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            cardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 180),
+            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 30),
-            titleLabel.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
-            
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
-            subtitleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-            subtitleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
-
-            otpStackView.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 30),
-            otpStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-            otpStackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
+            otpStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 30),
+            otpStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            otpStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             otpStackView.heightAnchor.constraint(equalToConstant: 50),
 
             verifyButton.topAnchor.constraint(equalTo: otpStackView.bottomAnchor, constant: 30),
-            verifyButton.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-            verifyButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24)
+            verifyButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            verifyButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24)
         ])
     }
 
     private func createOTPTextField() -> UITextField {
         let textField = UITextField()
-        textField.backgroundColor = UIColor(white: 1.0, alpha: 0.9)
+        textField.backgroundColor = UIColor(white: 1.0, alpha: 0.7)
         textField.layer.cornerRadius = 12
         textField.textColor = .black
         textField.textAlignment = .center
         textField.keyboardType = .numberPad
         textField.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        textField.layer.borderColor = UIColor.lightGray.cgColor
-        textField.layer.borderWidth = 1
         textField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
         return textField
     }
+
     @objc private func textFieldDidChange(_ textField: UITextField) {
         guard let text = textField.text, text.count == 1 else { return }
         if let nextField = otpStackView.arrangedSubviews.first(where: { ($0 as? UITextField)?.text?.isEmpty ?? true }) as? UITextField {
