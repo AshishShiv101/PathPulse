@@ -24,7 +24,15 @@ class OTPPage: UIViewController {
         stackView.addArrangedSubview(pulseLabel)
         return stackView
     }()
-    
+    private let taglineLabel: UILabel = {
+            let label = UILabel()
+            label.text = "Stay ahead, Stay safe"
+            label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+            label.textColor = .gray
+            label.textAlignment = .center
+            label.translatesAutoresizingMaskIntoConstraints = false
+            return label
+        }()
     private let roadImageView: UIImageView = {
         let imageView = UIImageView(image: UIImage(systemName: "road.lanes.curved.right"))
         imageView.tintColor = UIColor(hex: "40CBD8")
@@ -160,50 +168,45 @@ class OTPPage: UIViewController {
     private func setupUI() {
         view.backgroundColor = UIColor(hex: "#222222")
             
-            // Update the button stack setup
-            buttonStackView.addArrangedSubview(resendButton)
-            buttonStackView.addArrangedSubview(changeNumberButton)  // Add this line
-            cardView.addSubview(buttonStackView)
-            
-            // Rest of the setup remains the same...
-            logoStackContainer.addArrangedSubview(logoStack)
-            logoStackContainer.addArrangedSubview(roadImageView)
-            view.addSubview(logoStackContainer)
-            
-            view.addSubview(cardView)
-            
-            [titleLabel, subtitleLabel, otpStackView, verifyButton, buttonStackView].forEach {
-                cardView.addSubview($0)
-                $0.translatesAutoresizingMaskIntoConstraints = false
-            }
+        // Clear and set up logo stack container in correct order
+        logoStackContainer.removeArrangedSubview(logoStack)
+        logoStackContainer.removeArrangedSubview(taglineLabel)
+        logoStackContainer.removeArrangedSubview(roadImageView)
+        
+        // Add elements in new order - logo, road image, then tagline
         logoStackContainer.addArrangedSubview(logoStack)
         logoStackContainer.addArrangedSubview(roadImageView)
-        view.addSubview(logoStackContainer)
+        logoStackContainer.addArrangedSubview(taglineLabel)
         
+        // Adjust spacing for new layout
+        logoStackContainer.setCustomSpacing(-25, after: logoStack) // Space between logo and road
+        logoStackContainer.setCustomSpacing(8, after: roadImageView) // Space between road and tagline
+        
+        // Update tagline appearance for better visibility
+        taglineLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        taglineLabel.textColor = .gray
+        
+        // Rest of the setup remains the same
+        view.addSubview(logoStackContainer)
         view.addSubview(cardView)
         
-        [titleLabel, subtitleLabel, otpStackView, verifyButton].forEach {
+        // Set up button stack
+        buttonStackView.addArrangedSubview(resendButton)
+        buttonStackView.addArrangedSubview(changeNumberButton)
+        
+        // Add all elements to card view
+        [titleLabel, subtitleLabel, otpStackView, verifyButton, buttonStackView].forEach {
             cardView.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
 
         NSLayoutConstraint.activate([
-            verifyButton.topAnchor.constraint(equalTo: otpStackView.bottomAnchor, constant: 30),
-                verifyButton.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-                verifyButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
-                        
-            buttonStackView.topAnchor.constraint(equalTo: verifyButton.bottomAnchor, constant: 24),
-            buttonStackView.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
-            buttonStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-        buttonStackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
-            logoStackContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
+            logoStackContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 50),
             logoStackContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
-            // Road image constraints
             roadImageView.widthAnchor.constraint(equalToConstant: 100),
             roadImageView.heightAnchor.constraint(equalToConstant: 100),
             
-            // Card view
             cardView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.50),
             cardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             cardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -223,7 +226,12 @@ class OTPPage: UIViewController {
 
             verifyButton.topAnchor.constraint(equalTo: otpStackView.bottomAnchor, constant: 30),
             verifyButton.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
-            verifyButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24)
+            verifyButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
+            
+            buttonStackView.topAnchor.constraint(equalTo: verifyButton.bottomAnchor, constant: 24),
+            buttonStackView.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
+            buttonStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+            buttonStackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24)
         ])
     }
 

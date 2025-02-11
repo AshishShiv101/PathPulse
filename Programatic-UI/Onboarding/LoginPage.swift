@@ -33,6 +33,15 @@ class LoginPage: UIViewController {
            imageView.translatesAutoresizingMaskIntoConstraints = false
            return imageView
        }()
+    private let taglineLabel: UILabel = {
+            let label = UILabel()
+            label.text = "Stay ahead, Stay safe"
+            label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+            label.textColor = .gray
+            label.textAlignment = .center
+            label.translatesAutoresizingMaskIntoConstraints = false
+            return label
+        }()
     private let logoStackContainer: UIStackView = {
             let stackView = UIStackView()
             stackView.axis = .vertical
@@ -132,8 +141,8 @@ class LoginPage: UIViewController {
 
     private func setupUI() {
         logoStackContainer.addArrangedSubview(logoStack)
-                logoStackContainer.addArrangedSubview(roadImageView)
-                view.addSubview(logoStackContainer)
+        logoStackContainer.addArrangedSubview(roadImageView)
+        view.addSubview(logoStackContainer)
         view.backgroundColor = UIColor(hex: "#222222")
 
         let titleLabel = UILabel()
@@ -149,35 +158,30 @@ class LoginPage: UIViewController {
         subtitleLabel.textAlignment = .center
 
         view.addSubview(cardView)
-        
-        [logoImageView].forEach {
-            view.addSubview($0)
-            $0.translatesAutoresizingMaskIntoConstraints = false
-        }
-        
+
+        // Add tagline label to the main view (just below roadImageView)
+        view.addSubview(taglineLabel)
+
         [titleLabel, subtitleLabel, phoneTextField, continueButton, googleSignInButton].forEach {
             cardView.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
 
         NSLayoutConstraint.activate([
-            
             logoStackContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-                        logoStackContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                        
-                        roadImageView.widthAnchor.constraint(equalToConstant: 100),
-                        roadImageView.heightAnchor.constraint(equalToConstant: 100),
-            logoImageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 60),
-            logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            logoImageView.widthAnchor.constraint(equalToConstant: 150),
-            logoImageView.heightAnchor.constraint(equalToConstant: 150),
-            
+            logoStackContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
+            roadImageView.widthAnchor.constraint(equalToConstant: 100),
+            roadImageView.heightAnchor.constraint(equalToConstant: 100),
+
+            taglineLabel.topAnchor.constraint(equalTo: roadImageView.bottomAnchor, constant: 10),
+            taglineLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
             cardView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.50),
             cardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             cardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             cardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
 
-            // Elements inside card view
             titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 30),
             titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
             titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
@@ -202,6 +206,8 @@ class LoginPage: UIViewController {
 
         googleSignInButton.addTarget(self, action: #selector(handleGoogleSignIn), for: .touchUpInside)
     }
+
+
 
     
     @objc private func handleContinueButton() {
