@@ -21,7 +21,6 @@ import CoreLocation
     let sosButton = UIButton()
     private let sosOverlayView = SOSOverlayView()
     private let otherButton = UIButton()
-
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
@@ -119,14 +118,12 @@ import CoreLocation
     }
 }
         private func setupOtherButton() {
-            otherButton.setBackgroundImage(UIImage(named: "Normal"), for: .normal) // Default image
+            otherButton.setBackgroundImage(UIImage(named: "Normal"), for: .normal)
             otherButton.backgroundColor = .clear
             otherButton.layer.cornerRadius = 35
             otherButton.clipsToBounds = true
-
-            // Thicker Border
             otherButton.layer.borderColor = UIColor.black.cgColor
-            otherButton.layer.borderWidth = 3.5 // Increased thickness
+            otherButton.layer.borderWidth = 3.5
 
             otherButton.addTarget(self, action: #selector(otherButtonTapped), for: .touchUpInside)
             
@@ -145,7 +142,7 @@ import CoreLocation
             let view = UIView()
             view.backgroundColor = UIColor(hex: "#333333")
             view.translatesAutoresizingMaskIntoConstraints = false
-            view.isHidden = true  // Start hidden
+            view.isHidden = true
             view.layer.cornerRadius = 15
             view.clipsToBounds = true
             return view
@@ -153,7 +150,6 @@ import CoreLocation
 
         private func setupToggleView() {
             view.addSubview(toggleView)
-            
             NSLayoutConstraint.activate([
                 toggleView.trailingAnchor.constraint(equalTo: otherButton.trailingAnchor),
                 toggleView.widthAnchor.constraint(equalTo: otherButton.widthAnchor),
@@ -163,8 +159,6 @@ import CoreLocation
 
             let standardButton = createButton(withImage: "Normal", action: #selector(standardButtonTapped))
             let satelliteButton = createButton(withImage: "Satelite", action: #selector(hybridButtonTapped))
-
-            // **Vertical StackView** for buttons
             let buttonStackView = UIStackView(arrangedSubviews: [standardButton, satelliteButton])
             buttonStackView.axis = .vertical
             buttonStackView.distribution = .fillEqually
@@ -178,10 +172,8 @@ import CoreLocation
                 buttonStackView.trailingAnchor.constraint(equalTo: toggleView.trailingAnchor, constant: -5),
                 buttonStackView.bottomAnchor.constraint(equalTo: toggleView.bottomAnchor, constant: -10)
             ])
-
-            selectButton(standardButton) // Default selection
+            selectButton(standardButton)
         }
-
         private func createButton(withImage imageName: String, action: Selector) -> UIButton {
             let button = UIButton(type: .custom)
 
@@ -191,20 +183,17 @@ import CoreLocation
                 print("⚠️ Image not found: \(imageName)")
             }
 
-            button.tintColor = .none // Ensure image is displayed properly
+            button.tintColor = .none
             button.backgroundColor = .clear
             button.translatesAutoresizingMaskIntoConstraints = false
             button.addTarget(self, action: action, for: .touchUpInside)
-
-            // Set height and width for a circular shape
             let size: CGFloat = 50 // Adjust as needed
             NSLayoutConstraint.activate([
                 button.heightAnchor.constraint(equalToConstant: size),
                 button.widthAnchor.constraint(equalToConstant: size)
             ])
-
-            button.layer.cornerRadius = size / 2 // Make it circular
-            button.clipsToBounds = true // Ensure it clips within the circular shape
+            button.layer.cornerRadius = size / 2
+            button.clipsToBounds = true
 
             return button
         }
@@ -245,7 +234,7 @@ import CoreLocation
             selectedButton?.layer.borderColor = UIColor.clear.cgColor
 
             button.layer.borderWidth = 2
-            button.layer.borderColor = UIColor.systemYellow.cgColor // Highlight selected button
+            button.layer.borderColor = UIColor.systemYellow.cgColor
 
             if let selectedImage = button.imageView?.image {
                 otherButton.setBackgroundImage(selectedImage, for: .normal)
@@ -282,10 +271,9 @@ import CoreLocation
             sosOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             sosOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             sosOverlayView.topAnchor.constraint(equalTo: view.topAnchor, constant: 170),
-            sosOverlayView.heightAnchor.constraint(equalToConstant: 200)
+            sosOverlayView.heightAnchor.constraint(equalToConstant: 150)
         ])
     }
-
     private func setupViews() {
         mapView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mapView)
@@ -330,8 +318,6 @@ import CoreLocation
                    let data = try? Data(contentsOf: iconUrl) {
                     self.weatherIcon.image = UIImage(data: data)
                 }
-                
-                // Apply gradient background instead of solid color
                 self.applyBackgroundGradient(for: weatherData.icon)
             }
         }
@@ -341,64 +327,63 @@ import CoreLocation
             gradientLayer.frame = weatherView.bounds
             gradientLayer.cornerRadius = 15
             gradientLayer.masksToBounds = true
-            
             switch icon {
-            case "01d": // ☀️ Clear day
+            case "01d":
                 gradientLayer.colors = [
-                    UIColor(red: 1.0, green: 0.8, blue: 0.3, alpha: 1.0).cgColor, // Warm golden
-                    UIColor(red: 0.7, green: 0.5, blue: 0.2, alpha: 1.0).cgColor  // Sunset orange
+                    UIColor(red: 1.0, green: 0.8, blue: 0.3, alpha: 1.0).cgColor,
+                    UIColor(red: 0.7, green: 0.5, blue: 0.2, alpha: 1.0).cgColor
                 ]
-            case "01n": // 🌙 Clear night
+            case "01n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.2, green: 0.2, blue: 0.4, alpha: 1.0).cgColor, // Deep night blue
-                    UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor  // Dark navy
+                    UIColor(red: 0.2, green: 0.2, blue: 0.4, alpha: 1.0).cgColor,
+                    UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor
                 ]
-            case "02d", "02n": // 🌤️ Few clouds
+            case "02d", "02n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0).cgColor, // Soft sky blue
-                    UIColor(red: 0.4, green: 0.5, blue: 0.8, alpha: 1.0).cgColor  // Gentle ocean blue
+                    UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0).cgColor,
+                    UIColor(red: 0.4, green: 0.5, blue: 0.8, alpha: 1.0).cgColor
                 ]
-            case "03d", "03n": // ☁️ Scattered clouds
+            case "03d", "03n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0).cgColor, // Soft cloudy gray
-                    UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0).cgColor  // Deeper cloud gray
+                    UIColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0).cgColor,
+                    UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0).cgColor
                 ]
-            case "04d", "04n": // 🌥️ Overcast clouds
+            case "04d", "04n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0).cgColor, // Heavy cloud gray
-                    UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0).cgColor  // Darker storm gray
+                    UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0).cgColor,
+                    UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0).cgColor
                 ]
-            case "09d", "09n": // 🌧️ Shower rain
+            case "09d", "09n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.3, green: 0.4, blue: 0.6, alpha: 1.0).cgColor, // Rainy blue
-                    UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0).cgColor  // Dark storm gray
+                    UIColor(red: 0.3, green: 0.4, blue: 0.6, alpha: 1.0).cgColor,
+                    UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0).cgColor
                 ]
-            case "10d": // 🌦️ Rain (day)
+            case "10d":
                 gradientLayer.colors = [
-                    UIColor(red: 0.4, green: 0.6, blue: 0.8, alpha: 1.0).cgColor, // Blue-gray
-                    UIColor(red: 0.3, green: 0.4, blue: 0.7, alpha: 1.0).cgColor  // Rain cloud blue
+                    UIColor(red: 0.4, green: 0.6, blue: 0.8, alpha: 1.0).cgColor,
+                    UIColor(red: 0.3, green: 0.4, blue: 0.7, alpha: 1.0).cgColor
                 ]
-            case "10n": // 🌧️ Rain (night)
+            case "10n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.2, green: 0.3, blue: 0.6, alpha: 1.0).cgColor, // Deep storm blue
-                    UIColor(red: 0.1, green: 0.1, blue: 0.3, alpha: 1.0).cgColor  // Almost black night
+                    UIColor(red: 0.2, green: 0.3, blue: 0.6, alpha: 1.0).cgColor,
+                    UIColor(red: 0.1, green: 0.1, blue: 0.3, alpha: 1.0).cgColor
                 ]
-            case "11d", "11n": // ⛈️ Thunderstorm
+            case "11d", "11n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0).cgColor, // Thunder gray
-                    UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor  // Deep storm night
+                    UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0).cgColor,
+                    UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor
                 ]
-            case "13d", "13n": // ❄️ Snow
+            case "13d", "13n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0).cgColor, // Ice blue
-                    UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0).cgColor  // Frosty blue
+                    UIColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0).cgColor,
+                    UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0).cgColor
                 ]
-            case "50d", "50n": // 🌫️ Mist
+            case "50d", "50n":
                 gradientLayer.colors = [
-                    UIColor(red: 0.6, green: 0.6, blue: 0.7, alpha: 1.0).cgColor, // Foggy gray
-                    UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0).cgColor  // Deep mist
+                    UIColor(red: 0.6, green: 0.6, blue: 0.7, alpha: 1.0).cgColor,
+                    UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0).cgColor
                 ]
-            default: // Default
+            default:
                 gradientLayer.colors = [
                     UIColor.systemGray.cgColor,
                     UIColor.darkGray.cgColor
@@ -490,13 +475,13 @@ import CoreLocation
             let additionalTapGesture = UITapGestureRecognizer(target: self, action: #selector(openAdditionalView))
             additionalCardView.addGestureRecognizer(additionalTapGesture)
             
-            // Add Icon
+     
             let newsIcon = UIImageView(image: UIImage(systemName: "newspaper"))
             newsIcon.translatesAutoresizingMaskIntoConstraints = false
             newsIcon.tintColor = UIColor(hex: "#40cbd8")
             newsIcon.contentMode = .scaleAspectFit
             
-            // Add Label
+   
             let newsLabel = UILabel()
             newsLabel.translatesAutoresizingMaskIntoConstraints = false
             newsLabel.text = "See the latest news updates "
@@ -505,25 +490,25 @@ import CoreLocation
             newsLabel.numberOfLines = 2
             newsLabel.textAlignment = .left
             
-            // Add views
+       
             additionalCardView.addSubview(newsIcon)
             additionalCardView.addSubview(newsLabel)
             bottomSheetView.addSubview(additionalCardView)
             
-            // Constraints
+   
             NSLayoutConstraint.activate([
                 additionalCardView.topAnchor.constraint(equalTo: weatherView.bottomAnchor, constant: 50),
                 additionalCardView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
                 additionalCardView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16),
                 additionalCardView.heightAnchor.constraint(equalToConstant: 150),
                 
-                // Center the icon horizontally and position it at the top
+               
                 newsIcon.centerXAnchor.constraint(equalTo: additionalCardView.centerXAnchor),
                 newsIcon.topAnchor.constraint(equalTo: additionalCardView.topAnchor, constant: 20),
                 newsIcon.widthAnchor.constraint(equalToConstant: 60),
                 newsIcon.heightAnchor.constraint(equalToConstant: 60),
                 
-                // Position the label below the icon
+        
                 newsLabel.topAnchor.constraint(equalTo: newsIcon.bottomAnchor, constant: 10),
                 newsLabel.centerXAnchor.constraint(equalTo: additionalCardView.centerXAnchor),
                 newsLabel.leadingAnchor.constraint(greaterThanOrEqualTo: additionalCardView.leadingAnchor, constant: 20),
@@ -685,7 +670,7 @@ import CoreLocation
             }
             
             let detailedVC = DetailedViews()
-            detailedVC.cityName = cityName // Pass the city name
+            detailedVC.cityName = cityName
 
             if let navigationController = navigationController {
                 navigationController.pushViewController(detailedVC, animated: true)
@@ -702,7 +687,7 @@ import CoreLocation
                 return
             }
             
-            locationLabel.text = cityName // ✅ City name update karega, par view open nahi hoga
+            locationLabel.text = cityName
             
             CitySearchHelper.searchForCity(city: cityName, mapView: mapView, locationManager: locationManager) { [weak self] (weatherData, error) in
                 if let error = error {
@@ -813,8 +798,6 @@ import CoreLocation
              if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
                  updateWeatherIcon(iconImageView, with: weatherData.icon)
              }
-
-             // Change background color based on weather condition
              updateWeatherBackground(for: weatherInfoView, condition: weatherData.description.lowercased())
          }
 
@@ -830,7 +813,6 @@ import CoreLocation
                  }
              }
          }
-
          private func updateWeatherBackground(for view: UIView, condition: String) {
              let gradientLayer = CAGradientLayer()
              gradientLayer.frame = view.bounds
@@ -838,24 +820,23 @@ import CoreLocation
 
              switch condition {
              case let str where str.contains("clear"):
-                 gradientLayer.colors = [UIColor(hex: "#FFD700").cgColor, UIColor(hex: "#FFA500").cgColor] // Sunny - Golden to Orange
+                 gradientLayer.colors = [UIColor(hex: "#FFD700").cgColor, UIColor(hex: "#FFA500").cgColor]
              case let str where str.contains("cloud"):
-                 gradientLayer.colors = [UIColor(hex: "#B0BEC5").cgColor, UIColor(hex: "#78909C").cgColor] // Cloudy - Light to Dark Gray
+                 gradientLayer.colors = [UIColor(hex: "#B0BEC5").cgColor, UIColor(hex: "#78909C").cgColor]
              case let str where str.contains("rain"):
-                 gradientLayer.colors = [UIColor(hex: "#4682B4").cgColor, UIColor(hex: "#1E3A5F").cgColor] // Rainy - Blue Shades
+                 gradientLayer.colors = [UIColor(hex: "#4682B4").cgColor, UIColor(hex: "#1E3A5F").cgColor]
              case let str where str.contains("storm"):
-                 gradientLayer.colors = [UIColor(hex: "#2C3E50").cgColor, UIColor(hex: "#000000").cgColor] // Stormy - Dark Blue to Black
+                 gradientLayer.colors = [UIColor(hex: "#2C3E50").cgColor, UIColor(hex: "#000000").cgColor]
              case let str where str.contains("snow"):
-                 gradientLayer.colors = [UIColor(hex: "#FFFFFF").cgColor, UIColor(hex: "#D3D3D3").cgColor] // Snowy - White to Light Gray
+                 gradientLayer.colors = [UIColor(hex: "#FFFFFF").cgColor, UIColor(hex: "#D3D3D3").cgColor]
              default:
-                 gradientLayer.colors = [UIColor(hex: "#222222").cgColor, UIColor(hex: "#000000").cgColor] // Default Dark Theme
+                 gradientLayer.colors = [UIColor(hex: "#222222").cgColor, UIColor(hex: "#000000").cgColor]
              }
 
              gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
              gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
 
              DispatchQueue.main.async {
-                 // Remove existing gradient layers before adding a new one
                  view.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
                  view.layer.insertSublayer(gradientLayer, at: 0)
              }

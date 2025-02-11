@@ -8,7 +8,6 @@ class GuideItemCell: UICollectionViewCell {
     private let ratingStackView = UIStackView()
     private let ratingLabel = UILabel()
     private let starImageView = UIImageView()
-    private let hoursLabel = UILabel()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -36,12 +35,12 @@ class GuideItemCell: UICollectionViewCell {
         imageView.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(imageView)
         
-        titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 20)
         titleLabel.textColor = .white
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(titleLabel)
         
-        locationLabel.font = UIFont.systemFont(ofSize: 14)
+        locationLabel.font = UIFont.systemFont(ofSize: 18)
         locationLabel.textColor = .lightGray
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(locationLabel)
@@ -52,8 +51,8 @@ class GuideItemCell: UICollectionViewCell {
         ratingStackView.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(ratingStackView)
         
-        ratingLabel.font = UIFont.systemFont(ofSize: 14)
-        ratingLabel.textColor = .lightGray
+        ratingLabel.font = UIFont.systemFont(ofSize: 16)
+        ratingLabel.textColor = .yellow
         ratingStackView.addArrangedSubview(ratingLabel)
         
         starImageView.image = UIImage(systemName: "star.fill")
@@ -63,10 +62,7 @@ class GuideItemCell: UICollectionViewCell {
         starImageView.heightAnchor.constraint(equalToConstant: 15).isActive = true
         ratingStackView.addArrangedSubview(starImageView)
         
-        hoursLabel.font = UIFont.systemFont(ofSize: 14)
-        hoursLabel.textColor = .lightGray
-        hoursLabel.translatesAutoresizingMaskIntoConstraints = false
-        cardView.addSubview(hoursLabel)
+
     }
     
     private func setupConstraints() {
@@ -74,14 +70,14 @@ class GuideItemCell: UICollectionViewCell {
             cardView.topAnchor.constraint(equalTo: contentView.topAnchor),
             cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
+            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -70),
             
             imageView.topAnchor.constraint(equalTo: cardView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
-            imageView.heightAnchor.constraint(equalToConstant: 100),
+            imageView.heightAnchor.constraint(equalToConstant: 80),
             
-            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
+            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 6),
             titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
             titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -8),
             
@@ -91,19 +87,14 @@ class GuideItemCell: UICollectionViewCell {
             
             ratingStackView.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 4),
             ratingStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
-            
-            hoursLabel.topAnchor.constraint(equalTo: ratingStackView.bottomAnchor, constant: 4),
-            hoursLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
-            hoursLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -8),
-            hoursLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -8)
         ])
     }
+
     
     func configure(with item: GuideItem) {
         titleLabel.text = item.title
         locationLabel.text = item.location
         ratingLabel.text = "\(item.rating)"
-        hoursLabel.text = item.hours
         
         if let cachedImage = ImageCache.shared.image(forKey: item.imageName) {
             imageView.image = cachedImage

@@ -34,7 +34,6 @@ class DetailedView: UIViewController {
             let infoContainer = createInfoContainer()
             let infoStackView = createInfoStackView()
             
-            infoStackView.addArrangedSubview(createInfoLabel(title: "Hours", value: selectedItem.hours))
             infoStackView.addArrangedSubview(createInfoLabel(title: "Location", value: selectedItem.location))
             infoStackView.addArrangedSubview(createInfoLabel(title: "Rating", value: String(selectedItem.rating)))
             
