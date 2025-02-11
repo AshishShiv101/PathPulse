@@ -59,7 +59,34 @@ class OTPPage: UIViewController {
         label.textAlignment = .center
         return label
     }()
+    private let resendButton: UIButton = {
+            let button = UIButton(type: .system)
+            button.setTitle("Resend OTP", for: .normal)
+            button.setTitleColor(UIColor(hex: "#40CBD8"), for: .normal)
+            button.titleLabel?.font = UIFont.systemFont(ofSize: 16)
+            button.backgroundColor = .clear
+            button.addTarget(self, action: #selector(handleResendOTP), for: .touchUpInside)
+            return button
+        }()
     
+    private let changeNumberButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Change Number", for: .normal)
+        button.setTitleColor(.gray, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16)
+        button.backgroundColor = .clear
+        button.addTarget(self, action: #selector(handleChangeNumber), for: .touchUpInside)
+        return button
+    }()
+    @objc private func handleChangeNumber() {
+            UserDefaults.standard.removeObject(forKey: "authVerificationID")
+            UserDefaults.standard.removeObject(forKey: "phoneNumber")
+            
+            let loginPage = LoginPage()
+            let navigationController = UINavigationController(rootViewController: loginPage)
+            navigationController.modalPresentationStyle = .fullScreen
+                        present(navigationController, animated: true, completion: nil)
+        }
     private let subtitleLabel: UILabel = {
         let label = UILabel()
         label.text = "Please enter the verification code sent to your phone"
@@ -99,12 +126,21 @@ class OTPPage: UIViewController {
         return button
     }()
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        setupGradientBackground()
-        navigationItem.hidesBackButton = true
-    }
+    private let buttonStackView: UIStackView = {
+            let stackView = UIStackView()
+            stackView.axis = .vertical
+            stackView.alignment = .center
+            stackView.spacing = 16
+            stackView.translatesAutoresizingMaskIntoConstraints = false
+            return stackView
+        }()
+
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            setupUI()
+            setupGradientBackground()
+            navigationItem.hidesBackButton = true
+        }
 
     private func setupGradientBackground() {
         let gradientLayer = CAGradientLayer()
@@ -123,8 +159,23 @@ class OTPPage: UIViewController {
 
     private func setupUI() {
         view.backgroundColor = UIColor(hex: "#222222")
-        
-        // Set up logo stack
+            
+            // Update the button stack setup
+            buttonStackView.addArrangedSubview(resendButton)
+            buttonStackView.addArrangedSubview(changeNumberButton)  // Add this line
+            cardView.addSubview(buttonStackView)
+            
+            // Rest of the setup remains the same...
+            logoStackContainer.addArrangedSubview(logoStack)
+            logoStackContainer.addArrangedSubview(roadImageView)
+            view.addSubview(logoStackContainer)
+            
+            view.addSubview(cardView)
+            
+            [titleLabel, subtitleLabel, otpStackView, verifyButton, buttonStackView].forEach {
+                cardView.addSubview($0)
+                $0.translatesAutoresizingMaskIntoConstraints = false
+            }
         logoStackContainer.addArrangedSubview(logoStack)
         logoStackContainer.addArrangedSubview(roadImageView)
         view.addSubview(logoStackContainer)
@@ -137,7 +188,14 @@ class OTPPage: UIViewController {
         }
 
         NSLayoutConstraint.activate([
-            // Logo stack container constraints
+            verifyButton.topAnchor.constraint(equalTo: otpStackView.bottomAnchor, constant: 30),
+                verifyButton.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+                verifyButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
+                        
+            buttonStackView.topAnchor.constraint(equalTo: verifyButton.bottomAnchor, constant: 24),
+            buttonStackView.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
+            buttonStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 24),
+        buttonStackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
             logoStackContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
             logoStackContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
@@ -246,7 +304,44 @@ class OTPPage: UIViewController {
         }
     }
 
-
+    @objc private func handleResendOTP() {
+            resendButton.isEnabled = false
+            
+            // Start countdown timer (60 seconds)
+            var timeRemaining = 60
+            Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
+                }
+                
+                timeRemaining -= 1
+                if timeRemaining > 0 {
+                    self.resendButton.setTitle("Resend OTP (\(timeRemaining)s)", for: .normal)
+                } else {
+                    timer.invalidate()
+                    self.resendButton.setTitle("Resend OTP", for: .normal)
+                    self.resendButton.isEnabled = true
+                }
+            }
+            
+            // Resend OTP logic here
+            guard let phoneNumber = UserDefaults.standard.string(forKey: "phoneNumber") else {
+                showAlert(message: "Phone number not found")
+                return
+            }
+            
+            PhoneAuthProvider.provider().verifyPhoneNumber(phoneNumber, uiDelegate: nil) { [weak self] verificationID, error in
+                if let error = error {
+                    self?.showAlert(message: error.localizedDescription)
+                    return
+                }
+                
+                UserDefaults.standard.set(verificationID, forKey: "authVerificationID")
+                self?.showAlert(message: "OTP has been resent successfully!")
+            }
+        }
+      
     private func showAlert(message: String) {
         let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
