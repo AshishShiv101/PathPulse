@@ -1,4 +1,6 @@
 import UIKit
+import CoreLocation
+
 enum WeatherCondition: String {
     case sunny = "sun.max.fill"
     case cloudy = "cloud.fill"
@@ -7,33 +9,38 @@ enum WeatherCondition: String {
     case snow = "snow"
     
     var backgroundColors: (top: UIColor, bottom: UIColor) {
-        switch self {
-        case .storm:
-            return (
-                UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0),
-                UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
-            )
-        case .sunny:
-            return (
-                UIColor(red: 0.4, green: 0.6, blue: 0.9, alpha: 1.0),
-                UIColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1.0)
-            )
-        case .cloudy:
-            return (
-                UIColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1.0),
-                UIColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0)
-            )
-        case .rainy:
-            return (
-                UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0),
-                UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0)
-            )
-        case .snow:
-            return (
-                UIColor(red: 0.7, green: 0.7, blue: 0.8, alpha: 1.0),
-                UIColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0)
-            )
-        }
+          switch self {
+          case .sunny:
+              // Maps to "01d" daytime sunny conditions
+              return (
+                  UIColor(red: 1.0, green: 0.8, blue: 0.3, alpha: 1.0),
+                  UIColor(red: 0.7, green: 0.5, blue: 0.2, alpha: 1.0)
+              )
+          case .cloudy:
+              // Maps to "03d", "03n" cloudy conditions
+              return (
+                  UIColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0),
+                  UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0)
+              )
+          case .rainy:
+              // Maps to "09d", "09n" rainy conditions
+              return (
+                  UIColor(red: 0.3, green: 0.4, blue: 0.6, alpha: 1.0),
+                  UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0)
+              )
+          case .storm:
+              // Maps to "11d", "11n" thunderstorm conditions
+              return (
+                  UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0),
+                  UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
+              )
+          case .snow:
+              // Maps to "13d", "13n" snow conditions
+              return (
+                  UIColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0),
+                  UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0)
+              )
+          }
     }
 }
 
@@ -51,8 +58,8 @@ struct DailyForecast {
     let condition: WeatherCondition
 }
 
-class DetailedViews: UIViewController {
-    
+class DetailedViews: UIViewController, CLLocationManagerDelegate {
+
     // MARK: - Properties
     private var currentCondition: WeatherCondition = .sunny {
         didSet {
@@ -151,15 +158,70 @@ class DetailedViews: UIViewController {
     
     private let gradientLayer = CAGradientLayer()
     
-    // MARK: - Lifecycle Methods
+    private let locationManager = CLLocationManager()
     override func viewDidLoad() {
         super.viewDidLoad()
         setupGradientBackground()
         setupUI()
         setupWeatherCollectionView()
         setupWeeklyCollectionView()
+        requestLocation()
     }
+
+    private func requestLocation() {
+            locationManager.delegate = self
+            locationManager.requestWhenInUseAuthorization()
+            locationManager.startUpdatingLocation()
+        }
     
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        
+        // Fetch the weather data for the given coordinates
+        fetchWeather(for: location.coordinate)
+        
+        // Reverse geocode to get city name
+        let geocoder = CLGeocoder()
+        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
+            guard let self = self, let placemark = placemarks?.first, error == nil else {
+                print("Failed to get location name:", error?.localizedDescription ?? "Unknown error")
+                return
+            }
+            
+            // Get the city name
+            if let city = placemark.locality {
+                DispatchQueue.main.async {
+                    self.locationLabel.text = city
+                }
+            }
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+           print("Failed to get location:", error.localizedDescription)
+       }
+    private func fetchWeather(for coordinate: CLLocationCoordinate2D) {
+           WeatherService.shared.fetchWeather(for: coordinate) { [weak self] weatherData, error in
+               guard let self = self, let weather = weatherData, error == nil else {
+                   print("Failed to fetch weather:", error?.localizedDescription ?? "Unknown error")
+                   return
+               }
+               DispatchQueue.main.async {
+                   self.updateUI(with: weather)
+               }
+           }
+       }
+    
+    private func updateUI(with weather: WeatherData) {
+        temperatureLabel.text = "\(Int(weather.temperature))°"
+        conditionLabel.text = weather.description.capitalized
+        additionalDetailsLabel.text = "Humidity: \(weather.humidity)%\nWind: \(weather.windSpeed) km/h"
+        
+        // Update Background Gradient Based on Weather
+        if let condition = WeatherCondition(rawValue: weather.icon) {
+            currentCondition = condition
+        }
+    }
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         gradientLayer.frame = view.bounds

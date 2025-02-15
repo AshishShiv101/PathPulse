@@ -70,7 +70,7 @@ class LoginPage: UIViewController {
 
     private let phoneTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "Enter Phone Number (India)"
+        textField.placeholder = "Enter Phone Number"
         textField.keyboardType = .phonePad
         textField.backgroundColor = UIColor(white: 1.0, alpha: 0.9)
         textField.layer.cornerRadius = 12
@@ -264,17 +264,51 @@ class LoginPage: UIViewController {
 
             // Authenticate with Firebase
             Auth.auth().signIn(with: credential) { authResult, error in
-                if let error = error {
-                    self.showAlert(message: "Firebase sign-in failed: \(error.localizedDescription)")
-                    return
+                            if let error = error {
+                                self.showAlert(message: "Firebase sign-in failed: \(error.localizedDescription)")
+                                return
+                            }
+
+                            let mapPage = MapPage()
+                            mapPage.tabBarItem = UITabBarItem(title: "Map", image: UIImage(systemName: "map.fill"), tag: 0)
+
+                            let guidePage = GuidePage()
+                            guidePage.tabBarItem = UITabBarItem(title: "Guide", image: UIImage(systemName: "bookmark.fill"), tag: 1)
+                            let guideNavigationController = UINavigationController(rootViewController: guidePage)
+
+                            let accountPage = AccountPage()
+                            accountPage.tabBarItem = UITabBarItem(title: "Account", image: UIImage(systemName: "person.crop.circle"), tag: 2)
+                            let accNav = UINavigationController(rootViewController: accountPage)
+
+                            let tabBarController = UITabBarController()
+                            tabBarController.viewControllers = [mapPage, guideNavigationController, accNav]
+
+                            if #available(iOS 15.0, *) {
+                                let appearance = UITabBarAppearance()
+                                appearance.configureWithOpaqueBackground()
+                                appearance.backgroundColor = UIColor(hex: "#333333")
+
+                                let selectedColor = UIColor(hex: "#40cbd8") ?? .systemTeal
+                                let normalColor = UIColor.white
+
+                                appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
+                                appearance.stackedLayoutAppearance.selected.titleTextAttributes = [NSAttributedString.Key.foregroundColor: selectedColor]
+                                appearance.stackedLayoutAppearance.normal.iconColor = normalColor
+                                appearance.stackedLayoutAppearance.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: normalColor]
+
+                                tabBarController.tabBar.standardAppearance = appearance
+                                tabBarController.tabBar.scrollEdgeAppearance = appearance
+                            } else {
+                                tabBarController.tabBar.barTintColor = UIColor(hex: "#151515")
+                                tabBarController.tabBar.tintColor = UIColor(hex: "#40cbd8")
+                                tabBarController.tabBar.unselectedItemTintColor = .white
+                            }
+
+                            tabBarController.modalPresentationStyle = .fullScreen
+                            self.present(tabBarController, animated: true, completion: nil)
+                        }
+                    }
                 }
-
-                let mapPage = MapPage() // Replace with your target ViewController
-                self.navigationController?.pushViewController(mapPage, animated: true)
-            }
-        }
-    }
-
     private func showAlert(message: String) {
         let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))

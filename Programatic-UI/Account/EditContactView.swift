@@ -10,7 +10,15 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private var contactsStackView = UIStackView()
-    
+    private let noContactsLabel: UILabel = {
+            let label = UILabel()
+            label.text = "Add Contacts"
+            label.textColor = .lightGray
+            label.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+            label.textAlignment = .center
+            label.translatesAutoresizingMaskIntoConstraints = false
+            return label
+        }()
     override func viewDidLoad() {
         super.viewDidLoad()
         configureView()
@@ -42,29 +50,36 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     }
     
     private func setupScrollView() {
-            scrollView.translatesAutoresizingMaskIntoConstraints = false
-            contentView.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(scrollView)
-            scrollView.addSubview(contentView)
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            NSLayoutConstraint.activate([
-                scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-                scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-                
-                contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-                contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-                contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-                contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-                contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
-            ])
-        }
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+        ])
+    }
+
 
     private func setupUI() {
         configureTitleLabel()
         configureAddButton()
         configureContactsStack()
+        contentView.addSubview(noContactsLabel)
+
+        NSLayoutConstraint.activate([
+                  noContactsLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+                  noContactsLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 200)
+              ])
     }
     
     private func configureTitleLabel() {
@@ -77,7 +92,7 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         contentView.addSubview(titleLabel)
         
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 40),
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
             titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor)
         ])
     }
@@ -104,16 +119,29 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         contactsStackView.axis = .vertical
         contactsStackView.spacing = 16
         contactsStackView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(contactsStackView)
+        
+        contentView.addSubview(contactsStackView) // Ensure it is added before constraints
         
         NSLayoutConstraint.activate([
-            contactsStackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 170),
+            contactsStackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 60),
             contactsStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             contactsStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            contactsStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
+            contactsStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20) // Ensure scrollable content
         ])
     }
+
+
     
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Emergency Contacts"
+        label.font = UIFont.systemFont(ofSize: 26, weight: .semibold)
+        label.textColor = .white
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
   
     private func createContactCard(title: String, phoneNumber: String) -> UIView {
         let cardView = UIView()
@@ -140,33 +168,39 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
 
         let buttonStack = UIStackView(arrangedSubviews: [callButton, messageButton, deleteButton])
         buttonStack.axis = .horizontal
-        buttonStack.distribution = .fillEqually
-        buttonStack.spacing = 15
-        buttonStack.translatesAutoresizingMaskIntoConstraints = false
+        buttonStack.spacing = 12
+        buttonStack.alignment = .trailing
 
-        let stackView = UIStackView(arrangedSubviews: [nameLabel, phoneLabel, buttonStack])
-        stackView.axis = .vertical
-        stackView.spacing = 10
-        stackView.alignment = .leading
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        cardView.addSubview(stackView)
+        let topStack = UIStackView(arrangedSubviews: [nameLabel, buttonStack])
+        topStack.axis = .horizontal
+        topStack.alignment = .center
+        topStack.spacing = 12
+        topStack.distribution = .fill
+
+        let mainStack = UIStackView(arrangedSubviews: [topStack, phoneLabel])
+        mainStack.axis = .vertical
+        mainStack.spacing = 10
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+
+        cardView.addSubview(mainStack)
 
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
-            stackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
-            stackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            stackView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16),
-            cardView.heightAnchor.constraint(equalToConstant: 140),
-            callButton.widthAnchor.constraint(equalToConstant: 48),
-            callButton.heightAnchor.constraint(equalToConstant: 48),
-            messageButton.widthAnchor.constraint(equalToConstant: 48),
-            messageButton.heightAnchor.constraint(equalToConstant: 48),
-            deleteButton.widthAnchor.constraint(equalToConstant: 48),
-            deleteButton.heightAnchor.constraint(equalToConstant: 48)
+            mainStack.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
+            mainStack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
+            mainStack.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
+            mainStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16),
+
+            callButton.widthAnchor.constraint(equalToConstant: 40),
+            callButton.heightAnchor.constraint(equalToConstant: 40),
+            messageButton.widthAnchor.constraint(equalToConstant: 40),
+            messageButton.heightAnchor.constraint(equalToConstant: 40),
+            deleteButton.widthAnchor.constraint(equalToConstant: 40),
+            deleteButton.heightAnchor.constraint(equalToConstant: 40)
         ])
 
         return cardView
     }
+
 
 
     @objc private func makeCall(_ sender: UIButton) {
@@ -186,11 +220,12 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     private func createActionButton(icon: String, action: Selector, phone: String? = nil, name: String? = nil) -> UIButton {
         let button = UIButton(type: .system)
         button.backgroundColor = UIColor(hex: "#40CBD8").withAlphaComponent(0.8)
-        button.layer.cornerRadius = 24
+        button.layer.cornerRadius = 20 // Adjusted for a perfect circle
         button.tintColor = .white
+        button.clipsToBounds = true
         
-        // Configure symbol image
-        let config = UIImage.SymbolConfiguration(pointSize: 24, weight: .medium)
+        // Configure symbol image with a smaller size
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium) // Reduced size
         button.setImage(UIImage(systemName: icon, withConfiguration: config), for: .normal)
         
         // Add button action
@@ -199,8 +234,8 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         // Set size constraints
         button.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            button.widthAnchor.constraint(equalToConstant: 48),  // Increased for circle shape
-            button.heightAnchor.constraint(equalToConstant: 48)  // Make it square
+            button.widthAnchor.constraint(equalToConstant: 40),  // Adjusted size
+            button.heightAnchor.constraint(equalToConstant: 40)  // Adjusted size
         ])
         
         // Set accessibility
@@ -213,6 +248,7 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         
         return button
     }
+
     
     private func loadContactsFromFirebase() {
         guard let userId = Auth.auth().currentUser?.uid else { return }
@@ -268,13 +304,19 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     }
 
    
-        private func reloadContactCards() {
-        contactsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        contacts.sorted(by: { $0.key < $1.key }).forEach { name, phone in
-            let card = createContactCard(title: name, phoneNumber: phone)
-            contactsStackView.addArrangedSubview(card)
-        }
-    }
+    private func reloadContactCards() {
+           contactsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+           
+           if contacts.isEmpty {
+               noContactsLabel.isHidden = false
+           } else {
+               noContactsLabel.isHidden = true
+               contacts.sorted(by: { $0.key < $1.key }).forEach { name, phone in
+                   let card = createContactCard(title: name, phoneNumber: phone)
+                   contactsStackView.addArrangedSubview(card)
+               }
+           }
+       }
     
     @objc private func addContactTapped() {
         let alert = UIAlertController(title: "Add Contact", message: "Would you like to import a contact from your iPhone?", preferredStyle: .alert)

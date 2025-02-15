@@ -15,28 +15,28 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         setupCityLabel()
         setupScrollView()
         setupCarousels()
-        fetchPlaceData(for: "clinic", location: "12.8219,80.0453", radius: 5000) { [weak self] guideItems in
+        fetchPlaceData(for: "clinic", location: "13.0827,80.2707", radius: 5000) { [weak self] guideItems in
             DispatchQueue.main.async {
                 self?.carouselData["Clinics"] = guideItems
                 self?.reloadAllCarousels()
             }
         }
         
-        fetchPlaceData(for: "hospital", location: "12.8219,80.0453", radius: 5000) { [weak self] guideItems in
+        fetchPlaceData(for: "hospital", location: "13.0827,80.2707", radius: 5000) { [weak self] guideItems in
             DispatchQueue.main.async {
                 self?.carouselData["Hospitals"] = guideItems
                 self?.reloadAllCarousels()
             }
         }
         
-        fetchPlaceData(for: "hotel", location: "12.8219,80.0453", radius: 5000) { [weak self] guideItems in
+        fetchPlaceData(for: "hotel", location: "13.0827,80.2707", radius: 5000) { [weak self] guideItems in
             DispatchQueue.main.async {
                 self?.carouselData["Hotels"] = guideItems
                 self?.reloadAllCarousels()
             }
         }
 
-        fetchPlaceData(for: "pharmacy", location: "12.8219,80.0453", radius: 5000) { [weak self] guideItems in
+        fetchPlaceData(for: "pharmacy", location: "13.0827,80.2707", radius: 5000) { [weak self] guideItems in
             DispatchQueue.main.async {
                 self?.carouselData["Pharmacies"] = guideItems
                 self?.reloadAllCarousels()
@@ -75,17 +75,11 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             cityLabel.heightAnchor.constraint(equalToConstant: 40)
         ])
     }
-
-
-
-    
-    
     private func reloadAllCarousels() {
         for collectionView in carouselCollectionViews {
             collectionView.reloadData()
         }
     }
-
     private func setupNavigationBar() {
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
@@ -95,13 +89,11 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
         navigationController?.navigationBar.tintColor = .white
     }
-
     private func setupScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
-
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -114,13 +106,11 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
         ])
     }
-
     private func setupCarousels() {
         var previousCarousel: UIView? = nil
         carouselCollectionViews.removeAll()
-
-        for (index, title) in ["Clinics", "Hospitals", "Hotels", "Pharmacies"].enumerated() {
-            // Title Label
+        let carouselTitles = ["Clinics", "Hospitals", "Hotels", "Pharmacies"]
+        for (index, title) in carouselTitles.enumerated() {
             let titleLabel = UILabel()
             titleLabel.text = title
             titleLabel.font = UIFont.boldSystemFont(ofSize: 30)
@@ -128,18 +118,18 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             titleLabel.textAlignment = .left
             titleLabel.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview(titleLabel)
-
+            
             NSLayoutConstraint.activate([
-                titleLabel.topAnchor.constraint(equalTo: previousCarousel?.bottomAnchor ?? contentView.topAnchor, constant: 40),
+                titleLabel.topAnchor.constraint(equalTo: previousCarousel?.bottomAnchor ?? contentView.topAnchor, constant: index == 0 ? 40 : 20),
                 titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
                 titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -16)
             ])
-
-            // Collection View
+            
             let collectionViewLayout = UICollectionViewFlowLayout()
             collectionViewLayout.scrollDirection = .horizontal
             collectionViewLayout.itemSize = CGSize(width: 200, height: 240)
-            collectionViewLayout.minimumLineSpacing = 20
+            collectionViewLayout.minimumLineSpacing = 10
+            
             let collectionView = UICollectionView(frame: .zero, collectionViewLayout: collectionViewLayout)
             collectionView.tag = index
             collectionView.delegate = self
@@ -151,14 +141,14 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             collectionView.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview(collectionView)
             carouselCollectionViews.append(collectionView)
-
+            
             NSLayoutConstraint.activate([
                 collectionView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
                 collectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
                 collectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
                 collectionView.heightAnchor.constraint(equalToConstant: 260)
             ])
-
+            
             previousCarousel = collectionView
         }
 
@@ -169,12 +159,10 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         }
     }
 
-
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         let title = ["Clinics", "Hospitals", "Hotels", "Pharmacies"][collectionView.tag]
         return carouselData[title]?.count ?? 0
     }
-
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let title = ["Clinics", "Hospitals", "Hotels", "Pharmacies"][collectionView.tag]
         guard let item = carouselData[title]?[indexPath.item],
@@ -184,7 +172,6 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         cell.configure(with: item)
         return cell
     }
-    
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let title = ["Clinics", "Hospitals", "Hotels", "Pharmacies"][collectionView.tag]
         guard let selectedItem = carouselData[title]?[indexPath.item] else { return }

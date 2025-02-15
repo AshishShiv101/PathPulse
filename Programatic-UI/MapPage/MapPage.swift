@@ -83,7 +83,7 @@ import CoreLocation
             label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
             label.textColor = UIColor(hex:"FF8C00")
             label.textAlignment = .center
-            label.text = "Location: --"
+            label.text = ""
             label.translatesAutoresizingMaskIntoConstraints = false
             return label
         }()
@@ -182,12 +182,11 @@ import CoreLocation
             } else {
                 print("⚠️ Image not found: \(imageName)")
             }
-
             button.tintColor = .none
             button.backgroundColor = .clear
             button.translatesAutoresizingMaskIntoConstraints = false
             button.addTarget(self, action: action, for: .touchUpInside)
-            let size: CGFloat = 50 // Adjust as needed
+            let size: CGFloat = 50
             NSLayoutConstraint.activate([
                 button.heightAnchor.constraint(equalToConstant: size),
                 button.widthAnchor.constraint(equalToConstant: size)
@@ -313,7 +312,6 @@ import CoreLocation
                 self.temperatureLabel.text = "\(Int(weatherData.temperature))°C"
                 self.humidityLabel.text = "Humidity: \(weatherData.humidity)%"
                 self.windSpeedLabel.text = "Wind: \(weatherData.windSpeed) m/s"
-                
                 if let iconUrl = URL(string: "https://openweathermap.org/img/wn/\(weatherData.icon)@2x.png"),
                    let data = try? Data(contentsOf: iconUrl) {
                     self.weatherIcon.image = UIImage(data: data)
@@ -321,7 +319,6 @@ import CoreLocation
                 self.applyBackgroundGradient(for: weatherData.icon)
             }
         }
-
         private func applyBackgroundGradient(for icon: String) {
             let gradientLayer = CAGradientLayer()
             gradientLayer.frame = weatherView.bounds
