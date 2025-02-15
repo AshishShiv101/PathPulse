@@ -108,7 +108,6 @@ class LoginPage: UIViewController {
         button.contentHorizontalAlignment = .center
         button.imageEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         button.backgroundColor = .white
-        button.layer.cornerRadius = 25
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = 0.3
         button.layer.shadowOffset = CGSize(width: 0, height: 2)
@@ -116,6 +115,7 @@ class LoginPage: UIViewController {
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
+
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -200,10 +200,11 @@ class LoginPage: UIViewController {
 
             googleSignInButton.topAnchor.constraint(equalTo: continueButton.bottomAnchor, constant: 30),
             googleSignInButton.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
-            googleSignInButton.widthAnchor.constraint(equalToConstant: 200),
+            googleSignInButton.widthAnchor.constraint(equalToConstant: 50),  // Same width and height
             googleSignInButton.heightAnchor.constraint(equalToConstant: 50)
-        ])
 
+        ])
+        googleSignInButton.layer.cornerRadius = 25
         googleSignInButton.addTarget(self, action: #selector(handleGoogleSignIn), for: .touchUpInside)
     }
 
