@@ -1,11 +1,9 @@
 import UIKit
 import WebKit
 import CoreLocation
-
 struct NewsResponse: Decodable {
     let articles: [NewsDataModel]
 }
-
 struct NewsDataModel: Decodable {
     let headline: String
     let link: String
@@ -20,11 +18,9 @@ struct NewsDataModel: Decodable {
         case publisher = "source"
         case publishedAt
     }
-    
     enum SourceCodingKeys: String, CodingKey {
         case name
     }
-    
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         headline = try container.decode(String.self, forKey: .headline)
@@ -36,8 +32,6 @@ struct NewsDataModel: Decodable {
         publisher = try sourceContainer.decode(String.self, forKey: .name)
     }
 }
-
-
 class NewsSheet: UIView, CLLocationManagerDelegate {
     let scrollView: UIScrollView
     let stackView: UIStackView
@@ -323,7 +317,7 @@ class NewsSheet: UIView, CLLocationManagerDelegate {
                 readStatusLabel.text = "READ"
                 readStatusLabel.textColor = .lightGray
             } else {
-                readStatusTag.backgroundColor = UIColor(hex: "#40cbd8").withAlphaComponent(0.3)
+                readStatusTag.backgroundColor = UIColor(hex: "#40cbd8").withAlphaComponent(1)
                 readStatusLabel.text = "NEW"
                 readStatusLabel.textColor = .black
             }

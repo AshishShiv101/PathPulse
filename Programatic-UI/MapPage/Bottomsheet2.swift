@@ -2,6 +2,7 @@ import UIKit
 
 class BottomSheetViewController: UIViewController {
     
+    // MARK: - Properties
     var cityName: String?
     var weatherInfo: String?
     var cityImageURL: String?
@@ -9,154 +10,308 @@ class BottomSheetViewController: UIViewController {
     var location: String?
     
     private var guideItems: [GuideItem] = []
-
+    private var cityImages: [String] = []
+    private let googleAPIKey = "AIzaSyAkRf97JQAwepJSR6coaCQBQ5WpsOWLNyE"
+    private let openWeatherAPIKey = "562caa4db4fe2bf5de1470e5d0f67961"
+    
+    // MARK: - UI Components
+    private let containerView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor(hex: "#222222")
+        view.layer.cornerRadius = 20
+        view.clipsToBounds = true
+        return view
+    }()
+    
     private let cityImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
-        imageView.layer.cornerRadius = 10
+        imageView.layer.cornerRadius = 15
+        imageView.layer.borderWidth = 3
+        imageView.layer.borderColor = UIColor.white.withAlphaComponent(0.1).cgColor
         return imageView
     }()
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.boldSystemFont(ofSize: 20)
+        label.font = .systemFont(ofSize: 32, weight: .bold)
+        label.textColor = .white
         label.textAlignment = .center
         return label
     }()
     
     private let weatherLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 16)
+        label.font = .systemFont(ofSize: 18, weight: .medium)
+        label.textColor = .white
         label.textAlignment = .center
+        label.layer.cornerRadius = 12
+        label.layer.backgroundColor = UIColor.white.withAlphaComponent(0.1).cgColor
+        label.clipsToBounds = true
         return label
     }()
     
     private let descriptionLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 14)
+        label.font = .systemFont(ofSize: 16)
+        label.textColor = UIColor.white.withAlphaComponent(0.8)
         label.numberOfLines = 0
         label.textAlignment = .center
         return label
     }()
     
-    private let placesTableView: UITableView = {
-        let tableView = UITableView()
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "PlaceCell")
-        return tableView
+    private let imagesCollectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumInteritemSpacing = 15
+        layout.minimumLineSpacing = 15
+        
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.register(ImageCell.self, forCellWithReuseIdentifier: "ImageCell")
+        collectionView.backgroundColor = .clear
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.contentInset = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
+        return collectionView
     }()
-    
+
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .white
+        setupUI()
         setupLayout()
         updateUI()
-        
-        placesTableView.dataSource = self
-        placesTableView.delegate = self  // Add delegate for interactivity
-        
-        fetchNearbyPlaces()
+        imagesCollectionView.dataSource = self
+        imagesCollectionView.delegate = self
+        fetchCityImage()
+        fetchWeatherData()
     }
     
-    private func setupLayout() {
-        view.addSubview(cityImageView)
-        view.addSubview(titleLabel)
-        view.addSubview(weatherLabel)
-        view.addSubview(descriptionLabel)
-        view.addSubview(placesTableView)
+    // MARK: - Helper Methods
+    private func getWeatherComment(for temperature: Double, description: String) -> String {
+        switch temperature {
+        case ..<0:
+            return "❄️ It's freezing cold!"
+        case 0..<10:
+            return "🥶 It's quite chilly."
+        case 10..<20:
+            return "☁️ It's a bit cool."
+        case 20..<30:
+            return "🌤 It's warm and pleasant."
+        case 30..<40:
+            return "🔥 It's hot outside!"
+        default:
+            return "🌡 The weather is extreme."
+        }
+    }
+    
+    private func fetchWeatherData() {
+        guard let city = cityName?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+        let urlString = "https://api.openweathermap.org/data/2.5/weather?q=\(city)&appid=\(openWeatherAPIKey)&units=metric"
         
-        cityImageView.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        weatherLabel.translatesAutoresizingMaskIntoConstraints = false
-        descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
-        placesTableView.translatesAutoresizingMaskIntoConstraints = false
+        guard let url = URL(string: urlString) else { return }
         
-        NSLayoutConstraint.activate([
-            cityImageView.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            cityImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            cityImageView.widthAnchor.constraint(equalToConstant: 200),
-            cityImageView.heightAnchor.constraint(equalToConstant: 150),
-            
-            titleLabel.topAnchor.constraint(equalTo: cityImageView.bottomAnchor, constant: 10),
-            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            weatherLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 5),
-            weatherLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            descriptionLabel.topAnchor.constraint(equalTo: weatherLabel.bottomAnchor, constant: 10),
-            descriptionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            descriptionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
-            placesTableView.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 10),
-            placesTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            placesTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            placesTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            guard let data = data, error == nil else { return }
+            do {
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                guard let main = json?["main"] as? [String: Any],
+                      let temp = main["temp"] as? Double,
+                      let weather = json?["weather"] as? [[String: Any]],
+                      let description = weather.first?["description"] as? String else {
+                    return
+                }
+                
+                let weatherComment = self?.getWeatherComment(for: temp, description: description)
+                
+                DispatchQueue.main.async {
+                    self?.weatherLabel.text = "\(temp)°C | \(description.capitalized) \(weatherComment ?? "")"
+                }
+            } catch {
+                print("Error fetching weather data: \(error)")
+            }
+        }.resume()
+    }
+    
+    private func fetchCityImage() {
+        guard let city = cityName?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+        let urlString = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=\(city)&key=\(googleAPIKey)"
+        
+        guard let url = URL(string: urlString) else { return }
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            guard let data = data, error == nil else { return }
+            do {
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                guard let results = json?["results"] as? [[String: Any]] else { return }
+                
+                var imageURLs: [String] = []
+                for result in results.prefix(5) { // Fetch from more results (up to 5)
+                    if let photos = result["photos"] as? [[String: Any]] {
+                        for photo in photos.prefix(2) { // Fetch 2 images per result
+                            if let photoRef = photo["photo_reference"] as? String {
+                                let imageURL = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=500&photoreference=\(photoRef)&key=\(self?.googleAPIKey ?? "")"
+                                imageURLs.append(imageURL)
+                            }
+                        }
+                    }
+                }
+                
+                DispatchQueue.main.async {
+                    self?.cityImages = imageURLs
+                    self?.imagesCollectionView.reloadData()
+                }
+            } catch {
+                print("Error fetching city image: \(error)")
+            }
+        }.resume()
+    }
+    
+    private func setupUI() {
+        view.backgroundColor = UIColor(hex: "#222222")
+        
+        // Add gradient background
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(hex: "#222222").cgColor,
+            UIColor(hex: "#1a1a1a").cgColor
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.frame = view.bounds
+        view.layer.insertSublayer(gradientLayer, at: 0)
     }
     
     func updateUI() {
         titleLabel.text = cityName ?? "Unknown City"
-        weatherLabel.text = weatherInfo ?? "No weather data available"
         descriptionLabel.text = cityDescription ?? "No description available"
-
+        
+        // Load city image
         if let imageURL = cityImageURL, let url = URL(string: imageURL) {
-            DispatchQueue.global().async {
-                if let data = try? Data(contentsOf: url) {
-                    DispatchQueue.main.async {
-                        self.cityImageView.image = UIImage(data: data)
-                    }
+            URLSession.shared.dataTask(with: url) { data, _, error in
+                guard let data = data, error == nil else { return }
+                DispatchQueue.main.async {
+                    self.cityImageView.image = UIImage(data: data)
                 }
-            }
+            }.resume()
         }
     }
     
-    private func fetchNearbyPlaces() {
-        guard let location = location else { return }
+    // MARK: - Layout Setup
+    private func setupLayout() {
+        view.addSubview(containerView)
+        containerView.addSubview(titleLabel)
+        containerView.addSubview(weatherLabel)
+        containerView.addSubview(descriptionLabel)
+        containerView.addSubview(imagesCollectionView)
+        containerView.addSubview(cityImageView)
         
-        fetchPlaceData(for: "tourist attractions", location: location, radius: 5000) { [weak self] places in
-            DispatchQueue.main.async {
-                self?.guideItems = places
-                self?.placesTableView.reloadData()
-            }
+        [containerView, titleLabel, weatherLabel, descriptionLabel, imagesCollectionView, cityImageView, ].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+        }
+        
+        NSLayoutConstraint.activate([
+            containerView.topAnchor.constraint(equalTo: view.topAnchor),
+            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+    
+            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 30),
+            titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+            
+            imagesCollectionView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 25),
+            imagesCollectionView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            imagesCollectionView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            imagesCollectionView.heightAnchor.constraint(equalToConstant: 180),
+            
+            cityImageView.topAnchor.constraint(equalTo: imagesCollectionView.bottomAnchor, constant: 25),
+            cityImageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            cityImageView.widthAnchor.constraint(equalToConstant: 250),
+            cityImageView.heightAnchor.constraint(equalToConstant: 180),
+            
+            weatherLabel.topAnchor.constraint(equalTo: cityImageView.bottomAnchor, constant: 25),
+            weatherLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            weatherLabel.widthAnchor.constraint(lessThanOrEqualTo: containerView.widthAnchor, constant: -40),
+            weatherLabel.heightAnchor.constraint(equalToConstant: 44),
+            
+            descriptionLabel.topAnchor.constraint(equalTo: weatherLabel.bottomAnchor, constant: 20),
+            descriptionLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 25),
+            descriptionLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -25),
+            descriptionLabel.bottomAnchor.constraint(lessThanOrEqualTo: containerView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    // MARK: - Actions
+    @objc private func closeButtonTapped() {
+        dismiss(animated: true, completion: nil)
+    }
+}
+
+// MARK: - Custom Collection View Cell
+class ImageCell: UICollectionViewCell {
+    private let imageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        iv.layer.cornerRadius = 15
+        iv.layer.borderWidth = 2
+        iv.layer.borderColor = UIColor.white.withAlphaComponent(0.1).cgColor
+        return iv
+    }()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupCell()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setupCell() {
+        contentView.addSubview(imageView)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        ])
+        
+        // Add shadow
+        contentView.layer.shadowColor = UIColor.black.cgColor
+        contentView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        contentView.layer.shadowRadius = 8
+        contentView.layer.shadowOpacity = 0.3
+    }
+    
+    func configure(with imageURL: String) {
+        if let url = URL(string: imageURL) {
+            URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+                guard let data = data, error == nil else { return }
+                DispatchQueue.main.async {
+                    self?.imageView.image = UIImage(data: data)
+                }
+            }.resume()
         }
     }
 }
 
-// MARK: - UITableViewDataSource & UITableViewDelegate
-extension BottomSheetViewController: UITableViewDataSource, UITableViewDelegate {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return guideItems.count
+// MARK: - Collection View DataSource & Delegate
+extension BottomSheetViewController: UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return cityImages.count
     }
     
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "PlaceCell", for: indexPath)
-        let place = guideItems[indexPath.row]
-
-        cell.textLabel?.text = "\(place.title) - ⭐ \(place.rating ?? 0.0)"
-        cell.textLabel?.numberOfLines = 2
-
-        // Placeholder image
-        cell.imageView?.image = UIImage(named: "placeholder")
-
-        if let imageURL = place.imageName, let url = URL(string: imageURL) {
-            DispatchQueue.global().async {
-                if let data = try? Data(contentsOf: url), let image = UIImage(data: data) {
-                    DispatchQueue.main.async {
-                        cell.imageView?.image = image
-                        cell.setNeedsLayout() // Force the cell to update layout
-                    }
-                }
-            }
-        }
-
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as! ImageCell
+        cell.configure(with: cityImages[indexPath.row])
         return cell
     }
-
     
-    // Handle selection (optional)
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        let selectedPlace = guideItems[indexPath.row]
-        print("Selected Place: \(selectedPlace.title)")
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: 280, height: 180)
     }
 }

@@ -102,19 +102,34 @@ class LoginPage: UIViewController {
 
     private let googleSignInButton: UIButton = {
         let button = UIButton(type: .system)
+        
+        // Google icon
         let googleLogo = UIImage(named: "Google")?.withRenderingMode(.alwaysOriginal)
         button.setImage(googleLogo, for: .normal)
+        
+        // Set button title
+        button.setTitle("  Sign in with Google", for: .normal) // Extra space before text for better spacing
+        button.setTitleColor(.black, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        
+        // Layout settings
         button.imageView?.contentMode = .scaleAspectFit
-        button.contentHorizontalAlignment = .center
-        button.imageEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         button.backgroundColor = .white
+        button.layer.cornerRadius = 12
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = 0.3
         button.layer.shadowOffset = CGSize(width: 0, height: 2)
         button.layer.shadowRadius = 4
+        
+        // Adjust icon positioning
+        button.contentHorizontalAlignment = .left
+        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20)
+        button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 10) // Moves icon slightly left
+        
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
+
 
 
     override func viewDidLoad() {
@@ -199,9 +214,9 @@ class LoginPage: UIViewController {
             continueButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -24),
 
             googleSignInButton.topAnchor.constraint(equalTo: continueButton.bottomAnchor, constant: 30),
-            googleSignInButton.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
-            googleSignInButton.widthAnchor.constraint(equalToConstant: 50),  // Same width and height
-            googleSignInButton.heightAnchor.constraint(equalToConstant: 50)
+               googleSignInButton.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
+               googleSignInButton.widthAnchor.constraint(equalTo: cardView.widthAnchor, multiplier: 0.8), // 80% width of cardView
+               googleSignInButton.heightAnchor.constraint(equalToConstant: 50)
 
         ])
         googleSignInButton.layer.cornerRadius = 25

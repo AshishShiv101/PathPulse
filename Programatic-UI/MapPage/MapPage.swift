@@ -175,118 +175,109 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     }
     
     private var selectedButton: UIButton?
-    private let toggleView: UIView = {
-        let view = UIView()
-        view.backgroundColor = UIColor(hex: "#333333")
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.isHidden = true  // Start hidden
-        view.layer.cornerRadius = 15
-        view.clipsToBounds = true
-        return view
-    }()
-    
-    private func setupToggleView() {
-        view.addSubview(toggleView)
-        
-        NSLayoutConstraint.activate([
-            toggleView.trailingAnchor.constraint(equalTo: otherButton.trailingAnchor),
-            toggleView.widthAnchor.constraint(equalTo: otherButton.widthAnchor),
-            toggleView.topAnchor.constraint(equalTo: otherButton.bottomAnchor, constant: 10),
-            toggleView.heightAnchor.constraint(equalToConstant: 150)
-        ])
-        
-        let standardButton = createButton(withImage: "Normal", action: #selector(standardButtonTapped))
-        let satelliteButton = createButton(withImage: "Satelite", action: #selector(hybridButtonTapped))
-        
-        // *Vertical StackView* for buttons
-        let buttonStackView = UIStackView(arrangedSubviews: [standardButton, satelliteButton])
-        buttonStackView.axis = .vertical
-        buttonStackView.distribution = .fillEqually
-        buttonStackView.spacing = 10
-        buttonStackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        toggleView.addSubview(buttonStackView)
-        NSLayoutConstraint.activate([
-            buttonStackView.topAnchor.constraint(equalTo: toggleView.topAnchor, constant: 10),
-            buttonStackView.leadingAnchor.constraint(equalTo: toggleView.leadingAnchor, constant: 5),
-            buttonStackView.trailingAnchor.constraint(equalTo: toggleView.trailingAnchor, constant: -5),
-            buttonStackView.bottomAnchor.constraint(equalTo: toggleView.bottomAnchor, constant: -10)
-        ])
-        
-        selectButton(standardButton) // Default selection
-    }
-    
-    private func createButton(withImage imageName: String, action: Selector) -> UIButton {
-        let button = UIButton(type: .custom)
-        
-        if let image = UIImage(named: imageName)?.withRenderingMode(.alwaysOriginal) {
-            button.setImage(image, for: .normal)
-        } else {
-            print("⚠️ Image not found: \(imageName)")
-        }
-        
-        button.tintColor = .none // Ensure image is displayed properly
-        button.backgroundColor = .clear
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.addTarget(self, action: action, for: .touchUpInside)
-        
-        // Set height and width for a circular shape
-        let size: CGFloat = 50 // Adjust as needed
-        NSLayoutConstraint.activate([
-            button.heightAnchor.constraint(equalToConstant: size),
-            button.widthAnchor.constraint(equalToConstant: size)
-        ])
-        
-        button.layer.cornerRadius = size / 2 // Make it circular
-        button.clipsToBounds = true // Ensure it clips within the circular shape
-        
-        return button
-    }
-    
-    
-    @objc private func otherButtonTapped() {
-        if toggleView.isHidden {
-            toggleView.transform = CGAffineTransform(translationX: 0, y: -20)
-            toggleView.alpha = 0
-            toggleView.isHidden = false
-            UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
-                self.toggleView.transform = .identity
-                self.toggleView.alpha = 1.0
-            })
-        } else {
-            UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
-                self.toggleView.transform = CGAffineTransform(translationX: 0, y: -20)
-                self.toggleView.alpha = 0
-            }) { _ in
-                self.toggleView.isHidden = true
-                self.toggleView.transform = .identity
+            private let toggleView: UIView = {
+                let view = UIView()
+                view.backgroundColor = UIColor(hex: "#333333")
+                view.translatesAutoresizingMaskIntoConstraints = false
+                view.isHidden = true
+                view.layer.cornerRadius = 15
+                view.clipsToBounds = true
+                return view
+            }()
+
+            private func setupToggleView() {
+                view.addSubview(toggleView)
+                NSLayoutConstraint.activate([
+                    toggleView.trailingAnchor.constraint(equalTo: otherButton.trailingAnchor),
+                    toggleView.widthAnchor.constraint(equalTo: otherButton.widthAnchor),
+                    toggleView.topAnchor.constraint(equalTo: otherButton.bottomAnchor, constant: 10),
+                    toggleView.heightAnchor.constraint(equalToConstant: 150)
+                ])
+
+                let standardButton = createButton(withSystemImage: "map.fill", action: #selector(standardButtonTapped))
+                let satelliteButton = createButton(withSystemImage: "globe.americas.fill", action: #selector(hybridButtonTapped))
+                let buttonStackView = UIStackView(arrangedSubviews: [standardButton, satelliteButton])
+                buttonStackView.axis = .vertical
+                buttonStackView.distribution = .fillEqually
+                buttonStackView.spacing = 10
+                buttonStackView.translatesAutoresizingMaskIntoConstraints = false
+
+                toggleView.addSubview(buttonStackView)
+                NSLayoutConstraint.activate([
+                    buttonStackView.topAnchor.constraint(equalTo: toggleView.topAnchor, constant: 10),
+                    buttonStackView.leadingAnchor.constraint(equalTo: toggleView.leadingAnchor, constant: 5),
+                    buttonStackView.trailingAnchor.constraint(equalTo: toggleView.trailingAnchor, constant: -5),
+                    buttonStackView.bottomAnchor.constraint(equalTo: toggleView.bottomAnchor, constant: -10)
+                ])
+                otherButton.setTitle("Map", for: .normal)
+                otherButton.backgroundColor = UIColor(hex: "#333333")
+                otherButton.setBackgroundImage(nil, for: .normal)
+                selectButton(standardButton)
             }
-        }
-    }
-    
-    @objc private func standardButtonTapped(_ sender: UIButton) {
-        selectButton(sender)
-        mapView.mapType = .standard
-    }
-    
-    @objc private func hybridButtonTapped(_ sender: UIButton) {
-        selectButton(sender)
-        mapView.mapType = .hybrid
-    }
-    
-    private func selectButton(_ button: UIButton) {
-        selectedButton?.layer.borderWidth = 0
-        selectedButton?.layer.borderColor = UIColor.clear.cgColor
-        
-        button.layer.borderWidth = 2
-        button.layer.borderColor = UIColor.systemYellow.cgColor // Highlight selected button
-        
-        if let selectedImage = button.imageView?.image {
-            otherButton.setBackgroundImage(selectedImage, for: .normal)
-        }
-        
-        selectedButton = button
-    }
+
+
+            private func createButton(withSystemImage systemImageName: String, action: Selector) -> UIButton {
+                let button = UIButton(type: .custom)
+                let image = UIImage(systemName: systemImageName)?.withConfiguration(UIImage.SymbolConfiguration(pointSize: 30, weight: .bold)).withTintColor(.white, renderingMode: .alwaysOriginal)
+                button.setImage(image, for: .normal)
+                button.tintColor = .none
+                button.backgroundColor = UIColor(hex: "#333333")
+                button.translatesAutoresizingMaskIntoConstraints = false
+                button.addTarget(self, action: action, for: .touchUpInside)
+                let size: CGFloat = 50
+                NSLayoutConstraint.activate([
+                    button.heightAnchor.constraint(equalToConstant: size),
+                    button.widthAnchor.constraint(equalToConstant: size)
+                ])
+                button.layer.cornerRadius = size / 2
+                button.clipsToBounds = true
+                return button
+            }
+
+            @objc private func otherButtonTapped() {
+                otherButton.setTitle("Map", for: .normal)
+                otherButton.backgroundColor = UIColor(hex: "#333333")
+                otherButton.setBackgroundImage(nil, for: .normal)
+                if toggleView.isHidden {
+                    toggleView.transform = CGAffineTransform(translationX: 0, y: -20)
+                    toggleView.alpha = 0
+                    toggleView.isHidden = false
+                    UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
+                        self.toggleView.transform = .identity
+                        self.toggleView.alpha = 1.0
+                    })
+                } else {
+                    UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
+                        self.toggleView.transform = CGAffineTransform(translationX: 0, y: -20)
+                        self.toggleView.alpha = 0
+                    }) { _ in
+                        self.toggleView.isHidden = true
+                        self.toggleView.transform = .identity
+                    }
+                }
+            }
+
+            @objc private func standardButtonTapped(_ sender: UIButton) {
+                selectButton(sender)
+                mapView.mapType = .standard
+            }
+
+            @objc private func hybridButtonTapped(_ sender: UIButton) {
+                selectButton(sender)
+                mapView.mapType = .hybrid
+            }
+
+            private func selectButton(_ button: UIButton) {
+                selectedButton?.layer.borderWidth = 0
+                selectedButton?.layer.borderColor = UIColor.clear.cgColor
+                selectedButton?.backgroundColor = UIColor(hex: "#333333")
+
+                button.layer.borderWidth = 2
+                button.layer.borderColor = UIColor.systemYellow.cgColor
+                button.backgroundColor = UIColor(hex: "#40cbd8")
+
+                selectedButton = button
+            }
     
     private func setupSOSButton() {
         sosButton.setTitle("SOS", for: .normal)
