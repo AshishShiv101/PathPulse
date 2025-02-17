@@ -59,6 +59,6 @@ struct WeatherData {
     var humidity: Int
     var windSpeed: Double
     var description: String
-    var icon: String 
+    var icon: String
 }
 

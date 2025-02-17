@@ -4,7 +4,7 @@ struct GuideItem {
     var title: String
     var location: String
     var rating: Double
-    var imageName: String
+    var imageName: String!
     var hours: String
     var price: Double?
     var phoneNumber: String?
