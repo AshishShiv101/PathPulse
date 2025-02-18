@@ -2,7 +2,6 @@ import UIKit
 import MapKit
 import CoreLocation
 
-
 class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate, MKMapViewDelegate {
     let locationManager = CLLocationManager()
     let mapView = MKMapView()
@@ -69,7 +68,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
 
         NSLayoutConstraint.activate([
             compassButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
-            compassButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10)
+            compassButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -30)
         ])
     }
     private let weatherView: UIView = {
@@ -108,21 +107,21 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
-    private let locationLabel: UILabel = {
-        let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
-        label.textColor = UIColor(hex:"FF8C00")
-        label.textAlignment = .center
-        label.text = "Location: --"
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
     private let windSpeedLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.textColor = UIColor(hex:"40CBD8")
         label.textAlignment = .center
         label.text = "Wind: -- m/s"
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    private let locationLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        label.textColor = UIColor(hex:"FF8C00")
+        label.textAlignment = .center
+        label.text = ""
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -148,18 +147,14 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
     
-    
-    
-    
     private func setupOtherButton() {
         otherButton.setBackgroundImage(UIImage(named: "Normal"), for: .normal) // Default image
         otherButton.backgroundColor = .clear
         otherButton.layer.cornerRadius = 35
         otherButton.clipsToBounds = true
         
-        // Thicker Border
         otherButton.layer.borderColor = UIColor.black.cgColor
-        otherButton.layer.borderWidth = 3.5 // Increased thickness
+        otherButton.layer.borderWidth = 3.5
         
         otherButton.addTarget(self, action: #selector(otherButtonTapped), for: .touchUpInside)
         
@@ -168,7 +163,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         
         NSLayoutConstraint.activate([
             otherButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            otherButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            otherButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 70),
             otherButton.widthAnchor.constraint(equalToConstant: 70),
             otherButton.heightAnchor.constraint(equalToConstant: 70)
         ])
@@ -214,7 +209,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 otherButton.setBackgroundImage(nil, for: .normal)
                 selectButton(standardButton)
             }
-
 
             private func createButton(withSystemImage systemImageName: String, action: Selector) -> UIButton {
                 let button = UIButton(type: .custom)
@@ -278,7 +272,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
 
                 selectedButton = button
             }
-    
     private func setupSOSButton() {
         sosButton.setTitle("SOS", for: .normal)
         sosButton.backgroundColor = UIColor(hex: "#333333")
@@ -471,7 +464,49 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             searchBar.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16),
             searchBar.heightAnchor.constraint(equalToConstant: 44)
         ])
-        
+        let recentSearchesContainer = UIStackView()
+           recentSearchesContainer.axis = .vertical
+           recentSearchesContainer.spacing = 12
+           recentSearchesContainer.translatesAutoresizingMaskIntoConstraints = false
+           bottomSheetView.addSubview(recentSearchesContainer)
+
+           NSLayoutConstraint.activate([
+               recentSearchesContainer.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 20),
+               recentSearchesContainer.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
+               recentSearchesContainer.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16)
+           ])
+
+           // Add Recent Search Entries
+           let recentSearchTitles = ["New York", "London", "Tokyo"]
+           for title in recentSearchTitles {
+               let entryStack = UIStackView()
+               entryStack.axis = .horizontal
+               entryStack.distribution = .fill
+               entryStack.alignment = .center
+               entryStack.spacing = 8
+
+               let label = UILabel()
+               label.text = title
+               label.textColor = .white
+               label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+
+               let crossButton = UIButton(type: .system)
+               crossButton.setImage(UIImage(systemName: "xmark"), for: .normal)
+               crossButton.tintColor = .systemGray
+               crossButton.addTarget(self, action: #selector(removeRecentSearch(_:)), for: .touchUpInside)
+               
+               // Set fixed size for cross button
+               crossButton.translatesAutoresizingMaskIntoConstraints = false
+               NSLayoutConstraint.activate([
+                   crossButton.widthAnchor.constraint(equalToConstant: 24),
+                   crossButton.heightAnchor.constraint(equalToConstant: 24)
+               ])
+
+               entryStack.addArrangedSubview(label)
+               entryStack.addArrangedSubview(crossButton)
+               recentSearchesContainer.addArrangedSubview(entryStack)
+           }
+
         weatherView.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showDetailedView))
         weatherView.addGestureRecognizer(tapGesture)
@@ -554,6 +589,47 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             newsLabel.leadingAnchor.constraint(greaterThanOrEqualTo: additionalCardView.leadingAnchor, constant: 20),
             newsLabel.trailingAnchor.constraint(lessThanOrEqualTo: additionalCardView.trailingAnchor, constant: -20)
         ])
+    }
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        guard let cityName = searchBar.text, !cityName.isEmpty else {
+            return
+        }
+        
+        locationLabel.text = cityName
+        
+        CitySearchHelper.searchForCity(city: cityName, mapView: mapView, locationManager: locationManager) { [weak self] (weatherData, error) in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                return
+            }
+            if let weatherData = weatherData {
+                DispatchQueue.main.async {
+                    self?.updateWeatherUI(with: weatherData)
+                    
+                    // Show Bottom Sheet
+                    let bottomSheetVC = BottomSheetViewController()
+                    bottomSheetVC.cityName = cityName
+                    bottomSheetVC.weatherInfo = "Temp: \(weatherData.temperature)°C, \(weatherData.description)"
+                    
+                    if let sheet = bottomSheetVC.sheetPresentationController {
+                        sheet.detents = [.medium(), .large()]
+                        sheet.prefersGrabberVisible = true
+                    }
+                    
+                    self?.present(bottomSheetVC, animated: true)
+                }
+            }
+        }
+        
+        searchBar.resignFirstResponder()
+    }
+
+    @objc private func removeRecentSearch(_ sender: UIButton) {
+        guard let entryStack = sender.superview as? UIStackView else { return }
+        UIView.animate(withDuration: 0.2) {
+            entryStack.isHidden = true
+            entryStack.removeFromSuperview()
+        }
     }
     @objc private func openAdditionalView() {
         let detailVC = AddViewController()
@@ -722,40 +798,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
     
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        guard let cityName = searchBar.text, !cityName.isEmpty else {
-            return
-        }
-        
-        locationLabel.text = cityName
-        
-        CitySearchHelper.searchForCity(city: cityName, mapView: mapView, locationManager: locationManager) { [weak self] (weatherData, error) in
-            if let error = error {
-                print("Error: \(error.localizedDescription)")
-                return
-            }
-            if let weatherData = weatherData {
-                DispatchQueue.main.async {
-                    self?.updateWeatherUI(with: weatherData)
-                    
-                    // Show Bottom Sheet
-                    let bottomSheetVC = BottomSheetViewController()
-                    bottomSheetVC.cityName = cityName
-                    bottomSheetVC.weatherInfo = "Temp: \(weatherData.temperature)°C, \(weatherData.description)"
-                    
-                    if let sheet = bottomSheetVC.sheetPresentationController {
-                        sheet.detents = [.medium(), .large()]
-                        sheet.prefersGrabberVisible = true
-                    }
-                    
-                    self?.present(bottomSheetVC, animated: true)
-                }
-            }
-        }
-        
-        searchBar.resignFirstResponder()
-    }
-
+   
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(polyline: polyline)
