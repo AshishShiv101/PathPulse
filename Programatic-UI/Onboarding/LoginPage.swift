@@ -101,36 +101,45 @@ class LoginPage: UIViewController {
     }()
 
     private let googleSignInButton: UIButton = {
-        let button = UIButton(type: .system)
-        
-        // Google icon
-        let googleLogo = UIImage(named: "Google")?.withRenderingMode(.alwaysOriginal)
-        button.setImage(googleLogo, for: .normal)
-        
-        // Set button title
-        button.setTitle("  Sign in with Google", for: .normal) // Extra space before text for better spacing
-        button.setTitleColor(.black, for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-        
-        // Layout settings
-        button.imageView?.contentMode = .scaleAspectFit
+        let button = UIButton(type: .custom)
         button.backgroundColor = .white
-        button.layer.cornerRadius = 12
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.3
-        button.layer.shadowOffset = CGSize(width: 0, height: 2)
-        button.layer.shadowRadius = 4
-        
-        // Adjust icon positioning
-        button.contentHorizontalAlignment = .left
-        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20)
-        button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 10) // Moves icon slightly left
-        
         button.translatesAutoresizingMaskIntoConstraints = false
+
+        let imageView = UIImageView(image: UIImage(named: "Google")?.withRenderingMode(.alwaysOriginal))
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            imageView.widthAnchor.constraint(equalToConstant: 27),
+            imageView.heightAnchor.constraint(equalToConstant: 27)
+        ])
+
+        let label = UILabel()
+        label.text = "Sign in with Google"
+        label.textColor = .black
+        label.font = UIFont.systemFont(ofSize: 17, weight: .medium)
+        label.textAlignment = .right
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        let stackView = UIStackView(arrangedSubviews: [imageView, label])
+        stackView.axis = .horizontal
+        stackView.alignment = .center
+        stackView.spacing = 0
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.isUserInteractionEnabled = false // ✅ Allow button to receive touch events
+
+        button.addSubview(stackView)
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: button.leadingAnchor, constant: 39),
+            stackView.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -106),
+            stackView.topAnchor.constraint(equalTo: button.topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: button.bottomAnchor)
+        ])
+
+        imageView.setContentHuggingPriority(.required, for: .horizontal)
+        label.setContentHuggingPriority(.required, for: .horizontal)
+
         return button
     }()
-
-
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -215,17 +224,14 @@ class LoginPage: UIViewController {
 
             googleSignInButton.topAnchor.constraint(equalTo: continueButton.bottomAnchor, constant: 30),
                googleSignInButton.centerXAnchor.constraint(equalTo: cardView.centerXAnchor),
-               googleSignInButton.widthAnchor.constraint(equalTo: cardView.widthAnchor, multiplier: 0.8), // 80% width of cardView
+               googleSignInButton.widthAnchor.constraint(equalTo: cardView.widthAnchor, multiplier: 0.85), // 80% width of cardView
                googleSignInButton.heightAnchor.constraint(equalToConstant: 50)
 
         ])
-        googleSignInButton.layer.cornerRadius = 25
+        googleSignInButton.layer.cornerRadius = 15
         googleSignInButton.addTarget(self, action: #selector(handleGoogleSignIn), for: .touchUpInside)
     }
 
-
-
-    
     @objc private func handleContinueButton() {
         guard let phoneNumber = phoneTextField.text, !phoneNumber.isEmpty else {
             showAlert(message: "Please enter a phone number.")
