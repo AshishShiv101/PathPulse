@@ -4,20 +4,19 @@ import FirebaseFirestore
 import FirebaseAuth
 
 class EditContactViewController: UIViewController, CNContactViewControllerDelegate {
-    
     private var contacts: [String: String] = [:]
     private let db = Firestore.firestore()
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private var contactsStackView = UIStackView()
     private let noContactsLabel: UILabel = {
-            let label = UILabel()
-            label.text = "Add Contacts"
-            label.textColor = .lightGray
-            label.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-            label.textAlignment = .center
-            label.translatesAutoresizingMaskIntoConstraints = false
-            return label
+        let label = UILabel()
+        label.text = "Add Contacts"
+        label.textColor = .lightGray
+        label.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
         }()
     override func viewDidLoad() {
         super.viewDidLoad()

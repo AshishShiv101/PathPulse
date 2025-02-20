@@ -13,7 +13,7 @@ class onBoarding: UIViewController {
         view.addSubview(logoImageView)
         let cardStack = UIStackView(arrangedSubviews: [
             CardView(imageName: "Clouds", text: "Why worry about the weather when we can do it on your behalf.", isImageAsset: true),
-            CardView(imageName: "News", text: "Uncertain about your plans? Stay informed with the latest updates—we’ve got you covered!", isImageAsset: true),
+            CardView(imageName: "News", text: "Uncertain about your plans? Stay informed with the latest updates we’ve got you covered!", isImageAsset: true),
             CardView(imageName: "Hotels", text: "Uncertain about the plans you’ve made? We’ve got you covered there too.", isImageAsset: true)
         ])
         cardStack.axis = .vertical
@@ -48,18 +48,15 @@ class onBoarding: UIViewController {
         navigationController?.pushViewController(thirdViewController, animated: true)
     }
 }
-
 class CardView: UIView {
     
     init(imageName: String, text: String, isImageAsset: Bool) {
         super.init(frame: .zero)
         setupView(imageName: imageName, text: text, isImageAsset: isImageAsset)
     }
-    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
     private func setupView(imageName: String, text: String, isImageAsset: Bool) {
         backgroundColor = UIColor.black.withAlphaComponent(0.3)
         layer.cornerRadius = 12

@@ -1,6 +1,5 @@
 import MapKit
 import CoreLocation
-
 class CitySearchHelper {
     static let shared = CitySearchHelper()
     private static var routeInfoViews: [UIView] = []
@@ -66,12 +65,11 @@ class CitySearchHelper {
             }
         }
     }
-    
     private static func calculateDistance(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D) -> Double {
         let startLocation = CLLocation(latitude: start.latitude, longitude: start.longitude)
         let endLocation = CLLocation(latitude: end.latitude, longitude: end.longitude)
         let distanceInMeters = startLocation.distance(from: endLocation)
-        return distanceInMeters / 1000.0 // Convert meters to kilometers
+        return distanceInMeters / 1000.0
     }
     
     static func calculateRoute(from startCoordinate: CLLocationCoordinate2D, to destinationCoordinate: CLLocationCoordinate2D, mapView: MKMapView) {
@@ -157,7 +155,7 @@ class CitySearchHelper {
         routeInfoView.addSubview(distanceAndTimeLabel)
 
         let walkingTimeLabel = UILabel()
-                let walkingSpeed: Double = 5.0 // Average walking speed in km/h
+                let walkingSpeed: Double = 5.0
 
                 let routeDistance = route.distance
                 let walkingTimeInterval = (routeDistance / 1000.0) / walkingSpeed
