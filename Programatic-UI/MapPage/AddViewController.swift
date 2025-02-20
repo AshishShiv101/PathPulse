@@ -2,14 +2,17 @@ import UIKit
 
 class AddViewController: UIViewController {
 
-    private let newsSheet = NewsSheet()
+    private let newsViewController = NewsViewController()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
     }
+
     private func setupView() {
         view.backgroundColor = UIColor(hex: "#222222")
+        
+        // Gradient Background
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [UIColor.black.cgColor, UIColor.systemGray2.cgColor]
         gradientLayer.locations = [0.0, 1.0]
@@ -34,16 +37,19 @@ class AddViewController: UIViewController {
             backButton.heightAnchor.constraint(equalToConstant: 40)
         ])
 
-        // Add NewsSheet
-        newsSheet.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(newsSheet)
+        // Add NewsViewController as a Child View Controller
+        addChild(newsViewController)
+        newsViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(newsViewController.view)
 
         NSLayoutConstraint.activate([
-            newsSheet.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 10),
-            newsSheet.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            newsSheet.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            newsSheet.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            newsViewController.view.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 10),
+            newsViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            newsViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            newsViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+
+        newsViewController.didMove(toParent: self)
     }
 
     @objc private func dismissDetailView() {

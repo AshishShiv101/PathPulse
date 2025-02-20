@@ -11,18 +11,14 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     var weatherInfoView: UIView?
     let searchBar = UISearchBar()
     private var bottomSheetTopConstraint: NSLayoutConstraint!
-    var startLocationCoordinate: CLLocationCoordinate2D?
-    var destinationCoordinate: CLLocationCoordinate2D?
     private let bottomSheetCollapsedHeight: CGFloat = 135
     private let bottomSheetMediumHeight: CGFloat = 300
     private let bottomSheetExpandedHeight: CGFloat = 800
     let searchButton = UIButton()
     let directionButton = UIButton()
-    var previousContentViews: [UIView] = []
     let sosButton = UIButton()
     private let sosOverlayView = SOSOverlayView()
     private let otherButton = UIButton()
-    
     private let startButton: UIButton = {
         let button = UIButton()
         button.setTitle("Start", for: .normal)
@@ -119,7 +115,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     private let locationLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
-        label.textColor = UIColor(hex:"FF8C00")
+        label.textColor = UIColor(hex:"222222")
         label.textAlignment = .center
         label.text = ""
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -146,7 +142,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             sosOverlayView.isHidden = !sosTappedButton
         }
     }
-    
     private func setupOtherButton() {
         otherButton.setBackgroundImage(UIImage(named: "Normal"), for: .normal) // Default image
         otherButton.backgroundColor = .clear
@@ -294,7 +289,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         view.addSubview(sosOverlayView)
         sosOverlayView.addContactIcon(iconName: "cross.circle.fill", label: "Ambulance", number: "102")
         sosOverlayView.addContactIcon(iconName: "shield.fill", label: "Police", number: "100")
-        sosOverlayView.addContactIcon(iconName: "figure.stand.dress", label: "Women", number: "1091")
+        sosOverlayView.addContactIcon(iconName: "figure.stand.dress", label: "Helpline", number: "1091")
         sosOverlayView.layer.zPosition = 0
         NSLayoutConstraint.activate([
             sosOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
@@ -348,8 +343,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                let data = try? Data(contentsOf: iconUrl) {
                 self.weatherIcon.image = UIImage(data: data)
             }
-            
-            // Apply gradient background instead of solid color
             self.applyBackgroundGradient(for: weatherData.icon)
         }
     }
@@ -359,68 +352,91 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         gradientLayer.frame = weatherView.bounds
         gradientLayer.cornerRadius = 15
         gradientLayer.masksToBounds = true
-        
+        let textColor: UIColor
         switch icon {
         case "01d": // ☀️ Clear day
             gradientLayer.colors = [
-                UIColor(red: 1.0, green: 0.8, blue: 0.3, alpha: 1.0).cgColor, // Warm golden
-                UIColor(red: 0.7, green: 0.5, blue: 0.2, alpha: 1.0).cgColor  // Sunset orange
+                UIColor(red: 1.0, green: 0.8, blue: 0.3, alpha: 1.0).cgColor,
+                UIColor(red: 0.7, green: 0.5, blue: 0.2, alpha: 1.0).cgColor
             ]
+            textColor = .white
+            
         case "01n": // 🌙 Clear night
             gradientLayer.colors = [
-                UIColor(red: 0.2, green: 0.2, blue: 0.4, alpha: 1.0).cgColor, // Deep night blue
-                UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor  // Dark navy
+                UIColor(red: 0.2, green: 0.2, blue: 0.4, alpha: 1.0).cgColor,
+                UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor
             ]
+            textColor = .lightGray
+            
         case "02d", "02n": // 🌤️ Few clouds
             gradientLayer.colors = [
-                UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0).cgColor, // Soft sky blue
-                UIColor(red: 0.4, green: 0.5, blue: 0.8, alpha: 1.0).cgColor  // Gentle ocean blue
+                UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0).cgColor,
+                UIColor(red: 0.4, green: 0.5, blue: 0.8, alpha: 1.0).cgColor
             ]
+            textColor = .black
+            
         case "03d", "03n": // ☁️ Scattered clouds
             gradientLayer.colors = [
-                UIColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0).cgColor, // Soft cloudy gray
-                UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0).cgColor  // Deeper cloud gray
+                UIColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0).cgColor,
+                UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0).cgColor
             ]
+            textColor = .white
+            
         case "04d", "04n": // 🌥️ Overcast clouds
             gradientLayer.colors = [
-                UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0).cgColor, // Heavy cloud gray
-                UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0).cgColor  // Darker storm gray
+                UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0).cgColor,
+                UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0).cgColor
             ]
+            textColor = .lightGray
+            
         case "09d", "09n": // 🌧️ Shower rain
             gradientLayer.colors = [
-                UIColor(red: 0.3, green: 0.4, blue: 0.6, alpha: 1.0).cgColor, // Rainy blue
-                UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0).cgColor  // Dark storm gray
+                UIColor(red: 0.3, green: 0.4, blue: 0.6, alpha: 1.0).cgColor,
+                UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0).cgColor
             ]
+            textColor = .white
+            
         case "10d": // 🌦️ Rain (day)
             gradientLayer.colors = [
-                UIColor(red: 0.4, green: 0.6, blue: 0.8, alpha: 1.0).cgColor, // Blue-gray
-                UIColor(red: 0.3, green: 0.4, blue: 0.7, alpha: 1.0).cgColor  // Rain cloud blue
+                UIColor(red: 0.4, green: 0.6, blue: 0.8, alpha: 1.0).cgColor,
+                UIColor(red: 0.3, green: 0.4, blue: 0.7, alpha: 1.0).cgColor
             ]
+            textColor = .black
+            
         case "10n": // 🌧️ Rain (night)
             gradientLayer.colors = [
-                UIColor(red: 0.2, green: 0.3, blue: 0.6, alpha: 1.0).cgColor, // Deep storm blue
-                UIColor(red: 0.1, green: 0.1, blue: 0.3, alpha: 1.0).cgColor  // Almost black night
+                UIColor(red: 0.2, green: 0.3, blue: 0.6, alpha: 1.0).cgColor,
+                UIColor(red: 0.1, green: 0.1, blue: 0.3, alpha: 1.0).cgColor
             ]
+            textColor = .lightGray
+            
         case "11d", "11n": // ⛈️ Thunderstorm
             gradientLayer.colors = [
-                UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0).cgColor, // Thunder gray
-                UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor  // Deep storm night
+                UIColor(red: 0.3, green: 0.3, blue: 0.4, alpha: 1.0).cgColor,
+                UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0).cgColor
             ]
+            textColor = .white
+            
         case "13d", "13n": // ❄️ Snow
             gradientLayer.colors = [
-                UIColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0).cgColor, // Ice blue
-                UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0).cgColor  // Frosty blue
+                UIColor(red: 0.8, green: 0.9, blue: 1.0, alpha: 1.0).cgColor,
+                UIColor(red: 0.6, green: 0.7, blue: 0.9, alpha: 1.0).cgColor
             ]
+            textColor = .black
+            
         case "50d", "50n": // 🌫️ Mist
             gradientLayer.colors = [
-                UIColor(red: 0.6, green: 0.6, blue: 0.7, alpha: 1.0).cgColor, // Foggy gray
-                UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0).cgColor  // Deep mist
+                UIColor(red: 0.6, green: 0.6, blue: 0.7, alpha: 1.0).cgColor,
+                UIColor(red: 0.4, green: 0.4, blue: 0.5, alpha: 1.0).cgColor
             ]
+            textColor = .white
+            
         default: // Default
             gradientLayer.colors = [
                 UIColor.systemGray.cgColor,
                 UIColor.darkGray.cgColor
             ]
+            textColor = .white
         }
         
         gradientLayer.locations = [0.0, 1.0]
@@ -429,8 +445,12 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         
         weatherView.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
         weatherView.layer.insertSublayer(gradientLayer, at: 0)
+        
+        self.temperatureLabel.textColor = textColor
+        self.humidityLabel.textColor = textColor
+        self.windSpeedLabel.textColor = textColor
     }
-    
+  
     private func addContentToBottomSheet() {
         let rectangleView = UIView()
         rectangleView.backgroundColor = .systemGray
@@ -477,7 +497,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
            ])
 
            // Add Recent Search Entries
-           let recentSearchTitles = ["New York", "London", "Tokyo"]
+           
            for title in recentSearchTitles {
                let entryStack = UIStackView()
                entryStack.axis = .horizontal
@@ -506,7 +526,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                entryStack.addArrangedSubview(crossButton)
                recentSearchesContainer.addArrangedSubview(entryStack)
            }
-
         weatherView.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showDetailedView))
         weatherView.addGestureRecognizer(tapGesture)
@@ -519,7 +538,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weatherView.addSubview(windSpeedLabel)
         
         NSLayoutConstraint.activate([
-            weatherView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 150),
+            weatherView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 170),
             weatherView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
             weatherView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16),
             weatherView.heightAnchor.constraint(equalToConstant: 220),
@@ -565,12 +584,10 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         newsLabel.numberOfLines = 2
         newsLabel.textAlignment = .left
         
-        // Add views
         additionalCardView.addSubview(newsIcon)
         additionalCardView.addSubview(newsLabel)
         bottomSheetView.addSubview(additionalCardView)
         
-        // Constraints
         NSLayoutConstraint.activate([
             additionalCardView.topAnchor.constraint(equalTo: weatherView.bottomAnchor, constant: 50),
             additionalCardView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
@@ -590,13 +607,99 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             newsLabel.trailingAnchor.constraint(lessThanOrEqualTo: additionalCardView.trailingAnchor, constant: -20)
         ])
     }
+    private func refreshRecentSearches() {
+        // Find and remove the existing recentSearchesContainer if it exists
+        bottomSheetView.subviews.forEach { view in
+            if let stackView = view as? UIStackView, stackView.tag == 100 {
+                stackView.removeFromSuperview()
+            }
+        }
+        
+        // Create new recent searches container
+        let recentSearchesContainer = UIStackView()
+        recentSearchesContainer.tag = 100
+        recentSearchesContainer.axis = .vertical
+        recentSearchesContainer.spacing = 12
+        recentSearchesContainer.translatesAutoresizingMaskIntoConstraints = false
+        bottomSheetView.addSubview(recentSearchesContainer)
+        
+        NSLayoutConstraint.activate([
+            recentSearchesContainer.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 20),
+            recentSearchesContainer.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
+            recentSearchesContainer.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16)
+        ])
+        
+        if recentSearchTitles.isEmpty {
+            // Create and add "No history available" label
+            let noHistoryLabel = UILabel()
+            noHistoryLabel.text = "No history available"
+            noHistoryLabel.textColor = .gray
+            noHistoryLabel.font = UIFont.systemFont(ofSize: 16)
+            noHistoryLabel.textAlignment = .center
+            recentSearchesContainer.addArrangedSubview(noHistoryLabel)
+        } else {
+            // Add Recent Search Entries
+            for title in recentSearchTitles {
+                let entryStack = UIStackView()
+                entryStack.axis = .horizontal
+                entryStack.distribution = .fill
+                entryStack.alignment = .center
+                entryStack.spacing = 8
+                
+                let label = UILabel()
+                label.text = title
+                label.textColor = .white
+                label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+                
+                let crossButton = UIButton(type: .system)
+                crossButton.setImage(UIImage(systemName: "xmark"), for: .normal)
+                crossButton.tintColor = .systemGray
+                crossButton.addTarget(self, action: #selector(removeRecentSearch(_:)), for: .touchUpInside)
+                
+                crossButton.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    crossButton.widthAnchor.constraint(equalToConstant: 24),
+                    crossButton.heightAnchor.constraint(equalToConstant: 24)
+                ])
+                
+                entryStack.addArrangedSubview(label)
+                entryStack.addArrangedSubview(crossButton)
+                recentSearchesContainer.addArrangedSubview(entryStack)
+            }
+        }
+    }
+    // Add this method to handle removing searches
+    @objc private func removeRecentSearch(_ sender: UIButton) {
+        guard let stackView = sender.superview as? UIStackView,
+              let label = stackView.arrangedSubviews.first as? UILabel,
+              let title = label.text,
+              let index = recentSearchTitles.firstIndex(of: title) else {
+            return
+        }
+        
+        recentSearchTitles.remove(at: index)
+        refreshRecentSearches()
+    }
+    var recentSearchTitles: [String] = []
+
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let cityName = searchBar.text, !cityName.isEmpty else {
             return
         }
         
-        locationLabel.text = cityName
+        // Add the cityName to the array
+        if !recentSearchTitles.contains(cityName) {
+            recentSearchTitles.insert(cityName, at: 0)
+            
+            if recentSearchTitles.count > 5 {
+                recentSearchTitles.removeLast()
+            }
+            
+            // Refresh the bottom sheet content
+            refreshRecentSearches()
+        }
         
+        locationLabel.text = cityName
         CitySearchHelper.searchForCity(city: cityName, mapView: mapView, locationManager: locationManager) { [weak self] (weatherData, error) in
             if let error = error {
                 print("Error: \(error.localizedDescription)")
@@ -608,8 +711,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                     
                     // Show Bottom Sheet
                     let bottomSheetVC = BottomSheetViewController()
-                    bottomSheetVC.cityName = cityName
-                    bottomSheetVC.weatherInfo = "Temp: \(weatherData.temperature)°C, \(weatherData.description)"
                     
                     if let sheet = bottomSheetVC.sheetPresentationController {
                         sheet.detents = [.medium(), .large()]
@@ -620,24 +721,34 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 }
             }
         }
-        
         searchBar.resignFirstResponder()
     }
-
-    @objc private func removeRecentSearch(_ sender: UIButton) {
-        guard let entryStack = sender.superview as? UIStackView else { return }
-        UIView.animate(withDuration: 0.2) {
-            entryStack.isHidden = true
-            entryStack.removeFromSuperview()
-        }
-    }
     @objc private func openAdditionalView() {
-        let detailVC = AddViewController()
+        let detailVC = NewsViewController()
+       // detailVC.cityName = locationLabel.text // Pass the searched city name
         detailVC.modalPresentationStyle = .fullScreen
         present(detailVC, animated: true, completion: nil)
     }
-    
-    
+
+
+    @objc private func showDetailedView() {
+        guard let cityName = locationLabel.text, !cityName.isEmpty else {
+            print("Error: City name is empty or nil")
+            return
+        }
+        
+        let detailedVC = DetailedViews()
+        detailedVC.cityName = cityName
+        
+        if let navigationController = navigationController {
+            navigationController.pushViewController(detailedVC, animated: true)
+        } else {
+            print("Warning: navigationController is nil. Presenting modally instead.")
+            let navController = UINavigationController(rootViewController: detailedVC)
+            navController.modalPresentationStyle = .fullScreen
+            present(navController, animated: true, completion: nil)
+        }
+    }
     
     @objc private func backButtonTapped(){
         bottomSheetView.subviews.forEach { $0.removeFromSuperview() }
@@ -779,27 +890,8 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             self.mapView.addAnnotation(annotation)
         }
     }
-    @objc private func showDetailedView() {
-        guard let cityName = locationLabel.text, !cityName.isEmpty else {
-            print("Error: City name is empty or nil")
-            return
-        }
-        
-        let detailedVC = DetailedViews()
-        detailedVC.cityName = cityName // Pass the city name
-        
-        if let navigationController = navigationController {
-            navigationController.pushViewController(detailedVC, animated: true)
-        } else {
-            print("Warning: navigationController is nil. Presenting modally instead.")
-            let navController = UINavigationController(rootViewController: detailedVC)
-            navController.modalPresentationStyle = .fullScreen
-            present(navController, animated: true, completion: nil)
-        }
-    }
-    
-   
-    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+
+func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(polyline: polyline)
             renderer.strokeColor = .blue
