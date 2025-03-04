@@ -1,51 +1,37 @@
 import UIKit
+import CoreLocation
 
-class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate, UICollectionViewDataSource {
+class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate, UICollectionViewDataSource, CLLocationManagerDelegate {
     
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private var carouselData: [String: [GuideItem]] = [:]
     private var carouselCollectionViews: [UICollectionView] = []
+    private let locationManager = CLLocationManager()
+    private var currentLocation: CLLocationCoordinate2D?
+    private var cityLabel: UILabel!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(hex: "#222222")
         title = "Guide"
+        setupLocationManager()
         setupNavigationBar()
         setupCityLabel()
         setupScrollView()
         setupCarousels()
-        fetchPlaceData(for: "clinic", location: "13.0827,80.2707", radius: 5000) { [weak self] guideItems in
-            DispatchQueue.main.async {
-                self?.carouselData["Clinics"] = guideItems
-                self?.reloadAllCarousels()
-            }
-        }
-        
-        fetchPlaceData(for: "hospital", location: "13.0827,80.2707", radius: 5000) { [weak self] guideItems in
-            DispatchQueue.main.async {
-                self?.carouselData["Hospitals"] = guideItems
-                self?.reloadAllCarousels()
-            }
-        }
-        
-        fetchPlaceData(for: "hotel", location: "13.0827,80.2707", radius: 5000) { [weak self] guideItems in
-            DispatchQueue.main.async {
-                self?.carouselData["Hotels"] = guideItems
-                self?.reloadAllCarousels()
-            }
-        }
-
-        fetchPlaceData(for: "pharmacy", location: "13.0827,80.2707", radius: 5000) { [weak self] guideItems in
-            DispatchQueue.main.async {
-                self?.carouselData["Pharmacies"] = guideItems
-                self?.reloadAllCarousels()
-            }
-        }
+    }
+    
+    private func setupLocationManager() {
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.distanceFilter = 1000 // Update after 1 km movement
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.startUpdatingLocation() // Continuous updates
     }
     
     private func setupCityLabel() {
-        let cityLabel = UILabel()
+        cityLabel = UILabel()
         cityLabel.font = UIFont.boldSystemFont(ofSize: 24)
         cityLabel.textColor = .white
         cityLabel.backgroundColor = .black
@@ -53,21 +39,19 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         cityLabel.layer.cornerRadius = 8
         cityLabel.layer.masksToBounds = true
         cityLabel.translatesAutoresizingMaskIntoConstraints = false
-
+        
         let locationAttachment = NSTextAttachment()
         locationAttachment.image = UIImage(systemName: "location.fill")?.withTintColor(.white)
         locationAttachment.bounds = CGRect(x: 0, y: -3, width: 20, height: 20)
-
+        
         let attributedText = NSMutableAttributedString(attachment: locationAttachment)
-        attributedText.append(NSAttributedString(string: " Chennai", attributes: [
+        attributedText.append(NSAttributedString(string: " Locating...", attributes: [
             .foregroundColor: UIColor.white,
             .font: UIFont.boldSystemFont(ofSize: 20)
         ]))
-
+        
         cityLabel.attributedText = attributedText
-
         contentView.addSubview(cityLabel)
-
         NSLayoutConstraint.activate([
             cityLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 0),
             cityLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
@@ -75,25 +59,57 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             cityLabel.heightAnchor.constraint(equalToConstant: 40)
         ])
     }
+    
     private func reloadAllCarousels() {
         for collectionView in carouselCollectionViews {
             collectionView.reloadData()
         }
     }
+    
     private func setupNavigationBar() {
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor(hex: "#222222")
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+        
         navigationController?.navigationBar.standardAppearance = appearance
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
         navigationController?.navigationBar.tintColor = .white
+        
+        let filterButton = UIBarButtonItem(image: UIImage(systemName: "line.horizontal.3.decrease.circle"),
+                                           style: .plain,
+                                           target: self,
+                                           action: #selector(showFilterOptions))
+        navigationItem.rightBarButtonItem = filterButton
     }
+    
+    @objc private func showFilterOptions() {
+        let alert = UIAlertController(title: "Filter Options", message: "Sort by:", preferredStyle: .actionSheet)
+        
+        let sortByRatingAction = UIAlertAction(title: "Rating (High to Low)", style: .default) { _ in
+            self.filterByRating()
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        
+        alert.addAction(sortByRatingAction)
+        alert.addAction(cancelAction)
+        present(alert, animated: true, completion: nil)
+    }
+    
+    private func filterByRating() {
+        carouselData = carouselData.mapValues { items in
+            items.sorted { $0.rating > $1.rating }
+        }
+        reloadAllCarousels()
+    }
+    
     private func setupScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
+        
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -106,10 +122,12 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
         ])
     }
+    
     private func setupCarousels() {
         var previousCarousel: UIView? = nil
         carouselCollectionViews.removeAll()
         let carouselTitles = ["Clinics", "Hospitals", "Hotels", "Pharmacies"]
+        
         for (index, title) in carouselTitles.enumerated() {
             let titleLabel = UILabel()
             titleLabel.text = title
@@ -151,18 +169,83 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             
             previousCarousel = collectionView
         }
-
+        
         if let previousCarousel = previousCarousel {
             NSLayoutConstraint.activate([
                 previousCarousel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
             ])
         }
     }
-
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        let newLocation = location.coordinate
+        
+        // Update only if it's the first location or moved 1 km
+        if currentLocation == nil || distance(from: currentLocation!, to: newLocation) >= 1000 {
+            currentLocation = newLocation
+            
+            let geocoder = CLGeocoder()
+            geocoder.reverseGeocodeLocation(location) { [weak self] (placemarks, error) in
+                guard let self = self,
+                      let placemark = placemarks?.first,
+                      let city = placemark.locality else { return }
+                
+                DispatchQueue.main.async {
+                    self.updateCityLabel(with: city)
+                    self.fetchNearbyPlaces()
+                }
+            }
+        }
+    }
+    
+    private func distance(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> CLLocationDistance {
+        let fromLocation = CLLocation(latitude: from.latitude, longitude: from.longitude)
+        let toLocation = CLLocation(latitude: to.latitude, longitude: to.longitude)
+        return fromLocation.distance(from: toLocation) // Distance in meters
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Location Error: \(error.localizedDescription)")
+    }
+    
+    private func updateCityLabel(with city: String) {
+        let locationAttachment = NSTextAttachment()
+        locationAttachment.image = UIImage(systemName: "location.fill")?.withTintColor(.white)
+        locationAttachment.bounds = CGRect(x: 0, y: -3, width: 20, height: 20)
+        
+        let attributedText = NSMutableAttributedString(attachment: locationAttachment)
+        attributedText.append(NSAttributedString(string: " \(city)", attributes: [
+            .foregroundColor: UIColor.white,
+            .font: UIFont.boldSystemFont(ofSize: 20)
+        ]))
+        
+        cityLabel.attributedText = attributedText
+    }
+    
+    private func fetchNearbyPlaces() {
+        guard let location = currentLocation else { return }
+        let locationString = "\(location.latitude),\(location.longitude)"
+        
+        let categories = ["clinic", "hospital", "hotel", "pharmacy"]
+        let titles = ["Clinics", "Hospitals", "Hotels", "Pharmacies"]
+        
+        for (category, title) in zip(categories, titles) {
+            fetchPlaceData(for: category, location: locationString, radius: 5000) { [weak self] guideItems in
+                DispatchQueue.main.async {
+                    self?.carouselData[title] = guideItems
+                    self?.reloadAllCarousels()
+                }
+            }
+        }
+    }
+    
+    // MARK: - CollectionView Delegate & DataSource
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         let title = ["Clinics", "Hospitals", "Hotels", "Pharmacies"][collectionView.tag]
         return carouselData[title]?.count ?? 0
     }
+    
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let title = ["Clinics", "Hospitals", "Hotels", "Pharmacies"][collectionView.tag]
         guard let item = carouselData[title]?[indexPath.item],
@@ -172,6 +255,7 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         cell.configure(with: item)
         return cell
     }
+    
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let title = ["Clinics", "Hospitals", "Hotels", "Pharmacies"][collectionView.tag]
         guard let selectedItem = carouselData[title]?[indexPath.item] else { return }
@@ -179,3 +263,4 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         navigationController?.pushViewController(detailedViewController, animated: true)
     }
 }
+

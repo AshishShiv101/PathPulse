@@ -2,7 +2,6 @@ import UIKit
 import FirebaseAuth
 
 class OTPPage: UIViewController {
-     
     private let logoStack: UIStackView = {
         let stackView = UIStackView()
         stackView.axis = .horizontal

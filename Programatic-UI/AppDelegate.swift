@@ -1,10 +1,3 @@
-//
-//  AppDelegate.swift
-//  Programatic-UI
-//
-//  Created by Anurag on 03/11/24.
-//
-
 import UIKit
 import Firebase
 import GoogleSignIn
@@ -14,10 +7,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
-        // Configure Firebase
         FirebaseApp.configure()
         
-        // Configure Google Sign-In with Client ID
         let clientID = "232272482517-oiofjgcupljdae57kdnr8q3g8qsq1mq3.apps.googleusercontent.com"
         GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
         
@@ -25,19 +16,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-        // Handle Google Sign-In callback
         return GIDSignIn.sharedInstance.handle(url)
     }
 
     // MARK: UISceneSession Lifecycle
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        // Called when a new scene session is being created.
+
         return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
     
     func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
-        // Called when the user discards a scene session.
-        // Release resources for discarded scenes, if necessary.
     }
 }
 

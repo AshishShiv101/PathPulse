@@ -1,5 +1,6 @@
 import MapKit
 import CoreLocation
+
 class CitySearchHelper {
     static let shared = CitySearchHelper()
     private static var routeInfoViews: [UIView] = []
@@ -71,7 +72,6 @@ class CitySearchHelper {
         let distanceInMeters = startLocation.distance(from: endLocation)
         return distanceInMeters / 1000.0
     }
-    
     static func calculateRoute(from startCoordinate: CLLocationCoordinate2D, to destinationCoordinate: CLLocationCoordinate2D, mapView: MKMapView) {
         mapView.removeOverlays(mapView.overlays)
         
@@ -93,7 +93,6 @@ class CitySearchHelper {
                 print("Error calculating directions: \(error.localizedDescription)")
                 return
             }
-            
             guard let routes = response?.routes else {
                 print("No routes found")
                 return
@@ -107,10 +106,24 @@ class CitySearchHelper {
             routeInfoViews.removeAll()
             
             for (index, route) in sortedRoutes.enumerated() {
+                let isShortest = route === shortestRoute // Using identity comparison
+                let isLongest = route === longestRoute   // Using identity comparison
+                
+                // Store the flags directly in the polyline's userInfo
+                let routeInfo: [String: Any] = [
+                    "index": index,
+                    "isShortest": isShortest,
+                    "isLongest": isLongest
+                ]
+                
+                route.polyline.title = String(index) // Add a title as backup
+                route.polyline.subtitle = "\(isShortest),\(isLongest)" // Add flags as subtitle for debugging
+                
                 mapView.addOverlay(route.polyline, level: .aboveRoads)
-                let isShortest = route == shortestRoute
-                let isLongest = route == longestRoute
                 displayRouteInfoView(for: route, at: index, mapView: mapView, isShortest: isShortest, isLongest: isLongest)
+                
+                // Debug print to verify
+                print("Route \(index): isShortest=\(isShortest), isLongest=\(isLongest), distance=\(route.distance)")
             }
             
             if let shortestRoute = shortestRoute {
@@ -118,12 +131,16 @@ class CitySearchHelper {
             }
         }
     }
-    
     static func displayRouteInfoView(for route: MKRoute, at index: Int, mapView: MKMapView, isShortest: Bool, isLongest: Bool) {
         let routeInfoView = UIView()
-
-        routeInfoView.backgroundColor = UIColor(hex: "#ffffff").withAlphaComponent(0.9)
-
+        routeInfoView.backgroundColor = UIColor(hex: "#222222")
+        routeInfoView.layer.cornerRadius = 12
+        routeInfoView.layer.shadowColor = UIColor.black.cgColor
+        routeInfoView.layer.shadowOpacity = 0.5
+        routeInfoView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        routeInfoView.layer.shadowRadius = 8
+        
+        // Border styling based on route status
         routeInfoView.layer.borderWidth = 2
         if isShortest {
             routeInfoView.layer.borderColor = UIColor.systemGreen.cgColor
@@ -132,46 +149,34 @@ class CitySearchHelper {
         } else {
             routeInfoView.layer.borderColor = UIColor.clear.cgColor
         }
-
-        routeInfoView.layer.cornerRadius = 8
-        routeInfoView.layer.shadowColor = UIColor.white.cgColor
-        routeInfoView.layer.shadowOpacity = 0.3
-        routeInfoView.layer.shadowOffset = CGSize(width: 0, height: 4)
-        routeInfoView.layer.shadowRadius = 6
-
+        
         let topMargin: Int = 70
-        routeInfoView.frame = CGRect(x: 10, y: topMargin + (index * 90), width: 200, height: 80)
-
+        routeInfoView.frame = CGRect(x: 10, y: topMargin + (index * 70), width: 220, height: 60)
+        
+        // Add car icon
+        let carIcon = UIImageView(image: UIImage(systemName: "car.fill"))
+        carIcon.tintColor = .white
+        carIcon.frame = CGRect(x: 12, y: 20, width: 20, height: 20)
+        routeInfoView.addSubview(carIcon)
+        
+        // Distance and time label (adjusted to accommodate car icon)
         let distanceAndTimeLabel = UILabel()
         let timeInHours = route.expectedTravelTime / 3600
         let timeInMinutes = (route.expectedTravelTime.truncatingRemainder(dividingBy: 3600)) / 60
-
-        distanceAndTimeLabel.text = String(format: "%.2f km   %.0f hr %.0f min", route.distance / 1000, timeInHours, timeInMinutes)
-        distanceAndTimeLabel.textColor = .black
-        distanceAndTimeLabel.font = UIFont.systemFont(ofSize: 14)
-        distanceAndTimeLabel.frame = CGRect(x: 10, y: 10, width: routeInfoView.frame.width - 20, height: 40)
-        distanceAndTimeLabel.numberOfLines = 2
-        distanceAndTimeLabel.textAlignment = .left
+        
+        distanceAndTimeLabel.text = String(format: "%.2f km • %.0fh %.0fm",
+                                           route.distance / 1000,
+                                           timeInHours,
+                                           timeInMinutes)
+        distanceAndTimeLabel.textColor = .white
+        distanceAndTimeLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        distanceAndTimeLabel.frame = CGRect(x: 38, y: 15, width: 200, height: 30)
         routeInfoView.addSubview(distanceAndTimeLabel)
-
-        let walkingTimeLabel = UILabel()
-                let walkingSpeed: Double = 5.0
-
-                let routeDistance = route.distance
-                let walkingTimeInterval = (routeDistance / 1000.0) / walkingSpeed
-
-                let hours = Int(walkingTimeInterval)
-                let minutes = Int((walkingTimeInterval - Double(hours)) * 60)
-
-                walkingTimeLabel.text = "Walking Time: \(hours) hr \(minutes) min"
-                walkingTimeLabel.font = UIFont.systemFont(ofSize: 14)
-                walkingTimeLabel.frame = CGRect(x: 10, y: 50, width: routeInfoView.frame.width - 20, height: 20)
-                routeInfoView.addSubview(walkingTimeLabel)
-
+        
         let closeButton = UIButton(type: .system)
         closeButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
-        closeButton.tintColor = .black
-        closeButton.frame = CGRect(x: routeInfoView.frame.width - 30, y: 10, width: 20, height: 20)
+        closeButton.tintColor = UIColor(hex: "#40cbd8")
+        closeButton.frame = CGRect(x: routeInfoView.frame.width - 32, y: 12, width: 24, height: 24)
         closeButton.addAction(UIAction { _ in
             if let index = mapView.overlays.firstIndex(where: { ($0 as? MKPolyline)?.userInfo as? Int == index }) {
                 mapView.removeOverlay(mapView.overlays[index])
@@ -179,7 +184,7 @@ class CitySearchHelper {
             routeInfoView.removeFromSuperview()
         }, for: .touchUpInside)
         routeInfoView.addSubview(closeButton)
-
+        
         mapView.superview?.addSubview(routeInfoView)
         route.polyline.userInfo = index
         routeInfoViews.append(routeInfoView)
@@ -188,12 +193,33 @@ class CitySearchHelper {
 func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
     if let polyline = overlay as? MKPolyline {
         let renderer = MKPolylineRenderer(polyline: polyline)
-        renderer.strokeColor = .blue
         renderer.lineWidth = 4
+        
+        if let subtitle = polyline.subtitle {
+            let flags = subtitle.split(separator: ",")
+            let isShortest = flags[0] == "true"
+            let isLongest = flags[1] == "true"
+            
+            if isShortest {
+                renderer.strokeColor = .systemGreen
+            } else if isLongest {
+                renderer.strokeColor = .systemRed
+            } else {
+                renderer.strokeColor = .blue
+            }
+            
+            // Debug print
+            print("Rendering polyline - shortest: \(isShortest), longest: \(isLongest)")
+        } else {
+            renderer.strokeColor = .blue // Default
+            print("No subtitle found for polyline")
+        }
+        
         return renderer
     }
     return MKOverlayRenderer()
 }
+
 extension MKPolyline {
     private struct AssociatedKeys {
         static var userInfo = "userInfo"

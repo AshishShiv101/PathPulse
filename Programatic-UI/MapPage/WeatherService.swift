@@ -5,9 +5,7 @@ import UIKit
 class WeatherService {
     static let shared = WeatherService()
     private let apiKey = "562caa4db4fe2bf5de1470e5d0f67961"
-    
     private init() {}
-    
     func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?, Error?) -> Void) {
         let urlString = "https://api.openweathermap.org/data/2.5/weather?lat=\(coordinate.latitude)&lon=\(coordinate.longitude)&appid=\(apiKey)&units=metric"
         
@@ -59,6 +57,7 @@ struct WeatherData {
     var humidity: Int
     var windSpeed: Double
     var description: String
-    var icon: String 
+    var icon: String
+    
 }
 

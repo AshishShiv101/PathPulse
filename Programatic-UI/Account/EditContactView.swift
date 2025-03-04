@@ -10,13 +10,13 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     private let contentView = UIView()
     private var contactsStackView = UIStackView()
     private let noContactsLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Add Contacts"
-        label.textColor = .lightGray
-        label.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+            let label = UILabel()
+            label.text = "Add Contacts"
+            label.textColor = .lightGray
+            label.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+            label.textAlignment = .center
+            label.translatesAutoresizingMaskIntoConstraints = false
+            return label
         }()
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,11 +26,10 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         loadContactsFromFirebase()
         setupNavigationBarAppearance()
     }
-
     private func setupNavigationBarAppearance() {
         let appearance = UINavigationBarAppearance()
         
-        let viewBackgroundColor = UIColor(hex: "#222222") // अपना व्यू कलर यहां डालें
+        let viewBackgroundColor = UIColor(hex: "#222222")
         appearance.backgroundColor = viewBackgroundColor
         appearance.shadowColor = .clear
         
@@ -367,9 +366,44 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     
     @objc private func deleteContact(_ sender: UIButton) {
         guard let name = sender.accessibilityLabel else { return }
-        contacts.removeValue(forKey: name)
-        deleteContactFromFirebase(name: name)
-        reloadContactCards()
+        
+        let alert = UIAlertController(
+            title: "Delete Contact",
+            message: "Are you sure you want to delete \(name)? This action cannot be undone.",
+            preferredStyle: .alert
+        )
+        
+        // Customize alert appearance for dark mode
+        let titleFont = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18),
+                        NSAttributedString.Key.foregroundColor: UIColor.white]
+        let messageFont = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15),
+                         NSAttributedString.Key.foregroundColor: UIColor.lightGray]
+        
+        let titleAttrString = NSAttributedString(string: "Delete Contact", attributes: titleFont)
+        let messageAttrString = NSAttributedString(string: "Are you sure you want to delete \(name)? This action cannot be undone.",
+                                                 attributes: messageFont)
+        
+        alert.setValue(titleAttrString, forKey: "attributedTitle")
+        alert.setValue(messageAttrString, forKey: "attributedMessage")
+        alert.view.subviews.first?.subviews.first?.subviews.first?.backgroundColor = UIColor(hex: "#1E1E1E")
+        
+        // Add actions
+        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
+            self.contacts.removeValue(forKey: name)
+            self.deleteContactFromFirebase(name: name)
+            self.reloadContactCards()
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        
+        // Customize action colors
+        deleteAction.setValue(UIColor.red, forKey: "titleTextColor")
+        cancelAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
+        
+        alert.addAction(deleteAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
     }
     
     func contactViewController(_ viewController: CNContactViewController, didCompleteWith contact: CNContact?) {

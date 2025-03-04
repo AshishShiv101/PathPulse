@@ -24,7 +24,7 @@ struct NewsDataModel: Decodable {
     enum SourceCodingKeys: String, CodingKey {
         case name
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         headline = try container.decode(String.self, forKey: .headline)
@@ -46,6 +46,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
     private var currentLocation: String?
     private var readArticles: Set<String> = Set()
     private var newsArticles: [NewsDataModel] = []
+    private let filterButton = UIButton()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -100,24 +101,83 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         }
     }
     
+    @objc private func showFilterOptions() {
+        let alertController = UIAlertController(title: "Sort News", message: nil, preferredStyle: .actionSheet)
+        
+        let ascendingAction = UIAlertAction(title: "Time Posted (Ascending)", style: .default) { [weak self] _ in
+            self?.sortNewsByTimeAscending()
+        }
+        
+        let descendingAction = UIAlertAction(title: "Time Posted (Descending)", style: .default) { [weak self] _ in
+            self?.sortNewsByTimeDescending()
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        
+        alertController.addAction(ascendingAction)
+        alertController.addAction(descendingAction)
+        alertController.addAction(cancelAction)
+        
+        present(alertController, animated: true, completion: nil)
+    }
+
+    private func sortNewsByTimeAscending() {
+        let dateFormatter = ISO8601DateFormatter()
+        newsArticles.sort { article1, article2 in
+            guard let date1 = dateFormatter.date(from: article1.publishedAt),
+                  let date2 = dateFormatter.date(from: article2.publishedAt) else {
+                return article1.publishedAt < article2.publishedAt // Fallback to string comparison
+            }
+            return date1 < date2
+        }
+        updateNewsDisplay()
+    }
+
+    private func sortNewsByTimeDescending() {
+        let dateFormatter = ISO8601DateFormatter()
+        newsArticles.sort { article1, article2 in
+            guard let date1 = dateFormatter.date(from: article1.publishedAt),
+                  let date2 = dateFormatter.date(from: article2.publishedAt) else {
+                return article1.publishedAt > article2.publishedAt // Fallback to string comparison
+            }
+            return date1 > date2
+        }
+        updateNewsDisplay()
+    }
+
+    private func updateNewsDisplay() {
+        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        for newsData in newsArticles {
+            let newsCard = createNewsCard(newsData: newsData)
+            stackView.addArrangedSubview(newsCard)
+        }
+    }
+
     private func setupView() {
         let backButton = UIButton()
-               let backImage = UIImage(systemName: "chevron.left")
-               backButton.setImage(backImage, for: .normal)
-               backButton.tintColor = .white
-               backButton.layer.cornerRadius = 10
-               backButton.clipsToBounds = true
-               backButton.addTarget(self, action: #selector(dismissDetailView), for: .touchUpInside)
-               backButton.translatesAutoresizingMaskIntoConstraints = false
-               view.addSubview(backButton)
+        let backImage = UIImage(systemName: "chevron.left")
+        backButton.setImage(backImage, for: .normal)
+        backButton.tintColor = .white
+        backButton.layer.cornerRadius = 10
+        backButton.clipsToBounds = true
+        backButton.addTarget(self, action: #selector(dismissDetailView), for: .touchUpInside)
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(backButton)
 
-        
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Latest News Updates"
         titleLabel.textColor = .white
         titleLabel.font = .boldSystemFont(ofSize: 20)
         titleLabel.textAlignment = .center
         view.addSubview(titleLabel)
+        
+        filterButton.translatesAutoresizingMaskIntoConstraints = false
+            let filterImage = UIImage(systemName: "line.3.horizontal.decrease.circle")
+            filterButton.setImage(filterImage, for: .normal)
+            filterButton.tintColor = .white
+            filterButton.addTarget(self, action: #selector(showFilterOptions), for: .touchUpInside)
+            view.addSubview(filterButton)
         
         buttonStackView.translatesAutoresizingMaskIntoConstraints = false
         buttonStackView.axis = .horizontal
@@ -161,14 +221,19 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         
         NSLayoutConstraint.activate([
             backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            backButton.widthAnchor.constraint(equalToConstant: 40),
-            backButton.heightAnchor.constraint(equalToConstant: 40),
+                    backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+                    backButton.widthAnchor.constraint(equalToConstant: 40),
+                    backButton.heightAnchor.constraint(equalToConstant: 40),
 
-            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            titleLabel.heightAnchor.constraint(equalToConstant: 40),
+                    titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+                    titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60), // Adjusted for back button
+                    titleLabel.trailingAnchor.constraint(equalTo: filterButton.leadingAnchor, constant: -20),
+                    titleLabel.heightAnchor.constraint(equalToConstant: 40),
+                    
+                    filterButton.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+                    filterButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+                    filterButton.widthAnchor.constraint(equalToConstant: 40),
+                    filterButton.heightAnchor.constraint(equalToConstant: 40),
             
             buttonStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
             buttonStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -192,7 +257,6 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
          dismiss(animated: true, completion: nil)
      }
 
-    
     private func fetchNewsData(query: String) {
         let apiKey = "30e36402849c414a9a78de022db36455"
         
@@ -401,19 +465,14 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
             print("No link associated with this card or invalid index.")
             return
         }
-        
         readArticles.insert(link)
-        
         let newsData = newsArticles[index]
         let updatedCard = createNewsCard(newsData: newsData)
-        
         stackView.removeArrangedSubview(card)
         card.removeFromSuperview()
         stackView.insertArrangedSubview(updatedCard, at: index)
-        
         openArticle(link: link)
     }
-
     private func formatDate(_ dateString: String) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
@@ -432,7 +491,6 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         } else if let days = components.day {
             return "\(days)d ago"
         }
-        
         return dateString
     }
     

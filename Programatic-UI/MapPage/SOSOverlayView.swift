@@ -20,28 +20,6 @@ class SOSOverlayView: UIView {
         stackView.translatesAutoresizingMaskIntoConstraints = false
         return stackView
     }()
-    private let addContactBox: UIView = {
-        let view = UIView()
-        view.backgroundColor = UIColor(hex: "#444444")
-        view.layer.cornerRadius = 10
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
-    private let addContactLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Add Contact"
-        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        label.textColor = .white
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-    
-    private let appleIconImageView: UIImageView = {
-        let imageView = UIImageView(image: UIImage(systemName: "person.crop.circle.badge.plus"))
-        imageView.tintColor = .white
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
-    }()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -60,34 +38,15 @@ class SOSOverlayView: UIView {
 
         addSubview(mainStackView)
         mainStackView.addArrangedSubview(contactsStackView)
- 
-        mainStackView.addArrangedSubview(addContactBox)
-
-        addContactBox.addSubview(addContactLabel)
-        addContactBox.addSubview(appleIconImageView)
 
         layer.zPosition = 1
         mainStackView.layer.zPosition = 2
-        addContactBox.layer.zPosition = 3
 
         NSLayoutConstraint.activate([
             mainStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             mainStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             mainStackView.topAnchor.constraint(equalTo: topAnchor, constant: 16),
-            mainStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16) 
-        ])
-        
-        NSLayoutConstraint.activate([
-            addContactBox.heightAnchor.constraint(equalToConstant: 50),
-            
-            addContactLabel.centerYAnchor.constraint(equalTo: addContactBox.centerYAnchor),
-            addContactLabel.leadingAnchor.constraint(equalTo: addContactBox.leadingAnchor, constant: 16),
-            
-            appleIconImageView.centerYAnchor.constraint(equalTo: addContactBox.centerYAnchor),
-            appleIconImageView.leadingAnchor.constraint(equalTo: addContactLabel.trailingAnchor, constant: 8),
-            appleIconImageView.trailingAnchor.constraint(equalTo: addContactBox.trailingAnchor, constant: -16),
-            appleIconImageView.widthAnchor.constraint(equalToConstant: 24),
-            appleIconImageView.heightAnchor.constraint(equalToConstant: 24)
+            mainStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
         ])
 
         NSLayoutConstraint.activate([
@@ -140,7 +99,6 @@ class SOSOverlayView: UIView {
         return stackView
     }
 
-
     @objc private func contactTapped(_ sender: UIButton) {
         guard let number = sender.accessibilityLabel,
               !number.isEmpty,
@@ -157,5 +115,4 @@ class SOSOverlayView: UIView {
             print("This device cannot make calls.")
         }
     }
-
 }

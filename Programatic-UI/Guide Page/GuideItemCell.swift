@@ -14,7 +14,6 @@ class GuideItemCell: UICollectionViewCell {
         setupUI()
         setupConstraints()
     }
-    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -61,37 +60,34 @@ class GuideItemCell: UICollectionViewCell {
         starImageView.widthAnchor.constraint(equalToConstant: 15).isActive = true
         starImageView.heightAnchor.constraint(equalToConstant: 15).isActive = true
         ratingStackView.addArrangedSubview(starImageView)
-        
-
     }
-    
     private func setupConstraints() {
         NSLayoutConstraint.activate([
             cardView.topAnchor.constraint(equalTo: contentView.topAnchor),
             cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -70),
+            cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40), // Increased bottom padding
             
-            imageView.topAnchor.constraint(equalTo: cardView.topAnchor),
-            imageView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
-            imageView.heightAnchor.constraint(equalToConstant: 80),
+            imageView.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 10),
+            imageView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 10),
+            imageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
+            imageView.heightAnchor.constraint(equalToConstant: 100), // Reduced height to allow space for ratingStackView
             
-            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 6),
-            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
-            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -8),
+            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 12),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 10),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
             
-            locationLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            locationLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
-            locationLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -8),
+            locationLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+            locationLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 10),
+            locationLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -10),
             
-            ratingStackView.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 4),
-            ratingStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 8),
+            ratingStackView.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 6),
+            ratingStackView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 10),
+            ratingStackView.trailingAnchor.constraint(lessThanOrEqualTo: cardView.trailingAnchor, constant: -10),
+            ratingStackView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -10) // Ensures it stays inside the card
         ])
     }
-
-    
-    func configure(with item: GuideItem) {
+  func configure(with item: GuideItem) {
         titleLabel.text = item.title
         locationLabel.text = item.location
         ratingLabel.text = "\(item.rating)"

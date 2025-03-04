@@ -2,11 +2,9 @@ import UIKit
 import FirebaseFirestore
 import FirebaseAuth
 
-
-
 // MARK: - UITextField Padding Extension
 extension UITextField {
-    func setLeftPaddingPoints(_ amount:CGFloat){
+    func setLeftPaddingPoints(_ amount: CGFloat) {
         let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: amount, height: self.frame.height))
         self.leftView = paddingView
         self.leftViewMode = .always
@@ -63,7 +61,7 @@ class AccountPage: UIViewController {
         let tf = UITextField()
         let placeholderText = "Enter your phone number"
         tf.attributedPlaceholder = NSAttributedString(string: placeholderText,
-        attributes: [NSAttributedString.Key.foregroundColor: UIColor.lightGray])
+                                                      attributes: [NSAttributedString.Key.foregroundColor: UIColor.lightGray])
         tf.borderStyle = .none
         tf.backgroundColor = UIColor(hex: "#222222")
         tf.textColor = .white
@@ -78,7 +76,6 @@ class AccountPage: UIViewController {
     private let saveEditButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("Save", for: .normal)
-
         button.backgroundColor = UIColor(hex: "#40CBD8")
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 8
@@ -131,7 +128,7 @@ class AccountPage: UIViewController {
         phoneLabel.textColor = .lightGray
         phoneLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        // Arrow image with tap gesture.
+        // Arrow image with tap gesture
         let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
         arrowImageView.tintColor = .white
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -164,15 +161,15 @@ class AccountPage: UIViewController {
         buttonsCardView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(buttonsCardView)
         
-        configureButton(privacyButton, title: "Privacy Settings", systemImageName: "lock.fill")
         configureButton(editContactsButton, title: "Emergency Contacts", systemImageName: "person.2.fill")
+        configureButton(privacyButton, title: "Privacy Settings", systemImageName: "lock.fill")
         configureButton(logoutButton, title: "Logout", systemImageName: "arrowshape.turn.up.left.fill")
         
-        privacyButton.addTarget(self, action: #selector(privacyButtonTapped), for: .touchUpInside)
         editContactsButton.addTarget(self, action: #selector(editContactsButtonTapped), for: .touchUpInside)
+        privacyButton.addTarget(self, action: #selector(privacyButtonTapped), for: .touchUpInside)
         logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
         
-        let buttonStackView = UIStackView(arrangedSubviews: [privacyButton, editContactsButton, logoutButton])
+        let buttonStackView = UIStackView(arrangedSubviews: [editContactsButton, privacyButton, logoutButton])
         buttonStackView.axis = .vertical
         buttonStackView.spacing = 20
         buttonStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -226,7 +223,7 @@ class AccountPage: UIViewController {
         editInfoContainerView.addSubview(editPhoneTextField)
         editInfoContainerView.addSubview(saveEditButton)
         
-        // Dismiss overlay when background is tapped.
+        // Dismiss overlay when background is tapped
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleBackgroundTap))
         editInfoBackgroundView.addGestureRecognizer(tapGesture)
         
@@ -257,7 +254,7 @@ class AccountPage: UIViewController {
             saveEditButton.heightAnchor.constraint(equalToConstant: 40)
         ])
         
-        // Add left padding to the text fields for consistency.
+        // Add left padding to the text fields for consistency
         editNameTextField.setLeftPaddingPoints(10)
         editPhoneTextField.setLeftPaddingPoints(10)
         
@@ -271,10 +268,10 @@ class AccountPage: UIViewController {
     }
     
     @objc private func editAccountInfoTapped() {
-        // Pre-populate text fields based on existing labels.
+        // Pre-populate text fields based on existing labels
         editNameTextField.text = (nameLabel.text == "Please Enter name") ? "" : nameLabel.text
         
-        // Use the phone number from login credentials if available.
+        // Use the phone number from login credentials if available
         if let currentUserPhone = Auth.auth().currentUser?.phoneNumber, !currentUserPhone.isEmpty {
             editPhoneTextField.text = currentUserPhone
         } else {
@@ -288,20 +285,17 @@ class AccountPage: UIViewController {
         let name = editNameTextField.text?.trimmingCharacters(in: .whitespaces) ?? ""
         let phoneInput = editPhoneTextField.text?.trimmingCharacters(in: .whitespaces) ?? ""
         
-        // Update the name label with validation.
+        // Update the name label with validation
         nameLabel.text = name.isEmpty ? "Please Enter name" : name
         
-        // Instead of saving the phone number entered here,
-        // always display the phone number from the login credentials on the info card view.
+        // Always display the phone number from login credentials on the info card view
         if let currentUserPhone = Auth.auth().currentUser?.phoneNumber, !currentUserPhone.isEmpty {
             phoneLabel.text = "Phone: \(currentUserPhone)"
         } else {
             phoneLabel.text = phoneInput.isEmpty ? "Please Enter phone number" : "Phone: \(phoneInput)"
         }
         
-        // Update Firestore:
-        // Always update the name.
-        // Update the phone only if there is no phone number in the login credentials.
+        // Update Firestore
         guard let uid = Auth.auth().currentUser?.uid else { return }
         var data: [String: String] = ["name": name]
         if Auth.auth().currentUser?.phoneNumber == nil || Auth.auth().currentUser?.phoneNumber?.isEmpty == true {
@@ -325,12 +319,37 @@ class AccountPage: UIViewController {
     
     @objc private func logoutButtonTapped() {
         let alert = UIAlertController(title: "Logout", message: "Are you sure?", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Logout", style: .destructive) { _ in
+        
+        // Customize title and message color
+        let titleAttributes = [NSAttributedString.Key.foregroundColor: UIColor(hex: "#40cbd8")]
+        let messageAttributes = [NSAttributedString.Key.foregroundColor: UIColor(hex: "#40cbd8")]
+        
+        let attributedTitle = NSAttributedString(string: "Logout", attributes: titleAttributes)
+        let attributedMessage = NSAttributedString(string: "Are you sure?", attributes: messageAttributes)
+        
+        alert.setValue(attributedTitle, forKey: "attributedTitle")
+        alert.setValue(attributedMessage, forKey: "attributedMessage")
+
+        // Add actions
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        cancelAction.setValue(UIColor.white, forKey: "titleTextColor")
+        
+        let logoutAction = UIAlertAction(title: "Logout", style: .destructive) { _ in
             self.performLogout()
-        })
+        }
+        logoutAction.setValue(UIColor.red, forKey: "titleTextColor")
+
+        alert.addAction(cancelAction)
+        alert.addAction(logoutAction)
+
+        // Customize background color
+        if let bgView = alert.view.subviews.first?.subviews.first?.subviews.first {
+            bgView.backgroundColor = UIColor(hex: "#222222")
+        }
+
         present(alert, animated: true)
     }
+
     
     // MARK: - Data Handling
     private func fetchUserData() {
@@ -355,8 +374,6 @@ class AccountPage: UIViewController {
         do {
             try Auth.auth().signOut()
             let loginVC = LoginPage()
-            
-            // Update root view controller (adjust for your SceneDelegate setup)
             if let sceneDelegate = UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate {
                 sceneDelegate.window?.rootViewController = loginVC
                 sceneDelegate.window?.makeKeyAndVisible()
@@ -366,10 +383,10 @@ class AccountPage: UIViewController {
         }
     }
     
-    // MARK: - Helpers
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
 }
+
