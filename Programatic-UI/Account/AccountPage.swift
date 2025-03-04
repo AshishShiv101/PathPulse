@@ -14,7 +14,7 @@ extension UITextField {
 // MARK: - AccountPage
 class AccountPage: UIViewController {
     
-    // MARK: - UI Components
+    // MARK: - UI Components (unchanged)
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let infoCardView = UIView()
@@ -25,7 +25,7 @@ class AccountPage: UIViewController {
     private let editContactsButton = UIButton()
     private let logoutButton = UIButton()
     
-    // MARK: - Edit Info Overlay Components
+    // MARK: - Edit Info Overlay Components (unchanged)
     private let editInfoBackgroundView: UIView = {
         let view = UIView()
         view.backgroundColor = UIColor.black.withAlphaComponent(0.5)
@@ -91,11 +91,10 @@ class AccountPage: UIViewController {
         fetchUserData()
     }
     
-    // MARK: - Setup Methods
     private func setupUI() {
         view.backgroundColor = UIColor(hex: "#222222")
         
-        // Scroll View Setup
+        // Scroll View Setup (unchanged)
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
@@ -114,56 +113,76 @@ class AccountPage: UIViewController {
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
         ])
         
-        // Info Card Setup
+        // Info Card Setup (unchanged)
         infoCardView.backgroundColor = UIColor(hex: "#333333")
-        infoCardView.layer.cornerRadius = 15
+        infoCardView.layer.cornerRadius = 20
+        infoCardView.layer.masksToBounds = true
+        infoCardView.layer.shadowColor = UIColor.black.cgColor
+        infoCardView.layer.shadowOpacity = 0.2
+        infoCardView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        infoCardView.layer.shadowRadius = 8
         infoCardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: view.bounds.width - 32, height: 120)
+        gradientLayer.colors = [UIColor(hex: "#333333").cgColor, UIColor(hex: "#2A2A2A").cgColor]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
+        infoCardView.layer.insertSublayer(gradientLayer, at: 0)
+        
         contentView.addSubview(infoCardView)
         
-        nameLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        nameLabel.font = UIFont.systemFont(ofSize: 26, weight: .bold)
         nameLabel.textColor = UIColor(hex: "#40CBD8")
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        phoneLabel.font = UIFont.systemFont(ofSize: 16)
+        phoneLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         phoneLabel.textColor = .lightGray
         phoneLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        // Arrow image with tap gesture
-        let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
-        arrowImageView.tintColor = .white
-        arrowImageView.translatesAutoresizingMaskIntoConstraints = false
-        arrowImageView.isUserInteractionEnabled = true
-        arrowImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(editAccountInfoTapped)))
+        let editIconView = UIImageView(image: UIImage(systemName: "pencil")?.withConfiguration(UIImage.SymbolConfiguration(pointSize: 25, weight: .semibold)))
+        editIconView.tintColor = UIColor(hex: "#40CBD8")
+        editIconView.translatesAutoresizingMaskIntoConstraints = false
+        editIconView.isUserInteractionEnabled = true
+        editIconView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(editAccountInfoTapped)))
         
         infoCardView.addSubview(nameLabel)
         infoCardView.addSubview(phoneLabel)
-        infoCardView.addSubview(arrowImageView)
+        infoCardView.addSubview(editIconView)
         
         NSLayoutConstraint.activate([
-            infoCardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 60),
+            infoCardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 40),
             infoCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             infoCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            infoCardView.heightAnchor.constraint(equalToConstant: 100),
+            infoCardView.heightAnchor.constraint(equalToConstant: 120),
             
-            nameLabel.topAnchor.constraint(equalTo: infoCardView.topAnchor, constant: 20),
-            nameLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 16),
+            nameLabel.topAnchor.constraint(equalTo: infoCardView.topAnchor, constant: 24),
+            nameLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 20),
+            nameLabel.trailingAnchor.constraint(equalTo: editIconView.leadingAnchor, constant: -10),
             
-            phoneLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 20),
-            phoneLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 16),
+            phoneLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 12),
+            phoneLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 20),
             
-            arrowImageView.centerYAnchor.constraint(equalTo: infoCardView.centerYAnchor),
-            arrowImageView.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -16)
+            editIconView.centerYAnchor.constraint(equalTo: infoCardView.centerYAnchor),
+            editIconView.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -20),
+            editIconView.widthAnchor.constraint(equalToConstant: 30),
+            editIconView.heightAnchor.constraint(equalToConstant: 30)
         ])
         
         // Buttons Card Setup
         buttonsCardView.backgroundColor = UIColor(hex: "#333333")
-        buttonsCardView.layer.cornerRadius = 15
+        buttonsCardView.layer.cornerRadius = 20
+        buttonsCardView.layer.shadowColor = UIColor.black.cgColor
+        buttonsCardView.layer.shadowOpacity = 0.2
+        buttonsCardView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        buttonsCardView.layer.shadowRadius = 8
         buttonsCardView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(buttonsCardView)
         
-        configureButton(editContactsButton, title: "Emergency Contacts", systemImageName: "person.2.fill")
-        configureButton(privacyButton, title: "Privacy Settings", systemImageName: "lock.fill")
-        configureButton(logoutButton, title: "Logout", systemImageName: "arrowshape.turn.up.left.fill")
+        // Configure buttons with distinct style for Emergency Contacts
+        configureButton(editContactsButton, title: "Emergency Contacts", systemImageName: "person.2.fill", isHighlighted: true)
+        configureButton(privacyButton, title: "Privacy Settings", systemImageName: "lock.fill", isHighlighted: false)
+        configureButton(logoutButton, title: "Logout", systemImageName: "arrowshape.turn.up.left.fill", isHighlighted: false)
         
         editContactsButton.addTarget(self, action: #selector(editContactsButtonTapped), for: .touchUpInside)
         privacyButton.addTarget(self, action: #selector(privacyButtonTapped), for: .touchUpInside)
@@ -171,51 +190,68 @@ class AccountPage: UIViewController {
         
         let buttonStackView = UIStackView(arrangedSubviews: [editContactsButton, privacyButton, logoutButton])
         buttonStackView.axis = .vertical
-        buttonStackView.spacing = 20
+        buttonStackView.spacing = 16
         buttonStackView.translatesAutoresizingMaskIntoConstraints = false
         buttonsCardView.addSubview(buttonStackView)
         
         NSLayoutConstraint.activate([
-            buttonsCardView.topAnchor.constraint(equalTo: infoCardView.bottomAnchor, constant: 40),
+            buttonsCardView.topAnchor.constraint(equalTo: infoCardView.bottomAnchor, constant: 30),
             buttonsCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             buttonsCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            buttonsCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
+            buttonsCardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
             
-            buttonStackView.topAnchor.constraint(equalTo: buttonsCardView.topAnchor, constant: 20),
-            buttonStackView.leadingAnchor.constraint(equalTo: buttonsCardView.leadingAnchor, constant: 16),
-            buttonStackView.trailingAnchor.constraint(equalTo: buttonsCardView.trailingAnchor, constant: -16),
-            buttonStackView.bottomAnchor.constraint(equalTo: buttonsCardView.bottomAnchor, constant: -20)
+            buttonStackView.topAnchor.constraint(equalTo: buttonsCardView.topAnchor, constant: 24),
+            buttonStackView.leadingAnchor.constraint(equalTo: buttonsCardView.leadingAnchor, constant: 20),
+            buttonStackView.trailingAnchor.constraint(equalTo: buttonsCardView.trailingAnchor, constant: -20),
+            buttonStackView.bottomAnchor.constraint(equalTo: buttonsCardView.bottomAnchor, constant: -24)
         ])
     }
     
-    private func configureButton(_ button: UIButton, title: String, systemImageName: String) {
+    private func configureButton(_ button: UIButton, title: String, systemImageName: String, isHighlighted: Bool) {
         button.setTitle(title, for: .normal)
         button.setTitleColor(.white, for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        button.setImage(UIImage(systemName: systemImageName), for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+        button.setImage(UIImage(systemName: systemImageName)?.withConfiguration(UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)), for: .normal)
         button.tintColor = .white
-        button.backgroundColor = UIColor(hex: "#818589").withAlphaComponent(0.8)
         button.contentHorizontalAlignment = .left
-        button.layer.cornerRadius = 12
-        button.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        
+        if isHighlighted { // Distinct style for Emergency Contacts
+            button.backgroundColor = UIColor(hex: "#40CBD8").withAlphaComponent(0.9) // Brighter accent color
+            button.layer.cornerRadius = 16
+            button.heightAnchor.constraint(equalToConstant: 60).isActive = true // Slightly taller
+            button.layer.borderWidth = 1.5
+            button.layer.borderColor = UIColor(hex: "#FFFFFF").withAlphaComponent(0.3).cgColor // Subtle white border
+            button.layer.shadowColor = UIColor(hex: "#40CBD8").cgColor // Match shadow to accent
+            button.layer.shadowOpacity = 0.4
+            button.layer.shadowOffset = CGSize(width: 0, height: 3)
+            button.layer.shadowRadius = 6
+        } else { // Standard style for other buttons
+            button.backgroundColor = UIColor(hex: "#818589").withAlphaComponent(0.9)
+            button.layer.cornerRadius = 14
+            button.heightAnchor.constraint(equalToConstant: 56).isActive = true
+            button.layer.shadowColor = UIColor.black.cgColor
+            button.layer.shadowOpacity = 0.1
+            button.layer.shadowOffset = CGSize(width: 0, height: 2)
+            button.layer.shadowRadius = 4
+        }
         
         var config = UIButton.Configuration.plain()
-        config.imagePadding = 8
-        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 0)
+        config.imagePadding = 12
+        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 0)
         button.configuration = config
         
-        let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
+        let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right")?.withConfiguration(UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)))
         arrowImageView.tintColor = .white
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
         button.addSubview(arrowImageView)
         
         NSLayoutConstraint.activate([
             arrowImageView.centerYAnchor.constraint(equalTo: button.centerYAnchor),
-            arrowImageView.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -16)
+            arrowImageView.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -20)
         ])
     }
     
-    // MARK: - Edit Info Overlay Setup
+    // MARK: - Edit Info Overlay Setup (unchanged)
     private func setupEditInfoView() {
         view.addSubview(editInfoBackgroundView)
         editInfoBackgroundView.addSubview(editInfoContainerView)
@@ -223,7 +259,11 @@ class AccountPage: UIViewController {
         editInfoContainerView.addSubview(editPhoneTextField)
         editInfoContainerView.addSubview(saveEditButton)
         
-        // Dismiss overlay when background is tapped
+        editInfoContainerView.layer.shadowColor = UIColor.black.cgColor
+        editInfoContainerView.layer.shadowOpacity = 0.3
+        editInfoContainerView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        editInfoContainerView.layer.shadowRadius = 10
+        
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleBackgroundTap))
         editInfoBackgroundView.addGestureRecognizer(tapGesture)
         
@@ -235,43 +275,50 @@ class AccountPage: UIViewController {
             
             editInfoContainerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             editInfoContainerView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            editInfoContainerView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.8),
-            editInfoContainerView.heightAnchor.constraint(equalToConstant: 200),
+            editInfoContainerView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.85),
+            editInfoContainerView.heightAnchor.constraint(equalToConstant: 240),
             
-            editNameTextField.topAnchor.constraint(equalTo: editInfoContainerView.topAnchor, constant: 20),
+            editNameTextField.topAnchor.constraint(equalTo: editInfoContainerView.topAnchor, constant: 30),
             editNameTextField.leadingAnchor.constraint(equalTo: editInfoContainerView.leadingAnchor, constant: 20),
             editNameTextField.trailingAnchor.constraint(equalTo: editInfoContainerView.trailingAnchor, constant: -20),
-            editNameTextField.heightAnchor.constraint(equalToConstant: 40),
+            editNameTextField.heightAnchor.constraint(equalToConstant: 48),
             
-            editPhoneTextField.topAnchor.constraint(equalTo: editNameTextField.bottomAnchor, constant: 15),
+            editPhoneTextField.topAnchor.constraint(equalTo: editNameTextField.bottomAnchor, constant: 20),
             editPhoneTextField.leadingAnchor.constraint(equalTo: editInfoContainerView.leadingAnchor, constant: 20),
             editPhoneTextField.trailingAnchor.constraint(equalTo: editInfoContainerView.trailingAnchor, constant: -20),
-            editPhoneTextField.heightAnchor.constraint(equalToConstant: 40),
+            editPhoneTextField.heightAnchor.constraint(equalToConstant: 48),
             
-            saveEditButton.bottomAnchor.constraint(equalTo: editInfoContainerView.bottomAnchor, constant: -20),
+            saveEditButton.bottomAnchor.constraint(equalTo: editInfoContainerView.bottomAnchor, constant: -30),
             saveEditButton.trailingAnchor.constraint(equalTo: editInfoContainerView.trailingAnchor, constant: -20),
-            saveEditButton.widthAnchor.constraint(equalToConstant: 80),
-            saveEditButton.heightAnchor.constraint(equalToConstant: 40)
+            saveEditButton.widthAnchor.constraint(equalToConstant: 100),
+            saveEditButton.heightAnchor.constraint(equalToConstant: 48)
         ])
         
-        // Add left padding to the text fields for consistency
-        editNameTextField.setLeftPaddingPoints(10)
-        editPhoneTextField.setLeftPaddingPoints(10)
+        editNameTextField.setLeftPaddingPoints(12)
+        editPhoneTextField.setLeftPaddingPoints(12)
+        editNameTextField.layer.borderWidth = 1
+        editNameTextField.layer.borderColor = UIColor(hex: "#40CBD8").withAlphaComponent(0.2).cgColor
+        editPhoneTextField.layer.borderWidth = 1
+        editPhoneTextField.layer.borderColor = UIColor(hex: "#40CBD8").withAlphaComponent(0.2).cgColor
+        
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 100, height: 48)
+        gradientLayer.colors = [UIColor(hex: "#40CBD8").cgColor, UIColor(hex: "#36A8B3").cgColor]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 0.5)
+        saveEditButton.layer.insertSublayer(gradientLayer, at: 0)
         
         saveEditButton.addTarget(self, action: #selector(saveEditInfoTapped), for: .touchUpInside)
     }
     
-    // MARK: - User Actions
+    // MARK: - User Actions (unchanged)
     @objc private func handleBackgroundTap() {
         view.endEditing(true)
         editInfoBackgroundView.isHidden = true
     }
     
     @objc private func editAccountInfoTapped() {
-        // Pre-populate text fields based on existing labels
         editNameTextField.text = (nameLabel.text == "Please Enter name") ? "" : nameLabel.text
-        
-        // Use the phone number from login credentials if available
         if let currentUserPhone = Auth.auth().currentUser?.phoneNumber, !currentUserPhone.isEmpty {
             editPhoneTextField.text = currentUserPhone
         } else {
@@ -285,17 +332,13 @@ class AccountPage: UIViewController {
         let name = editNameTextField.text?.trimmingCharacters(in: .whitespaces) ?? ""
         let phoneInput = editPhoneTextField.text?.trimmingCharacters(in: .whitespaces) ?? ""
         
-        // Update the name label with validation
         nameLabel.text = name.isEmpty ? "Please Enter name" : name
-        
-        // Always display the phone number from login credentials on the info card view
         if let currentUserPhone = Auth.auth().currentUser?.phoneNumber, !currentUserPhone.isEmpty {
             phoneLabel.text = "Phone: \(currentUserPhone)"
         } else {
             phoneLabel.text = phoneInput.isEmpty ? "Please Enter phone number" : "Phone: \(phoneInput)"
         }
         
-        // Update Firestore
         guard let uid = Auth.auth().currentUser?.uid else { return }
         var data: [String: String] = ["name": name]
         if Auth.auth().currentUser?.phoneNumber == nil || Auth.auth().currentUser?.phoneNumber?.isEmpty == true {
@@ -320,7 +363,6 @@ class AccountPage: UIViewController {
     @objc private func logoutButtonTapped() {
         let alert = UIAlertController(title: "Logout", message: "Are you sure?", preferredStyle: .alert)
         
-        // Customize title and message color
         let titleAttributes = [NSAttributedString.Key.foregroundColor: UIColor(hex: "#40cbd8")]
         let messageAttributes = [NSAttributedString.Key.foregroundColor: UIColor(hex: "#40cbd8")]
         
@@ -329,8 +371,7 @@ class AccountPage: UIViewController {
         
         alert.setValue(attributedTitle, forKey: "attributedTitle")
         alert.setValue(attributedMessage, forKey: "attributedMessage")
-
-        // Add actions
+        
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
         cancelAction.setValue(UIColor.white, forKey: "titleTextColor")
         
@@ -338,20 +379,18 @@ class AccountPage: UIViewController {
             self.performLogout()
         }
         logoutAction.setValue(UIColor.red, forKey: "titleTextColor")
-
+        
         alert.addAction(cancelAction)
         alert.addAction(logoutAction)
-
-        // Customize background color
+        
         if let bgView = alert.view.subviews.first?.subviews.first?.subviews.first {
             bgView.backgroundColor = UIColor(hex: "#222222")
         }
-
+        
         present(alert, animated: true)
     }
-
     
-    // MARK: - Data Handling
+    // MARK: - Data Handling (unchanged)
     private func fetchUserData() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         Firestore.firestore().collection("users").document(uid).getDocument { [weak self] snapshot, error in
@@ -389,4 +428,3 @@ class AccountPage: UIViewController {
         present(alert, animated: true)
     }
 }
-
