@@ -57,7 +57,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             searchCompleter.queryFragment = searchText
         }
     }
-
+    
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let cityName = searchBar.text, !cityName.isEmpty else {
             return
@@ -117,13 +117,13 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                             subview.backgroundColor = UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1)
                             subview.layer.cornerRadius = 12
                         }
-
+                        
                         self.present(alert, animated: true, completion: nil)
                         
                         // Mark the alert as seen
                         UserDefaults.standard.set(true, forKey: "hasSeenFirstSearchAlert")
                     }
-
+                    
                 }
             }
         }
@@ -549,7 +549,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         self.humidityIcon.tintColor = textColor
         self.windIcon.tintColor = textColor
     }
- private func setupSuggestionTableView() {
+    private func setupSuggestionTableView() {
         suggestionTableView = UITableView()
         suggestionTableView.delegate = self
         suggestionTableView.dataSource = self
@@ -769,7 +769,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             let spacer = UIView()
             spacer.heightAnchor.constraint(equalToConstant: 20).isActive = true
             recentSearchesContainer.addArrangedSubview(spacer)
-
+            
             let noHistoryLabel = UILabel()
             noHistoryLabel.text = "No history available"
             noHistoryLabel.textColor = .gray
@@ -817,7 +817,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             bottomSheetView.bringSubviewToFront(suggestionTableView)
         }
     }
-
+    
     // New method to handle tap on history card
     @objc private func historyCardTapped(_ sender: UITapGestureRecognizer) {
         guard let entryStack = sender.view as? UIStackView,
@@ -831,7 +831,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     }
     @objc private func openAdditionalView() {
         let detailVC = NewsViewController()
-       // detailVC.cityName = locationLabel.text // Pass the searched city name
+        // detailVC.cityName = locationLabel.text // Pass the searched city name
         detailVC.modalPresentationStyle = .fullScreen
         present(detailVC, animated: true, completion: nil)
     }
@@ -1002,7 +1002,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 let flags = subtitle.split(separator: ",")
                 let isShortest = flags[0] == "true"
                 let isLongest = flags[1] == "true"
-
+                
                 if let subtitle = polyline.subtitle {
                     let flags = subtitle.split(separator: ",")
                     let isShortest = flags[0] == "true"
@@ -1033,13 +1033,8 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 view.addSubview(weatherInfoView)
             }
             fetchWeather(for: coordinate) { [weak self] weatherData in
-                DispatchQueue.main.async {
-                    if let weatherData = weatherData {
-                        self?.updateWeatherInfoView(weatherData)
-                    } else {
-                        self?.updateWeatherInfoViewWithError()
-                    }
-                }
+                // No need for additional DispatchQueue.main.async here since fetchWeather already handles it
+                // The UI update is now handled inside fetchWeather's completion
             }
         }
     }
@@ -1050,7 +1045,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weatherView.layer.shadowOpacity = 0.2
         weatherView.layer.shadowOffset = CGSize(width: 0, height: 4)
         weatherView.layer.shadowRadius = 6
-        weatherView.frame = CGRect(x: location.x - 110, y: location.y - 100, width: 220, height: 220)
+        weatherView.frame = CGRect(x: location.x - 110, y: location.y - 120, width: 220, height: 260) // Increased height to accommodate location label
         weatherView.backgroundColor = UIColor(hex: "#222222")
         
         let closeButton = UIButton(type: .system)
@@ -1086,6 +1081,17 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         descriptionLabel.frame = CGRect(x: 10, y: 185, width: weatherView.frame.width - 20, height: 20)
         weatherView.addSubview(descriptionLabel)
         
+        // Add location label
+        let locationLabel = UILabel()
+        locationLabel.text = "Fetching location..."
+        locationLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        locationLabel.textAlignment = .center
+        locationLabel.textColor = .black
+        locationLabel.tag = 203 // Unique tag for location label
+        locationLabel.frame = CGRect(x: 10, y: 210, width: weatherView.frame.width - 20, height: 40)
+        locationLabel.numberOfLines = 2 // Allow wrapping for longer names
+        weatherView.addSubview(locationLabel)
+        
         weatherInfoView?.tag = 1000
         return weatherView
     }
@@ -1094,7 +1100,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weatherInfoView?.removeFromSuperview()
     }
     
-    private func updateWeatherInfoView(_ weatherData: WeatherData) {
+    private func updateWeatherInfoView(_ weatherData: WeatherData, locationName: String?) {
         guard let weatherInfoView = weatherInfoView else { return }
         if let titleLabel = weatherInfoView.viewWithTag(201) as? UILabel {
             titleLabel.text = "Temp: \(weatherData.temperature)°C"
@@ -1104,6 +1110,9 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
         if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
             updateWeatherIcon(iconImageView, with: weatherData.icon)
+        }
+        if let locationLabel = weatherInfoView.viewWithTag(203) as? UILabel {
+            locationLabel.text = locationName ?? "Location unavailable"
         }
         updateWeatherBackground(for: weatherInfoView, condition: weatherData.description.lowercased())
     }
@@ -1119,6 +1128,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             }
         }
     }
+    
     private func updateWeatherBackground(for view: UIView, condition: String) {
         let gradientLayer = CAGradientLayer()
         gradientLayer.frame = view.bounds
@@ -1154,20 +1164,48 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         if let descriptionLabel = weatherInfoView.viewWithTag(202) as? UILabel {
             descriptionLabel.text = "Please try again later."
         }
+        if let locationLabel = weatherInfoView.viewWithTag(203) as? UILabel {
+            locationLabel.text = "Location unavailable"
+        }
         if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
             iconImageView.image = UIImage(systemName: "exclamationmark.triangle.fill")
             iconImageView.tintColor = .red
         }
         updateWeatherBackground(for: weatherInfoView, condition: "error")
     }
+    
     private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
-        WeatherService.shared.fetchWeather(for: coordinate) { weatherData, error in
+        WeatherService.shared.fetchWeather(for: coordinate) { [weak self] weatherData, error in
+            guard let self = self else { return }
             DispatchQueue.main.async {
                 if let error = error {
                     print("Error fetching weather: \(error.localizedDescription)")
+                    self.updateWeatherInfoViewWithError()
                     completion(nil)
+                    return
+                }
+                if let weatherData = weatherData {
+                    // Reverse geocode to get location name
+                    let geocoder = CLGeocoder()
+                    let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+                    geocoder.reverseGeocodeLocation(location) { placemarks, error in
+                        if let error = error {
+                            print("Reverse geocoding error: \(error.localizedDescription)")
+                            self.updateWeatherInfoView(weatherData, locationName: nil)
+                            completion(weatherData)
+                            return
+                        }
+                        if let placemark = placemarks?.first {
+                            let locationName = placemark.locality ?? placemark.name ?? "Unknown location"
+                            self.updateWeatherInfoView(weatherData, locationName: locationName)
+                        } else {
+                            self.updateWeatherInfoView(weatherData, locationName: nil)
+                        }
+                        completion(weatherData)
+                    }
                 } else {
-                    completion(weatherData)
+                    self.updateWeatherInfoViewWithError()
+                    completion(nil)
                 }
             }
         }
