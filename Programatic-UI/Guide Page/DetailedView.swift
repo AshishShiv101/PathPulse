@@ -355,55 +355,6 @@ class DetailedView: UIViewController, UICollectionViewDelegate, UICollectionView
         alert.view.tintColor = UIColor(hex: "#40CBD8")
         present(alert, animated: true)
     }
-<<<<<<< HEAD
-}
-
-class ImageCell: UICollectionViewCell {
-    private let imageView: UIImageView = {
-        let iv = UIImageView()
-        iv.contentMode = .scaleAspectFill
-        iv.clipsToBounds = true
-        iv.layer.cornerRadius = 16
-        iv.translatesAutoresizingMaskIntoConstraints = false
-        
-        let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [UIColor.clear.cgColor, UIColor.black.withAlphaComponent(0.7).cgColor]
-        gradientLayer.locations = [0.4, 1.0]
-        iv.layer.addSublayer(gradientLayer)
-        
-        iv.layer.shadowColor = UIColor.black.cgColor
-        iv.layer.shadowOpacity = 0.3
-        iv.layer.shadowOffset = CGSize(width: 0, height: 4)
-        iv.layer.shadowRadius = 8
-        return iv
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        contentView.addSubview(imageView)
-        
-        NSLayoutConstraint.activate([
-            imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-        ])
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        imageView.layer.sublayers?.first?.frame = bounds
-    }
-    
-    func configure(with image: UIImage) {
-        imageView.image = image
-    }
-=======
->>>>>>> 9588a7b7489814f1b4a34713cf64e19f2db903ed
 }
 
 class ImageCell: UICollectionViewCell {
@@ -451,4 +402,3 @@ class ImageCell: UICollectionViewCell {
         imageView.image = image
     }
 }
-

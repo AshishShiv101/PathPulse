@@ -32,7 +32,7 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
     
     private func setupCityHeader() {
         cityHeader = UIView()
-        cityHeader.backgroundColor = UIColor(hex: "#333333") // Updated background color
+        cityHeader.backgroundColor = UIColor(hex: "#333333")
         cityHeader.layer.cornerRadius = 12
         cityHeader.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cityHeader)
@@ -42,6 +42,8 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         cityLabel.font = UIFont.boldSystemFont(ofSize: 24)
         cityLabel.textColor = .white
         cityLabel.translatesAutoresizingMaskIntoConstraints = false
+        cityLabel.numberOfLines = 1 // Limit to one line
+        cityLabel.lineBreakMode = .byTruncatingTail // Add ellipsis (...) for overflow
         
         // Filter Button
         filterButton = UIButton(type: .system)
@@ -58,7 +60,6 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         cityHeader.addSubview(filterButton)
         
         NSLayoutConstraint.activate([
-            // Reduced top gap by using negative constant
             cityHeader.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: -10),
             cityHeader.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             cityHeader.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
@@ -66,12 +67,14 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             
             cityLabel.centerYAnchor.constraint(equalTo: cityHeader.centerYAnchor),
             cityLabel.leadingAnchor.constraint(equalTo: cityHeader.leadingAnchor, constant: 10),
+            cityLabel.trailingAnchor.constraint(lessThanOrEqualTo: filterButton.leadingAnchor, constant: -10), // Prevent overlap with filter button
             
             filterButton.centerYAnchor.constraint(equalTo: cityHeader.centerYAnchor),
             filterButton.trailingAnchor.constraint(equalTo: cityHeader.trailingAnchor, constant: -10),
             filterButton.widthAnchor.constraint(equalToConstant: 30),
             filterButton.heightAnchor.constraint(equalToConstant: 30)
         ])
+        
         // Initial location text
         let locationAttachment = NSTextAttachment()
         locationAttachment.image = UIImage(systemName: "location.fill")?.withTintColor(.white)
@@ -89,6 +92,7 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             collectionView.reloadData()
         }
     }
+    
     @objc private func showFilterOptions() {
         let alert = UIAlertController(title: "Filter Options", message: "Sort by:", preferredStyle: .actionSheet)
         
@@ -225,6 +229,7 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         ]))
         
         cityLabel.attributedText = attributedText
+        cityLabel.adjustsFontSizeToFitWidth = false // Ensure truncation works instead of shrinking text
     }
     
     private func fetchNearbyPlaces() {
@@ -243,8 +248,7 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
             }
         }
     }
-    
-    // MARK: - CollectionView Delegate & DataSource
+
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         let title = ["Clinics", "Hospitals", "Hotels", "Pharmacies"][collectionView.tag]
         return carouselData[title]?.count ?? 0
@@ -259,7 +263,6 @@ class GuidePage: UIViewController, UISearchBarDelegate, UICollectionViewDelegate
         cell.configure(with: item)
         return cell
     }
-    
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let title = ["Clinics", "Hospitals", "Hotels", "Pharmacies"][collectionView.tag]
         guard let selectedItem = carouselData[title]?[indexPath.item] else { return }

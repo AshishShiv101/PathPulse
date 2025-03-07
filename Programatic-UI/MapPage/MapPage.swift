@@ -29,9 +29,13 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         setupSOSButton()
         setupSOSOverlay()
         navigationItem.hidesBackButton = true
+        
+        // Location setup
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
+        locationManager.startUpdatingLocation()
+        
         searchBar.delegate = self
         mapView.showsUserLocation = true
         mapView.delegate = self
@@ -47,7 +51,10 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         addCompassToMap()
         searchCompleter.delegate = self
         setupSuggestionTableView()
+        
+        locationLabel.text = "Fetching location..."
     }
+    
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchText.isEmpty {
             suggestionTableView.isHidden = true
@@ -57,7 +64,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             searchCompleter.queryFragment = searchText
         }
     }
-
+    
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let cityName = searchBar.text, !cityName.isEmpty else {
             return
@@ -72,6 +79,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             }
             refreshRecentSearches()
         }
+        
         locationLabel.text = cityName
         CitySearchHelper.searchForCity(city: cityName, mapView: mapView, locationManager: locationManager) { [weak self] (weatherData, error) in
             guard let self = self else { return }
@@ -84,7 +92,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 DispatchQueue.main.async {
                     self.updateWeatherUI(with: weatherData)
                     
-                    // Check if this is the first search after app launch
                     let hasSeenAlert = UserDefaults.standard.bool(forKey: "hasSeenFirstSearchAlert")
                     if !hasSeenAlert {
                         let alert = UIAlertController(
@@ -93,43 +100,37 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                             preferredStyle: .alert
                         )
                         
-                        // Change title color to white
                         let attributedTitle = NSAttributedString(string: "For More Details", attributes: [
                             .foregroundColor: UIColor.white,
                             .font: UIFont.boldSystemFont(ofSize: 17)
                         ])
                         alert.setValue(attributedTitle, forKey: "attributedTitle")
                         
-                        // Change message text color to #40CBD8
                         let attributedMessage = NSAttributedString(string: "Long tap on the route\nPull up the bottom sheet for more Weather and News details", attributes: [
                             .foregroundColor: UIColor(red: 64/255, green: 203/255, blue: 216/255, alpha: 1),
                             .font: UIFont.systemFont(ofSize: 13)
                         ])
                         alert.setValue(attributedMessage, forKey: "attributedMessage")
                         
-                        // Customize OK button color to white
                         let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
                         okAction.setValue(UIColor.white, forKey: "titleTextColor")
                         alert.addAction(okAction)
                         
-                        // Customize alert background color to #222222
                         if let subview = alert.view.subviews.first?.subviews.first?.subviews.first {
                             subview.backgroundColor = UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1)
                             subview.layer.cornerRadius = 12
                         }
-
-                        self.present(alert, animated: true, completion: nil)
                         
-                        // Mark the alert as seen
+                        self.present(alert, animated: true, completion: nil)
                         UserDefaults.standard.set(true, forKey: "hasSeenFirstSearchAlert")
                     }
-
                 }
             }
         }
         
         searchBar.resignFirstResponder()
     }
+    
     func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
         searchResults = completer.results
         suggestionTableView.isHidden = searchResults.isEmpty
@@ -141,7 +142,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         suggestionTableView.isHidden = true
     }
     
-    // MARK: - UITableViewDelegate & DataSource
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return searchResults.count
     }
@@ -161,10 +161,9 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         let selectedSuggestion = searchResults[indexPath.row]
         searchBar.text = selectedSuggestion.title
         suggestionTableView.isHidden = true
-        searchBarSearchButtonClicked(searchBar) // Trigger search with selected suggestion
+        searchBarSearchButtonClicked(searchBar)
     }
     
-    // MARK: - Existing Methods (unchanged unless noted)
     private func addCompassToMap() {
         let compassButton = MKCompassButton(mapView: mapView)
         compassButton.compassVisibility = .visible
@@ -236,13 +235,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     }()
     
     @objc private func locationButtonTapped() {
-        if let userLocation = locationManager.location {
-            let coordinate = userLocation.coordinate
-            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
-            mapView.setRegion(region, animated: true)
-        } else {
-            print("User location not available")
-        }
+        locationManager.startUpdatingLocation()
     }
     
     @objc private func sosButtonTapped() {
@@ -311,6 +304,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         otherButton.setBackgroundImage(nil, for: .normal)
         selectButton(standardButton)
     }
+    
     private func createButton(withSystemImage systemImageName: String, action: Selector) -> UIButton {
         let button = UIButton(type: .custom)
         let image = UIImage(systemName: systemImageName)?.withConfiguration(UIImage.SymbolConfiguration(pointSize: 30, weight: .bold)).withTintColor(.white, renderingMode: .alwaysOriginal)
@@ -549,7 +543,8 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         self.humidityIcon.tintColor = textColor
         self.windIcon.tintColor = textColor
     }
- private func setupSuggestionTableView() {
+    
+    private func setupSuggestionTableView() {
         suggestionTableView = UITableView()
         suggestionTableView.delegate = self
         suggestionTableView.dataSource = self
@@ -566,8 +561,8 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             suggestionTableView.heightAnchor.constraint(equalToConstant: 200)
         ])
     }
+    
     private func addContentToBottomSheet() {
-        // Existing rectangle view (handle)
         let rectangleView = UIView()
         rectangleView.backgroundColor = .systemGray
         rectangleView.layer.cornerRadius = 10
@@ -580,7 +575,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             rectangleView.heightAnchor.constraint(equalToConstant: 5)
         ])
         
-        // Search Bar
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetView.addSubview(searchBar)
         searchBar.barStyle = .default
@@ -603,7 +597,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             searchBar.heightAnchor.constraint(equalToConstant: 44)
         ])
         
-        // Search Suggestions/History Container
         let suggestionsContainer = UIView()
         suggestionsContainer.translatesAutoresizingMaskIntoConstraints = false
         suggestionsContainer.backgroundColor = UIColor(hex: "#333333")
@@ -616,7 +609,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         suggestionsContainer.layer.shadowRadius = 4
         bottomSheetView.addSubview(suggestionsContainer)
         
-        // Stack view for search items
         let suggestionsStack = UIStackView()
         suggestionsStack.axis = .vertical
         suggestionsStack.spacing = 12
@@ -624,7 +616,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         suggestionsStack.backgroundColor = .clear
         suggestionsContainer.addSubview(suggestionsStack)
         
-        // Populate recent searches
         for title in recentSearchTitles {
             let entryStack = UIStackView()
             entryStack.axis = .horizontal
@@ -660,7 +651,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             suggestionsContainer.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 12),
             suggestionsContainer.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 10),
             suggestionsContainer.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -10),
-            suggestionsContainer.heightAnchor.constraint(equalToConstant: 180), // Adjust height as needed
+            suggestionsContainer.heightAnchor.constraint(equalToConstant: 180),
             
             suggestionsStack.topAnchor.constraint(equalTo: suggestionsContainer.topAnchor, constant: 12),
             suggestionsStack.leadingAnchor.constraint(equalTo: suggestionsContainer.leadingAnchor, constant: 8),
@@ -668,7 +659,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             suggestionsStack.bottomAnchor.constraint(lessThanOrEqualTo: suggestionsContainer.bottomAnchor, constant: -12)
         ])
         
-        // Weather View
         weatherView.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showDetailedView))
         weatherView.addGestureRecognizer(tapGesture)
@@ -699,7 +689,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             locationLabel.leadingAnchor.constraint(equalTo: weatherView.leadingAnchor, constant: 40)
         ])
         
-        // Additional Card View
         let additionalCardView = UIView()
         additionalCardView.translatesAutoresizingMaskIntoConstraints = false
         additionalCardView.backgroundColor = UIColor(hex: "#222222")
@@ -745,6 +734,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             newsLabel.trailingAnchor.constraint(lessThanOrEqualTo: additionalCardView.trailingAnchor, constant: -20)
         ])
     }
+    
     private func refreshRecentSearches() {
         bottomSheetView.subviews.forEach { view in
             if let stackView = view as? UIStackView, stackView.tag == 100 {
@@ -769,7 +759,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             let spacer = UIView()
             spacer.heightAnchor.constraint(equalToConstant: 20).isActive = true
             recentSearchesContainer.addArrangedSubview(spacer)
-
+            
             let noHistoryLabel = UILabel()
             noHistoryLabel.text = "No history available"
             noHistoryLabel.textColor = .gray
@@ -783,7 +773,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 entryStack.distribution = .fill
                 entryStack.alignment = .center
                 entryStack.spacing = 8
-                entryStack.isUserInteractionEnabled = true // Enable interaction
+                entryStack.isUserInteractionEnabled = true
                 
                 let label = UILabel()
                 label.text = title
@@ -805,36 +795,33 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 entryStack.addArrangedSubview(crossButton)
                 recentSearchesContainer.addArrangedSubview(entryStack)
                 
-                // Add tap gesture to the entryStack
                 let tapGesture = UITapGestureRecognizer(target: self, action: #selector(historyCardTapped(_:)))
                 entryStack.addGestureRecognizer(tapGesture)
-                entryStack.accessibilityLabel = title // Store the city name for retrieval
+                entryStack.accessibilityLabel = title
             }
         }
         
-        // Safely bring suggestionTableView to front if it exists
         if let suggestionTableView = suggestionTableView {
             bottomSheetView.bringSubviewToFront(suggestionTableView)
         }
     }
-
-    // New method to handle tap on history card
+    
     @objc private func historyCardTapped(_ sender: UITapGestureRecognizer) {
         guard let entryStack = sender.view as? UIStackView,
               let cityName = entryStack.accessibilityLabel else {
             return
         }
         
-        // Set the search bar text and trigger the search
         searchBar.text = cityName
         searchBarSearchButtonClicked(searchBar)
     }
+    
     @objc private func openAdditionalView() {
         let detailVC = NewsViewController()
-       // detailVC.cityName = locationLabel.text // Pass the searched city name
         detailVC.modalPresentationStyle = .fullScreen
         present(detailVC, animated: true, completion: nil)
     }
+    
     @objc private func removeRecentSearch(_ sender: UIButton) {
         guard let stackView = sender.superview as? UIStackView,
               let label = stackView.arrangedSubviews.first as? UILabel,
@@ -865,6 +852,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             present(navController, animated: true, completion: nil)
         }
     }
+    
     @objc private func handlePanGesture(_ recognizer: UIPanGestureRecognizer) {
         let translation = recognizer.translation(in: view)
         let velocity = recognizer.velocity(in: view)
@@ -928,19 +916,42 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         let coordinate = location.coordinate
+        
         let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
         mapView.setRegion(region, animated: true)
-        fetchWeather(for: coordinate)
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        if status == .authorizedWhenInUse || status == .authorizedAlways {
-            locationManager.startUpdatingLocation()
-        } else {
-            print("Location permission denied.")
+        
+        let geocoder = CLGeocoder()
+        geocoder.reverseGeocodeLocation(location) { [weak self] (placemarks, error) in
+            guard let self = self else { return }
+            if let placemark = placemarks?.first {
+                let city = placemark.locality ?? placemark.subAdministrativeArea ?? "Unknown Location"
+                DispatchQueue.main.async {
+                    self.locationLabel.text = city
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.locationLabel.text = "Location Unknown"
+                }
+            }
+            self.fetchWeather(for: coordinate)
         }
     }
     
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Location error: \(error.localizedDescription)")
+        locationLabel.text = "Location Error"
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        switch status {
+        case .authorizedWhenInUse, .authorizedAlways:
+            locationManager.startUpdatingLocation()
+        case .denied, .restricted:
+            locationLabel.text = "Location Access Denied"
+        default:
+            break
+        }
+    }
     func drawRoute(to destination: CLLocationCoordinate2D) {
         guard let userLocation = locationManager.location?.coordinate else {
             print("User location not available")
@@ -1001,21 +1012,10 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             if let subtitle = polyline.subtitle {
                 let flags = subtitle.split(separator: ",")
                 let isShortest = flags[0] == "true"
-                let isLongest = flags[1] == "true"
-
-                if let subtitle = polyline.subtitle {
-                    let flags = subtitle.split(separator: ",")
-                    let isShortest = flags[0] == "true"
-                    
-                    if isShortest {
-                        renderer.strokeColor = UIColor.blue
-                    } else {
-                        renderer.strokeColor = UIColor(red: 0.3, green: 0.6, blue: 0.9, alpha: 1.0) // Rest - Light Blue
-                    }
-                }
-                print("Rendering polyline - shortest: \(isShortest), longest: \(isLongest)")
+                renderer.strokeColor = isShortest ? .blue : UIColor(red: 0.3, green: 0.6, blue: 0.9, alpha: 1.0)
+                print("Rendering polyline - shortest: \(isShortest)")
             } else {
-                renderer.strokeColor = .blue // Default
+                renderer.strokeColor = .blue
                 print("No subtitle found for polyline")
             }
             
@@ -1023,6 +1023,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
         return MKOverlayRenderer()
     }
+    
     @objc func handleLongPress(_ gestureRecognizer: UILongPressGestureRecognizer) {
         if gestureRecognizer.state == .ended {
             let location = gestureRecognizer.location(in: mapView)
@@ -1033,13 +1034,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 view.addSubview(weatherInfoView)
             }
             fetchWeather(for: coordinate) { [weak self] weatherData in
-                DispatchQueue.main.async {
-                    if let weatherData = weatherData {
-                        self?.updateWeatherInfoView(weatherData)
-                    } else {
-                        self?.updateWeatherInfoViewWithError()
-                    }
-                }
             }
         }
     }
@@ -1050,7 +1044,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weatherView.layer.shadowOpacity = 0.2
         weatherView.layer.shadowOffset = CGSize(width: 0, height: 4)
         weatherView.layer.shadowRadius = 6
-        weatherView.frame = CGRect(x: location.x - 110, y: location.y - 100, width: 220, height: 220)
+        weatherView.frame = CGRect(x: location.x - 110, y: location.y - 120, width: 220, height: 260)
         weatherView.backgroundColor = UIColor(hex: "#222222")
         
         let closeButton = UIButton(type: .system)
@@ -1086,6 +1080,16 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         descriptionLabel.frame = CGRect(x: 10, y: 185, width: weatherView.frame.width - 20, height: 20)
         weatherView.addSubview(descriptionLabel)
         
+        let locationLabel = UILabel()
+        locationLabel.text = "Fetching location..."
+        locationLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        locationLabel.textAlignment = .center
+        locationLabel.textColor = .black
+        locationLabel.tag = 203
+        locationLabel.frame = CGRect(x: 10, y: 210, width: weatherView.frame.width - 20, height: 40)
+        locationLabel.numberOfLines = 2
+        weatherView.addSubview(locationLabel)
+        
         weatherInfoView?.tag = 1000
         return weatherView
     }
@@ -1094,7 +1098,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weatherInfoView?.removeFromSuperview()
     }
     
-    private func updateWeatherInfoView(_ weatherData: WeatherData) {
+    private func updateWeatherInfoView(_ weatherData: WeatherData, locationName: String?) {
         guard let weatherInfoView = weatherInfoView else { return }
         if let titleLabel = weatherInfoView.viewWithTag(201) as? UILabel {
             titleLabel.text = "Temp: \(weatherData.temperature)°C"
@@ -1104,6 +1108,9 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
         if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
             updateWeatherIcon(iconImageView, with: weatherData.icon)
+        }
+        if let locationLabel = weatherInfoView.viewWithTag(203) as? UILabel {
+            locationLabel.text = locationName ?? "Location unavailable"
         }
         updateWeatherBackground(for: weatherInfoView, condition: weatherData.description.lowercased())
     }
@@ -1119,6 +1126,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             }
         }
     }
+    
     private func updateWeatherBackground(for view: UIView, condition: String) {
         let gradientLayer = CAGradientLayer()
         gradientLayer.frame = view.bounds
@@ -1137,7 +1145,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         default:
             gradientLayer.colors = [UIColor(hex: "#222222").cgColor, UIColor(hex: "#000000").cgColor]
         }
-        
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
         gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
         DispatchQueue.main.async {
@@ -1154,20 +1161,47 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         if let descriptionLabel = weatherInfoView.viewWithTag(202) as? UILabel {
             descriptionLabel.text = "Please try again later."
         }
+        if let locationLabel = weatherInfoView.viewWithTag(203) as? UILabel {
+            locationLabel.text = "Location unavailable"
+        }
         if let iconImageView = weatherInfoView.viewWithTag(101) as? UIImageView {
             iconImageView.image = UIImage(systemName: "exclamationmark.triangle.fill")
             iconImageView.tintColor = .red
         }
         updateWeatherBackground(for: weatherInfoView, condition: "error")
     }
+    
     private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
-        WeatherService.shared.fetchWeather(for: coordinate) { weatherData, error in
+        WeatherService.shared.fetchWeather(for: coordinate) { [weak self] weatherData, error in
+            guard let self = self else { return }
             DispatchQueue.main.async {
                 if let error = error {
                     print("Error fetching weather: \(error.localizedDescription)")
+                    self.updateWeatherInfoViewWithError()
                     completion(nil)
+                    return
+                }
+                if let weatherData = weatherData {
+                    let geocoder = CLGeocoder()
+                    let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+                    geocoder.reverseGeocodeLocation(location) { placemarks, error in
+                        if let error = error {
+                            print("Reverse geocoding error: \(error.localizedDescription)")
+                            self.updateWeatherInfoView(weatherData, locationName: nil)
+                            completion(weatherData)
+                            return
+                        }
+                        if let placemark = placemarks?.first {
+                            let locationName = placemark.locality ?? placemark.name ?? "Unknown location"
+                            self.updateWeatherInfoView(weatherData, locationName: locationName)
+                        } else {
+                            self.updateWeatherInfoView(weatherData, locationName: nil)
+                        }
+                        completion(weatherData)
+                    }
                 } else {
-                    completion(weatherData)
+                    self.updateWeatherInfoViewWithError()
+                    completion(nil)
                 }
             }
         }
