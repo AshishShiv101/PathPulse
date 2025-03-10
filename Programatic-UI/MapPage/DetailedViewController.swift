@@ -22,8 +22,6 @@ struct DailyForecast {
     let condition: WeatherCondition
 }
 
-// Assuming WeatherData struct exi
-
 class DetailedViews: UIViewController, CLLocationManagerDelegate {
     
     // MARK: - Properties
@@ -31,6 +29,19 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
     private var weeklyCollectionView: UICollectionView!
     private let gradientLayer = CAGradientLayer()
     private let locationManager = CLLocationManager()
+    private var lastSearchedCity: String?
+    private var currentLocationWeather: WeatherData? // Cache for current location
+    private var searchedLocationWeather: WeatherData? // Cache for searched location
+    private var currentCoordinate: CLLocationCoordinate2D? // Store current location coordinates
+    private var currentCityName: String? // Store the current location's city name
+    
+    // Loading indicator
+    private lazy var loadingIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView(style: .large)
+        indicator.color = .white
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        return indicator
+    }()
     
     private lazy var backButton: UIButton = {
         let button = UIButton(type: .system)
@@ -38,6 +49,35 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
         button.tintColor = .white
         button.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
+    private lazy var toggleLocationButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Current", for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 14, weight: .bold)
+        button.tintColor = .white
+        button.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        button.layer.cornerRadius = 15
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.3
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 4
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Gradient with #40CBD8
+        let gradient = CAGradientLayer()
+        gradient.frame = button.bounds
+        gradient.colors = [
+            UIColor(red: 64/255, green: 203/255, blue: 216/255, alpha: 1.0).cgColor, // #40CBD8
+            UIColor(red: 64/255, green: 150/255, blue: 216/255, alpha: 1.0).cgColor // A slightly darker variant
+        ]
+        gradient.startPoint = CGPoint(x: 0, y: 0)
+        gradient.endPoint = CGPoint(x: 1, y: 1)
+        gradient.cornerRadius = 15
+        button.layer.insertSublayer(gradient, at: 0)
+        
+        button.addTarget(self, action: #selector(toggleLocationTapped), for: .touchUpInside)
         return button
     }()
     
@@ -51,10 +91,20 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
         return label
     }()
     
+    private var _cityName: String?
     var cityName: String? {
-        didSet {
-            cityLabel.text = cityName
-            if let city = cityName {
+        get { _cityName }
+        set {
+            _cityName = newValue
+            cityLabel.text = newValue ?? "Unknown City"
+            locationLabel.text = newValue ?? "Unknown Location"
+            if let city = newValue, !city.isEmpty {
+                lastSearchedCity = city
+                toggleLocationButton.setTitle("Searched", for: .normal)
+                if let cachedWeather = searchedLocationWeather, city == lastSearchedCity {
+                    updateUI(with: cachedWeather)
+                }
+                showLoadingIndicator()
                 fetchWeatherForCity(city)
             }
         }
@@ -126,19 +176,43 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
         setupUI()
         setupWeatherCollectionView()
         setupWeeklyCollectionView()
+        setupLoadingIndicator()
         requestLocation()
+    }
+    
+    // MARK: - Loading Indicator Setup
+    private func setupLoadingIndicator() {
+        view.addSubview(loadingIndicator)
+        NSLayoutConstraint.activate([
+            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+    }
+    
+    private func showLoadingIndicator() {
+        DispatchQueue.main.async { [weak self] in
+            self?.loadingIndicator.startAnimating()
+            self?.view.bringSubviewToFront(self!.loadingIndicator)
+        }
+    }
+    
+    private func hideLoadingIndicator() {
+        DispatchQueue.main.async { [weak self] in
+            self?.loadingIndicator.stopAnimating()
+        }
     }
     
     // MARK: - Location Handling
     private func requestLocation() {
         locationManager.delegate = self
         locationManager.requestWhenInUseAuthorization()
-        locationManager.startUpdatingLocation()
+        locationManager.requestLocation()
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        locationManager.stopUpdatingLocation()
+        currentCoordinate = location.coordinate
+        showLoadingIndicator()
         fetchWeather(for: location.coordinate)
         
         let geocoder = CLGeocoder()
@@ -146,8 +220,13 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
             guard let self = self, let placemark = placemarks?.first, error == nil else { return }
             if let city = placemark.locality {
                 DispatchQueue.main.async {
-                    self.locationLabel.text = city
-                    self.cityLabel.text = city
+                    self.currentCityName = city // Store the current city name
+                    if self.cityName == nil || self.cityName?.isEmpty == true {
+                        self._cityName = city
+                        self.cityLabel.text = city
+                        self.locationLabel.text = city
+                        self.toggleLocationButton.setTitle("Current", for: .normal)
+                    }
                 }
             }
         }
@@ -155,17 +234,28 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Failed to get location:", error.localizedDescription)
+        hideLoadingIndicator()
     }
     
     // MARK: - Weather Fetching
     private func fetchWeather(for coordinate: CLLocationCoordinate2D) {
         WeatherService.shared.fetchWeather(for: coordinate) { [weak self] weatherData, error in
-            guard let self = self, let weather = weatherData, error == nil else {
+            guard let self = self else { return }
+            if let weather = weatherData, error == nil {
+                DispatchQueue.main.async {
+                    if self.toggleLocationButton.title(for: .normal) == "Current" {
+                        self.currentLocationWeather = weather
+                    } else {
+                        self.searchedLocationWeather = weather
+                    }
+                    self.updateUI(with: weather)
+                    self.hideLoadingIndicator()
+                }
+            } else {
                 print("Failed to fetch weather:", error?.localizedDescription ?? "Unknown error")
-                return
-            }
-            DispatchQueue.main.async {
-                self.updateUI(with: weather)
+                DispatchQueue.main.async {
+                    self.hideLoadingIndicator()
+                }
             }
         }
     }
@@ -173,14 +263,16 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
     private func fetchWeatherForCity(_ city: String) {
         let geocoder = CLGeocoder()
         geocoder.geocodeAddressString(city) { [weak self] placemarks, error in
-            guard let self = self, let placemark = placemarks?.first, error == nil else {
+            guard let self = self else { return }
+            if let placemark = placemarks?.first, error == nil {
+                let coordinate = placemark.location?.coordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0)
+                self.fetchWeather(for: coordinate)
+            } else {
                 print("Failed to geocode city:", error?.localizedDescription ?? "Unknown error")
-                return
+                DispatchQueue.main.async {
+                    self.hideLoadingIndicator()
+                }
             }
-            let coordinate = placemark.location?.coordinate ?? CLLocationCoordinate2D(latitude: 0, longitude: 0)
-            self.cityLabel.text = city // Update city label with searched city
-            self.locationLabel.text = city
-            self.fetchWeather(for: coordinate)
         }
     }
     
@@ -194,11 +286,12 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         gradientLayer.frame = view.bounds
+        toggleLocationButton.layer.sublayers?.first?.frame = toggleLocationButton.bounds
     }
     
     // MARK: - Setup Methods
     private func setupGradientBackground() {
-        gradientLayer.colors = [UIColor.systemGray.cgColor, UIColor.darkGray.cgColor] // Default gradient
+        gradientLayer.colors = [UIColor.systemGray.cgColor, UIColor.darkGray.cgColor]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
         gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
@@ -266,22 +359,27 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
         view.layer.insertSublayer(gradientLayer, at: 0)
         CATransaction.commit()
         
-        // Update text colors for all labels
         temperatureLabel.textColor = textColor
         conditionLabel.textColor = textColor
         additionalDetailsLabel.textColor = textColor
         cityLabel.textColor = textColor
         backButton.tintColor = textColor
+        toggleLocationButton.tintColor = textColor
     }
     
     private func setupUI() {
-        [backButton, locationLabel, cityLabel, temperatureLabel, conditionLabel, additionalDetailsLabel].forEach {
+        [backButton, toggleLocationButton, locationLabel, cityLabel, temperatureLabel, conditionLabel, additionalDetailsLabel].forEach {
             view.addSubview($0)
         }
         
         NSLayoutConstraint.activate([
             backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            
+            toggleLocationButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            toggleLocationButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            toggleLocationButton.widthAnchor.constraint(equalToConstant: 80),
+            toggleLocationButton.heightAnchor.constraint(equalToConstant: 30),
             
             locationLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             locationLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -350,6 +448,44 @@ class DetailedViews: UIViewController, CLLocationManagerDelegate {
     
     @objc private func backButtonTapped() {
         dismiss(animated: true, completion: nil)
+    }
+    
+    @objc private func toggleLocationTapped() {
+        if toggleLocationButton.title(for: .normal) == "Current" {
+            // Switch to last searched city
+            if let searchedCity = lastSearchedCity {
+                cityName = searchedCity
+                toggleLocationButton.setTitle("Searched", for: .normal)
+                if let cachedWeather = searchedLocationWeather {
+                    updateUI(with: cachedWeather)
+                    showLoadingIndicator()
+                    fetchWeatherForCity(searchedCity)
+                }
+            }
+        } else {
+            // Switch to current location
+            toggleLocationButton.setTitle("Current", for: .normal)
+            if let cachedWeather = currentLocationWeather, let coordinate = currentCoordinate {
+                _cityName = currentCityName // Restore current city name
+                cityLabel.text = currentCityName ?? "Unknown City"
+                locationLabel.text = currentCityName ?? "Unknown Location"
+                updateUI(with: cachedWeather)
+                showLoadingIndicator()
+                fetchWeather(for: coordinate)
+            } else {
+                showLoadingIndicator()
+                locationManager.requestLocation()
+            }
+        }
+        
+        // Add a subtle animation to the button
+        UIView.animate(withDuration: 0.2, animations: {
+            self.toggleLocationButton.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+        }) { _ in
+            UIView.animate(withDuration: 0.2) {
+                self.toggleLocationButton.transform = .identity
+            }
+        }
     }
 }
 
