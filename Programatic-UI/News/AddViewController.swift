@@ -35,7 +35,7 @@ struct NewsDataModel: Decodable {
     }
 }
 
-class NewsViewController: UIViewController, CLLocationManagerDelegate {
+class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollViewDelegate {
     private let scrollView = UIScrollView()
     private let stackView = UIStackView()
     private let titleLabel = UILabel()
@@ -45,19 +45,24 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
     private var readArticles: Set<String> = Set()
     private var newsArticles: [NewsDataModel] = []
     private let filterButton = UIButton()
-    
+    private let showMoreButton = UIButton()
+    private var displayedArticleCount = 0
+    private let articlesPerPage = 20
+    private var currentQuery: String?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupLocationManager()
         setupView()
         setGradientBackground()
+        scrollView.delegate = self
     }
 
     func setGradientBackground() {
         let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [UIColor.black.cgColor, UIColor.white.cgColor]
-        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)  // Top center
-        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)    // Bottom center
+        gradientLayer.colors = [UIColor(hex: "#222222").cgColor, UIColor(hex: "#222222").cgColor]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
         gradientLayer.frame = view.bounds
         
         view.layer.insertSublayer(gradientLayer, at: 0)
@@ -77,22 +82,18 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         geocoder.reverseGeocodeLocation(location) { [weak self] (placemarks, error) in
             guard let self = self, let placemark = placemarks?.first else { return }
             
-            // Get the current city
             if let city = placemark.locality {
                 self.currentLocation = city
                 print("Current location: \(city)")
-                
-                // Fetch news for the current city
-                self.fetchNewsData(query: "\(city)-road-accident") { [weak self] success in
+                let initialQuery = "\(city)-road-accident"
+                self.currentQuery = initialQuery
+                self.fetchNewsData(query: initialQuery) { [weak self] success in
                     guard let self = self else { return }
-                    
-                    // If no news is found, fetch news for a nearby renowned city
                     if !success {
                         self.fetchNewsForNearbyRenownedCity(location: location)
                     }
                 }
             } else {
-                // If no city is found, fetch news for a nearby renowned city
                 self.fetchNewsForNearbyRenownedCity(location: location)
             }
         }
@@ -104,12 +105,11 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         geocoder.reverseGeocodeLocation(location) { [weak self] (placemarks, error) in
             guard let self = self, let placemark = placemarks?.first else { return }
             
-            // Get the administrative area (state) or country as a fallback
             let fallbackLocation = placemark.administrativeArea ?? placemark.country ?? "Unknown"
             print("Fallback location: \(fallbackLocation)")
-            
-            // Fetch news for the fallback location
-            self.fetchNewsData(query: "\(fallbackLocation)-road-accident") { success in
+            let fallbackQuery = "\(fallbackLocation)-road-accident"
+            self.currentQuery = fallbackQuery
+            self.fetchNewsData(query: fallbackQuery) { success in
                 if !success {
                     print("No news found for fallback location: \(fallbackLocation)")
                 }
@@ -146,7 +146,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
                 let response = try decoder.decode(NewsResponse.self, from: data)
                 DispatchQueue.main.async {
                     self?.updateNewsData(with: response.articles)
-                    completion(!response.articles.isEmpty) // Return true if articles are found
+                    completion(!response.articles.isEmpty)
                 }
             } catch {
                 print("Error parsing JSON: \(error)")
@@ -160,15 +160,49 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
     }
     
     private func updateNewsData(with newData: [NewsDataModel]) {
-        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
         let validArticles = newData.filter { !$0.headline.isEmpty && !$0.link.isEmpty && $0.imageUrl != nil }
         newsArticles = validArticles
+        displayedArticleCount = 0
+        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        displayNextArticles()
+    }
+    
+    private func displayNextArticles() {
+        let startIndex = displayedArticleCount
+        let endIndex = min(startIndex + articlesPerPage, newsArticles.count)
         
-        for newsData in validArticles {
-            let newsCard = createNewsCard(newsData: newsData)
+        for i in startIndex..<endIndex {
+            let newsCard = createNewsCard(newsData: newsArticles[i])
             stackView.addArrangedSubview(newsCard)
         }
+        
+        displayedArticleCount = endIndex
+        
+        showMoreButton.removeFromSuperview()
+        
+        if displayedArticleCount < newsArticles.count {
+            setupShowMoreButton()
+            stackView.addArrangedSubview(showMoreButton)
+        }
+    }
+    
+    private func setupShowMoreButton() {
+        showMoreButton.translatesAutoresizingMaskIntoConstraints = false
+        showMoreButton.setTitle("Show More", for: .normal)
+        showMoreButton.setTitleColor(.white, for: .normal)
+        showMoreButton.backgroundColor = UIColor(hex: "#40cbd8")
+        showMoreButton.layer.cornerRadius = 8
+        showMoreButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        showMoreButton.addTarget(self, action: #selector(showMoreTapped), for: .touchUpInside)
+        
+        NSLayoutConstraint.activate([
+            showMoreButton.heightAnchor.constraint(equalToConstant: 44),
+            showMoreButton.widthAnchor.constraint(equalToConstant: 120)
+        ])
+    }
+    
+    @objc private func showMoreTapped() {
+        displayNextArticles()
     }
     
     @objc private func showFilterOptions() {
@@ -196,7 +230,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         newsArticles.sort { article1, article2 in
             guard let date1 = dateFormatter.date(from: article1.publishedAt),
                   let date2 = dateFormatter.date(from: article2.publishedAt) else {
-                return article1.publishedAt < article2.publishedAt // Fallback to string comparison
+                return article1.publishedAt < article2.publishedAt
             }
             return date1 < date2
         }
@@ -208,7 +242,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         newsArticles.sort { article1, article2 in
             guard let date1 = dateFormatter.date(from: article1.publishedAt),
                   let date2 = dateFormatter.date(from: article2.publishedAt) else {
-                return article1.publishedAt > article2.publishedAt // Fallback to string comparison
+                return article1.publishedAt > article2.publishedAt
             }
             return date1 > date2
         }
@@ -217,11 +251,8 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
 
     private func updateNewsDisplay() {
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
-        for newsData in newsArticles {
-            let newsCard = createNewsCard(newsData: newsData)
-            stackView.addArrangedSubview(newsCard)
-        }
+        displayedArticleCount = 0
+        displayNextArticles()
     }
 
     private func setupView() {
@@ -243,11 +274,11 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         view.addSubview(titleLabel)
         
         filterButton.translatesAutoresizingMaskIntoConstraints = false
-            let filterImage = UIImage(systemName: "line.3.horizontal.decrease.circle")
-            filterButton.setImage(filterImage, for: .normal)
-            filterButton.tintColor = .white
-            filterButton.addTarget(self, action: #selector(showFilterOptions), for: .touchUpInside)
-            view.addSubview(filterButton)
+        let filterImage = UIImage(systemName: "line.3.horizontal.decrease.circle")
+        filterButton.setImage(filterImage, for: .normal)
+        filterButton.tintColor = .white
+        filterButton.addTarget(self, action: #selector(showFilterOptions), for: .touchUpInside)
+        view.addSubview(filterButton)
         
         buttonStackView.translatesAutoresizingMaskIntoConstraints = false
         buttonStackView.axis = .horizontal
@@ -291,19 +322,19 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         
         NSLayoutConstraint.activate([
             backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-                    backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-                    backButton.widthAnchor.constraint(equalToConstant: 40),
-                    backButton.heightAnchor.constraint(equalToConstant: 40),
+            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            backButton.widthAnchor.constraint(equalToConstant: 40),
+            backButton.heightAnchor.constraint(equalToConstant: 40),
 
-                    titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-                    titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60), // Adjusted for back button
-                    titleLabel.trailingAnchor.constraint(equalTo: filterButton.leadingAnchor, constant: -20),
-                    titleLabel.heightAnchor.constraint(equalToConstant: 40),
-                    
-                    filterButton.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
-                    filterButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-                    filterButton.widthAnchor.constraint(equalToConstant: 40),
-                    filterButton.heightAnchor.constraint(equalToConstant: 40),
+            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
+            titleLabel.trailingAnchor.constraint(equalTo: filterButton.leadingAnchor, constant: -20),
+            titleLabel.heightAnchor.constraint(equalToConstant: 40),
+            
+            filterButton.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            filterButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            filterButton.widthAnchor.constraint(equalToConstant: 40),
+            filterButton.heightAnchor.constraint(equalToConstant: 40),
             
             buttonStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
             buttonStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -323,9 +354,10 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
         ])
     }
+    
     @objc private func dismissDetailView() {
-         dismiss(animated: true, completion: nil)
-     }
+        dismiss(animated: true, completion: nil)
+    }
 
     private func fetchNewsData(query: String) {
         let apiKey = "30e36402849c414a9a78de022db36455"
@@ -387,17 +419,23 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
             case 0:
                 if let last7Days = Calendar.current.date(byAdding: .day, value: -7, to: Date()) {
                     let fromDate = dateFormatter.string(from: last7Days)
-                    fetchNewsData(query: "\(location)-road-accident OR \(location)-event OR \(location)-weather&from=\(fromDate)")
+                    let query = "\(location)-road-accident OR \(location)-event OR \(location)-weather&from=\(fromDate)"
+                    currentQuery = query
+                    fetchNewsData(query: query)
                 }
             case 1:
-                if let last24Hours = Calendar.current.date(byAdding: .day, value: -30, to: Date()) {
+                if let last24Hours = Calendar.current.date(byAdding: .hour, value: -24, to: Date()) { // Fixed from -30 days to -24 hours
                     let fromDate = dateFormatter.string(from: last24Hours)
-                    fetchNewsData(query: "\(location)-road-accident OR \(location)-event OR \(location)-weather&from=\(fromDate)")
+                    let query = "\(location)-road-accident OR \(location)-event OR \(location)-weather&from=\(fromDate)"
+                    currentQuery = query
+                    fetchNewsData(query: query)
                 }
             case 2:
                 if let lastMonth = Calendar.current.date(byAdding: .month, value: -1, to: Date()) {
                     let fromDate = dateFormatter.string(from: lastMonth)
-                    fetchNewsData(query: "\(location)-weather OR \(location)-temperature OR \(location)-storm OR \(location)-rain OR \(location)-snowfall OR \(location)-heatwave OR \(location)-coldwave OR \(location)-forecast OR \(location)-climate&from=\(fromDate)")
+                    let query = "\(location)-weather OR \(location)-temperature OR \(location)-storm OR \(location)-rain OR \(location)-snowfall OR \(location)-heatwave OR \(location)-coldwave OR \(location)-forecast OR \(location)-climate&from=\(fromDate)"
+                    currentQuery = query
+                    fetchNewsData(query: query)
                 }
             default:
                 break
@@ -543,6 +581,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate {
         stackView.insertArrangedSubview(updatedCard, at: index)
         openArticle(link: link)
     }
+    
     private func formatDate(_ dateString: String) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
@@ -600,5 +639,19 @@ extension UIImageView {
                 ImageNewsCache.shared.saveImage(image, for: url)
             }
         }.resume()
+    }
+}
+
+extension NewsViewController {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let offsetY = scrollView.contentOffset.y
+        let contentHeight = scrollView.contentSize.height
+        let frameHeight = scrollView.frame.size.height
+        
+        if offsetY > contentHeight - frameHeight - 100 && displayedArticleCount >= articlesPerPage {
+            if showMoreButton.superview == nil && displayedArticleCount < newsArticles.count {
+                stackView.addArrangedSubview(showMoreButton)
+            }
+        }
     }
 }
