@@ -350,8 +350,52 @@ class AccountPage: UIViewController {
     }
     
     @objc private func editContactsButtonTapped() {
-        let editVC = EditContactViewController()
-        navigationController?.pushViewController(editVC, animated: true)
+        // Check if name is empty or has default placeholder text
+        let isNameMissing = nameLabel.text == "Please Enter name" || nameLabel.text?.isEmpty == true
+        
+        // Check if phone is empty or has default placeholder text
+        let isPhoneMissing = phoneLabel.text == "Please Enter phone number" || phoneLabel.text?.isEmpty == true || phoneLabel.text == "Phone: "
+        
+        if isNameMissing || isPhoneMissing {
+            // Show alert prompting user to add missing information
+            let alert = UIAlertController(
+                title: "Information Required",
+                message: "Please add your name and phone number in your profile before adding emergency contacts.",
+                preferredStyle: .alert
+            )
+            
+            // Style the alert to match app theme
+            let titleAttributes = [NSAttributedString.Key.foregroundColor: UIColor(hex: "#40CBD8")]
+            let messageAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+            
+            let attributedTitle = NSAttributedString(string: "Information Required", attributes: titleAttributes)
+            let attributedMessage = NSAttributedString(
+                string: "Please add your name and phone number in your profile before adding emergency contacts.",
+                attributes: messageAttributes
+            )
+            
+            alert.setValue(attributedTitle, forKey: "attributedTitle")
+            alert.setValue(attributedMessage, forKey: "attributedMessage")
+            
+            let okAction = UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+                // Optionally open the edit profile popup directly
+                self?.editAccountInfoTapped()
+            }
+            okAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
+            
+            alert.addAction(okAction)
+            
+            // Style alert background
+            if let bgView = alert.view.subviews.first?.subviews.first?.subviews.first {
+                bgView.backgroundColor = UIColor(hex: "#333333")
+            }
+            
+            present(alert, animated: true)
+        } else {
+            // If both name and phone are present, proceed to edit contacts
+            let editVC = EditContactViewController()
+            navigationController?.pushViewController(editVC, animated: true)
+        }
     }
     
     @objc private func logoutButtonTapped() {
