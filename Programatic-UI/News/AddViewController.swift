@@ -359,7 +359,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
     }
 
     private func fetchNewsData(query: String) {
-        let apiKey = "30e36402849c414a9a78de022db36455"
+        let apiKey = "25bc188274a54c08b3d1693b5b10de5f"
         
         guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "https://newsapi.org/v2/everything?q=\(encodedQuery)&apiKey=\(apiKey)") else {

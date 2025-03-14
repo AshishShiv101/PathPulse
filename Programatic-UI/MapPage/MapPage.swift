@@ -24,7 +24,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     private var searchCompleter = MKLocalSearchCompleter()
     private var searchResults: [MKLocalSearchCompletion] = []
     private var suggestionTableView: UITableView!
-
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
@@ -45,7 +44,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         setupLocationButton()
         setupOtherButton()
         setupToggleView()
-        mapView.showsCompass = true
+        
         mapView.userTrackingMode = .followWithHeading
         view.bringSubviewToFront(bottomSheetView) // Fixed to bottomSheetView
         sosOverlayView.translatesAutoresizingMaskIntoConstraints = false

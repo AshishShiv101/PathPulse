@@ -11,7 +11,7 @@ extension UITextField {
     }
 }
 
-class AccountPage: UIViewController {
+class AccountPage: UIViewController, UITextFieldDelegate {
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let infoCardView = UIView()
@@ -85,12 +85,27 @@ class AccountPage: UIViewController {
         setupUI()
         setupEditInfoView()
         fetchUserData()
+        editPhoneTextField.delegate = self // Set delegate for phone text field
+    }
+    
+    // MARK: - UITextFieldDelegate
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if textField == editPhoneTextField {
+            let currentText = textField.text ?? ""
+            guard let stringRange = Range(range, in: currentText) else { return false }
+            let updatedText = currentText.replacingCharacters(in: stringRange, with: string)
+            
+            // Allow only numeric characters and limit to 10 digits
+            let numericOnly = updatedText.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+            return numericOnly.count <= 10 && updatedText == numericOnly
+        }
+        return true
     }
     
     private func setupUI() {
         view.backgroundColor = UIColor(hex: "#222222")
         
-        // Scroll View Setup (unchanged)
+        // Scroll View Setup
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
@@ -109,7 +124,7 @@ class AccountPage: UIViewController {
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
         ])
         
-        // Info Card Setup (unchanged)
+        // Info Card Setup
         infoCardView.backgroundColor = UIColor(hex: "#333333")
         infoCardView.layer.cornerRadius = 20
         infoCardView.layer.masksToBounds = true
@@ -209,17 +224,17 @@ class AccountPage: UIViewController {
         button.tintColor = .white
         button.contentHorizontalAlignment = .left
         
-        if isHighlighted { // Distinct style for Emergency Contacts
-            button.backgroundColor = UIColor(hex: "#40CBD8").withAlphaComponent(0.9) // Brighter accent color
+        if isHighlighted {
+            button.backgroundColor = UIColor(hex: "#40CBD8").withAlphaComponent(0.9)
             button.layer.cornerRadius = 16
-            button.heightAnchor.constraint(equalToConstant: 60).isActive = true // Slightly taller
+            button.heightAnchor.constraint(equalToConstant: 60).isActive = true
             button.layer.borderWidth = 1.5
-            button.layer.borderColor = UIColor(hex: "#FFFFFF").withAlphaComponent(0.3).cgColor // Subtle white border
-            button.layer.shadowColor = UIColor(hex: "#40CBD8").cgColor // Match shadow to accent
+            button.layer.borderColor = UIColor(hex: "#FFFFFF").withAlphaComponent(0.3).cgColor
+            button.layer.shadowColor = UIColor(hex: "#40CBD8").cgColor
             button.layer.shadowOpacity = 0.4
             button.layer.shadowOffset = CGSize(width: 0, height: 3)
             button.layer.shadowRadius = 6
-        } else { // Standard style for other buttons
+        } else {
             button.backgroundColor = UIColor(hex: "#818589").withAlphaComponent(0.9)
             button.layer.cornerRadius = 14
             button.heightAnchor.constraint(equalToConstant: 56).isActive = true
@@ -245,7 +260,7 @@ class AccountPage: UIViewController {
         ])
     }
     
-    // MARK: - Edit Info Overlay Setup (unchanged)
+    // MARK: - Edit Info Overlay Setup
     private func setupEditInfoView() {
         view.addSubview(editInfoBackgroundView)
         editInfoBackgroundView.addSubview(editInfoContainerView)
@@ -305,7 +320,7 @@ class AccountPage: UIViewController {
         saveEditButton.addTarget(self, action: #selector(saveEditInfoTapped), for: .touchUpInside)
     }
     
-    // MARK: - User Actions (unchanged)
+    // MARK: - User Actions
     @objc private func handleBackgroundTap() {
         view.endEditing(true)
         editInfoBackgroundView.isHidden = true
@@ -326,6 +341,22 @@ class AccountPage: UIViewController {
         let name = editNameTextField.text?.trimmingCharacters(in: .whitespaces) ?? ""
         let phoneInput = editPhoneTextField.text?.trimmingCharacters(in: .whitespaces) ?? ""
         
+        // Validate phone number if provided
+        if !phoneInput.isEmpty {
+            let numericPhone = phoneInput.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+            
+            if numericPhone != phoneInput {
+                showPhoneValidationAlert(message: "Phone number should only contain digits.")
+                return
+            }
+            
+            if numericPhone.count != 10 { // Exact 10 digits required
+                showPhoneValidationAlert(message: "Phone number must be exactly 10 digits long.")
+                return
+            }
+        }
+        
+        // Update UI labels
         nameLabel.text = name.isEmpty ? "Please Enter name" : name
         if let currentUserPhone = Auth.auth().currentUser?.phoneNumber, !currentUserPhone.isEmpty {
             phoneLabel.text = "Phone: \(currentUserPhone)"
@@ -333,6 +364,7 @@ class AccountPage: UIViewController {
             phoneLabel.text = phoneInput.isEmpty ? "Please Enter phone number" : "Phone: \(phoneInput)"
         }
         
+        // Save data to Firestore
         guard let uid = Auth.auth().currentUser?.uid else { return }
         var data: [String: String] = ["name": name]
         if Auth.auth().currentUser?.phoneNumber == nil || Auth.auth().currentUser?.phoneNumber?.isEmpty == true {
@@ -350,8 +382,44 @@ class AccountPage: UIViewController {
     }
     
     @objc private func editContactsButtonTapped() {
-        let editVC = EditContactViewController()
-        navigationController?.pushViewController(editVC, animated: true)
+        let isNameMissing = nameLabel.text == "Please Enter name" || nameLabel.text?.isEmpty == true
+        let isPhoneMissing = phoneLabel.text == "Please Enter phone number" || phoneLabel.text?.isEmpty == true || phoneLabel.text == "Phone: "
+        
+        if isNameMissing || isPhoneMissing {
+            let alert = UIAlertController(
+                title: "Information Required",
+                message: "Please add your name and phone number in your profile before adding emergency contacts.",
+                preferredStyle: .alert
+            )
+            
+            let titleAttributes = [NSAttributedString.Key.foregroundColor: UIColor(hex: "#40CBD8")]
+            let messageAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+            
+            let attributedTitle = NSAttributedString(string: "Information Required", attributes: titleAttributes)
+            let attributedMessage = NSAttributedString(
+                string: "Please add your name and phone number in your profile before adding emergency contacts.",
+                attributes: messageAttributes
+            )
+            
+            alert.setValue(attributedTitle, forKey: "attributedTitle")
+            alert.setValue(attributedMessage, forKey: "attributedMessage")
+            
+            let okAction = UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+                self?.editAccountInfoTapped()
+            }
+            okAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
+            
+            alert.addAction(okAction)
+            
+            if let bgView = alert.view.subviews.first?.subviews.first?.subviews.first {
+                bgView.backgroundColor = UIColor(hex: "#333333")
+            }
+            
+            present(alert, animated: true)
+        } else {
+            let editVC = EditContactViewController()
+            navigationController?.pushViewController(editVC, animated: true)
+        }
     }
     
     @objc private func logoutButtonTapped() {
@@ -384,7 +452,7 @@ class AccountPage: UIViewController {
         present(alert, animated: true)
     }
     
-    // MARK: - Data Handling (unchanged)
+    // MARK: - Data Handling
     private func fetchUserData() {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         Firestore.firestore().collection("users").document(uid).getDocument { [weak self] snapshot, error in
@@ -419,6 +487,37 @@ class AccountPage: UIViewController {
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
+    // MARK: - Phone Validation Alert
+    private func showPhoneValidationAlert(message: String) {
+        let alert = UIAlertController(
+            title: "Invalid Phone Number",
+            message: message,
+            preferredStyle: .alert
+        )
+        
+        let titleAttributes = [NSAttributedString.Key.foregroundColor: UIColor(hex: "#40CBD8")]
+        let messageAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+        
+        let attributedTitle = NSAttributedString(string: "Invalid Phone Number", attributes: titleAttributes)
+        let attributedMessage = NSAttributedString(string: message, attributes: messageAttributes)
+        
+        alert.setValue(attributedTitle, forKey: "attributedTitle")
+        alert.setValue(attributedMessage, forKey: "attributedMessage")
+        
+        let okAction = UIAlertAction(title: "OK", style: .default) { [weak self] _ in
+            self?.editPhoneTextField.becomeFirstResponder()
+        }
+        okAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
+        
+        alert.addAction(okAction)
+        
+        if let bgView = alert.view.subviews.first?.subviews.first?.subviews.first {
+            bgView.backgroundColor = UIColor(hex: "#333333")
+        }
+        
         present(alert, animated: true)
     }
 }

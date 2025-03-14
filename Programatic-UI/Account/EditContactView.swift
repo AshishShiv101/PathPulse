@@ -10,14 +10,15 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     private let contentView = UIView()
     private var contactsStackView = UIStackView()
     private let noContactsLabel: UILabel = {
-            let label = UILabel()
-            label.text = "Add Contacts"
-            label.textColor = .lightGray
-            label.font = UIFont.systemFont(ofSize: 18, weight: .medium)
-            label.textAlignment = .center
-            label.translatesAutoresizingMaskIntoConstraints = false
-            return label
-        }()
+        let label = UILabel()
+        label.text = "Add Contacts"
+        label.textColor = .lightGray
+        label.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         configureView()
@@ -26,6 +27,7 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         loadContactsFromFirebase()
         setupNavigationBarAppearance()
     }
+    
     private func setupNavigationBarAppearance() {
         let appearance = UINavigationBarAppearance()
         
@@ -43,6 +45,7 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         navigationController?.navigationBar.tintColor = UIColor(hex: "#40CBD8")
         navigationController?.navigationBar.isTranslucent = false
     }
+    
     private func configureView() {
         view.backgroundColor = UIColor(named: "darkBackground") ?? UIColor(hex: "#222222")
     }
@@ -66,18 +69,17 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
         ])
     }
-
-
+    
     private func setupUI() {
         configureTitleLabel()
         configureAddButton()
         configureContactsStack()
         contentView.addSubview(noContactsLabel)
-
+        
         NSLayoutConstraint.activate([
-                  noContactsLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-                  noContactsLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 200)
-              ])
+            noContactsLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            noContactsLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 200)
+        ])
     }
     
     private func configureTitleLabel() {
@@ -94,53 +96,41 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
             titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor)
         ])
     }
+    
     private func configureAddButton() {
         let addButton = UIButton(type: .system)
-           addButton.setImage(UIImage(systemName: "plus"), for: .normal)
-           addButton.tintColor = .white
-           addButton.backgroundColor = UIColor(hex: "#40CBD8")
-           addButton.layer.cornerRadius = 30
-           addButton.clipsToBounds = true
-           addButton.translatesAutoresizingMaskIntoConstraints = false
-           addButton.addTarget(self, action: #selector(addContactTapped), for: .touchUpInside)
-           view.addSubview(addButton)
-           
-           NSLayoutConstraint.activate([
-               addButton.widthAnchor.constraint(equalToConstant: 60),
-               addButton.heightAnchor.constraint(equalToConstant: 60),
-               addButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-               addButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
-           ])
-       }
+        addButton.setImage(UIImage(systemName: "plus"), for: .normal)
+        addButton.tintColor = .white
+        addButton.backgroundColor = UIColor(hex: "#40CBD8")
+        addButton.layer.cornerRadius = 30
+        addButton.clipsToBounds = true
+        addButton.translatesAutoresizingMaskIntoConstraints = false
+        addButton.addTarget(self, action: #selector(addContactTapped), for: .touchUpInside)
+        view.addSubview(addButton)
+        
+        NSLayoutConstraint.activate([
+            addButton.widthAnchor.constraint(equalToConstant: 60),
+            addButton.heightAnchor.constraint(equalToConstant: 60),
+            addButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            addButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
+        ])
+    }
     
     private func configureContactsStack() {
         contactsStackView.axis = .vertical
         contactsStackView.spacing = 16
         contactsStackView.translatesAutoresizingMaskIntoConstraints = false
         
-        contentView.addSubview(contactsStackView) // Ensure it is added before constraints
+        contentView.addSubview(contactsStackView)
         
         NSLayoutConstraint.activate([
             contactsStackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 60),
             contactsStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             contactsStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            contactsStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20) // Ensure scrollable content
+            contactsStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
         ])
     }
-
-
     
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Emergency Contacts"
-        label.font = UIFont.systemFont(ofSize: 26, weight: .semibold)
-        label.textColor = .white
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-
-  
     private func createContactCard(title: String, phoneNumber: String) -> UIView {
         let cardView = UIView()
         cardView.backgroundColor = UIColor(hex: "#1E1E1E")
@@ -149,45 +139,45 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         cardView.layer.shadowOpacity = 0.3
         cardView.layer.shadowOffset = CGSize(width: 0, height: 4)
         cardView.translatesAutoresizingMaskIntoConstraints = false
-
+        
         let nameLabel = UILabel()
         nameLabel.text = title
         nameLabel.font = UIFont.systemFont(ofSize: 20, weight: .medium)
         nameLabel.textColor = .white
-
+        
         let phoneLabel = UILabel()
-        phoneLabel.text = phoneNumber
+        phoneLabel.text = phoneNumber // Display cleaned phone number
         phoneLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         phoneLabel.textColor = .lightGray
-
+        
         let callButton = createActionButton(icon: "phone.fill", action: #selector(makeCall), phone: phoneNumber)
         let messageButton = createActionButton(icon: "message.fill", action: #selector(sendMessage), phone: phoneNumber)
         let deleteButton = createActionButton(icon: "trash.fill", action: #selector(deleteContact), name: title)
-
+        
         let buttonStack = UIStackView(arrangedSubviews: [callButton, messageButton, deleteButton])
         buttonStack.axis = .horizontal
         buttonStack.spacing = 12
         buttonStack.alignment = .trailing
-
+        
         let topStack = UIStackView(arrangedSubviews: [nameLabel, buttonStack])
         topStack.axis = .horizontal
         topStack.alignment = .center
         topStack.spacing = 12
         topStack.distribution = .fill
-
+        
         let mainStack = UIStackView(arrangedSubviews: [topStack, phoneLabel])
         mainStack.axis = .vertical
         mainStack.spacing = 10
         mainStack.translatesAutoresizingMaskIntoConstraints = false
-
+        
         cardView.addSubview(mainStack)
-
+        
         NSLayoutConstraint.activate([
             mainStack.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
             mainStack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
             mainStack.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
             mainStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16),
-
+            
             callButton.widthAnchor.constraint(equalToConstant: 40),
             callButton.heightAnchor.constraint(equalToConstant: 40),
             messageButton.widthAnchor.constraint(equalToConstant: 40),
@@ -195,12 +185,10 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
             deleteButton.widthAnchor.constraint(equalToConstant: 40),
             deleteButton.heightAnchor.constraint(equalToConstant: 40)
         ])
-
+        
         return cardView
     }
-
-
-
+    
     @objc private func makeCall(_ sender: UIButton) {
         guard let phoneNumber = sender.accessibilityIdentifier,
               let url = URL(string: "tel://\(phoneNumber)") else {
@@ -214,29 +202,21 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
             print("Calling is not supported on this device")
         }
     }
-
+    
     private func createActionButton(icon: String, action: Selector, phone: String? = nil, name: String? = nil) -> UIButton {
         let button = UIButton(type: .system)
         button.backgroundColor = UIColor(hex: "#40CBD8").withAlphaComponent(0.8)
-        button.layer.cornerRadius = 20 // Adjusted for a perfect circle
+        button.layer.cornerRadius = 20
         button.tintColor = .white
         button.clipsToBounds = true
         
-        // Configure symbol image with a smaller size
-        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium) // Reduced size
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
         button.setImage(UIImage(systemName: icon, withConfiguration: config), for: .normal)
         
-        // Add button action
         button.addTarget(self, action: action, for: .touchUpInside)
         
-        // Set size constraints
         button.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            button.widthAnchor.constraint(equalToConstant: 40),  // Adjusted size
-            button.heightAnchor.constraint(equalToConstant: 40)  // Adjusted size
-        ])
         
-        // Set accessibility
         if let phone = phone {
             button.accessibilityIdentifier = phone
         }
@@ -246,7 +226,6 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         
         return button
     }
-
     
     private func loadContactsFromFirebase() {
         guard let userId = Auth.auth().currentUser?.uid else { return }
@@ -300,26 +279,24 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         picker.displayedPropertyKeys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactPhoneNumbersKey]
         present(picker, animated: true)
     }
-
-   
+    
     private func reloadContactCards() {
-           contactsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-           
-           if contacts.isEmpty {
-               noContactsLabel.isHidden = false
-           } else {
-               noContactsLabel.isHidden = true
-               contacts.sorted(by: { $0.key < $1.key }).forEach { name, phone in
-                   let card = createContactCard(title: name, phoneNumber: phone)
-                   contactsStackView.addArrangedSubview(card)
-               }
-           }
-       }
+        contactsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        if contacts.isEmpty {
+            noContactsLabel.isHidden = false
+        } else {
+            noContactsLabel.isHidden = true
+            contacts.sorted(by: { $0.key < $1.key }).forEach { name, phone in
+                let card = createContactCard(title: name, phoneNumber: phone)
+                contactsStackView.addArrangedSubview(card)
+            }
+        }
+    }
     
     @objc private func addContactTapped() {
         let alert = UIAlertController(title: "Add Contact", message: "Would you like to import a contact from your iPhone?", preferredStyle: .alert)
         
-        // Customize the alert title color and background (for dark mode)
         let titleFont = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18), NSAttributedString.Key.foregroundColor: UIColor.white]
         let messageFont = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15), NSAttributedString.Key.foregroundColor: UIColor.lightGray]
         
@@ -329,7 +306,6 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         alert.setValue(titleAttrString, forKey: "attributedTitle")
         alert.setValue(messageAttrString, forKey: "attributedMessage")
         
-        // Change background color of alert
         alert.view.subviews.first?.subviews.first?.subviews.first?.backgroundColor = UIColor(hex: "#1E1E1E")
         
         let importAction = UIAlertAction(title: "Import from Contacts", style: .default) { _ in
@@ -355,8 +331,6 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         present(alert, animated: true)
     }
     
-  
-
     @objc private func sendMessage(_ sender: UIButton) {
         guard let phoneNumber = sender.accessibilityIdentifier,
               let url = URL(string: "sms:\(phoneNumber)"),
@@ -373,7 +347,6 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
             preferredStyle: .alert
         )
         
-        // Customize alert appearance for dark mode
         let titleFont = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18),
                         NSAttributedString.Key.foregroundColor: UIColor.white]
         let messageFont = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15),
@@ -387,7 +360,6 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         alert.setValue(messageAttrString, forKey: "attributedMessage")
         alert.view.subviews.first?.subviews.first?.subviews.first?.backgroundColor = UIColor(hex: "#1E1E1E")
         
-        // Add actions
         let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
             self.contacts.removeValue(forKey: name)
             self.deleteContactFromFirebase(name: name)
@@ -396,7 +368,6 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
         
-        // Customize action colors
         deleteAction.setValue(UIColor.red, forKey: "titleTextColor")
         cancelAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
         
@@ -415,12 +386,56 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
             .joined(separator: " ")
         
         guard !name.isEmpty,
-              let phone = contact.phoneNumbers.first?.value.stringValue else { return }
+              let phone = contact.phoneNumbers.first?.value.stringValue else {
+            showValidationAlert(message: "Contact must have a name and phone number.")
+            return
+        }
         
-        contacts[name] = phone
-        saveContactToFirebase(name: name, phoneNumber: phone)
+        // Clean phone number by removing all non-numeric characters
+        let numericPhone = phone.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        
+        if numericPhone.count != 10 {
+            showValidationAlert(message: "Phone number must be exactly 10 digits long (excluding spaces or hyphens).")
+            return
+        }
+        
+        contacts[name] = numericPhone
+        saveContactToFirebase(name: name, phoneNumber: numericPhone)
         reloadContactCards()
     }
+    
+    private func showValidationAlert(message: String) {
+        let alert = UIAlertController(
+            title: "Invalid Contact",
+            message: message,
+            preferredStyle: .alert
+        )
+        
+        let titleFont = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18),
+                        NSAttributedString.Key.foregroundColor: UIColor.white]
+        let messageFont = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15),
+                         NSAttributedString.Key.foregroundColor: UIColor.lightGray]
+        
+        let titleAttrString = NSAttributedString(string: "Invalid Contact", attributes: titleFont)
+        let messageAttrString = NSAttributedString(string: message, attributes: messageFont)
+        
+        alert.setValue(titleAttrString, forKey: "attributedTitle")
+        alert.setValue(messageAttrString, forKey: "attributedMessage")
+        alert.view.subviews.first?.subviews.first?.subviews.first?.backgroundColor = UIColor(hex: "#1E1E1E")
+        
+        let okAction = UIAlertAction(title: "OK", style: .default) { _ in
+            let contactVC = CNContactViewController(forNewContact: nil)
+            contactVC.delegate = self
+            let navController = UINavigationController(rootViewController: contactVC)
+            self.present(navController, animated: true)
+        }
+        
+        okAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
+        alert.addAction(okAction)
+        
+        present(alert, animated: true)
+    }
+    
     private func addLogoutButton() {
         let button = UIButton(type: .system)
         button.setTitle("Logout", for: .normal)
@@ -457,8 +472,16 @@ extension EditContactViewController: CNContactPickerDelegate {
         guard !name.isEmpty,
               let phone = contact.phoneNumbers.first?.value.stringValue else { return }
         
-        contacts[name] = phone
-        saveContactToFirebase(name: name, phoneNumber: phone)
+        // Clean phone number by removing all non-numeric characters
+        let numericPhone = phone.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        
+        if numericPhone.count != 10 {
+            showValidationAlert(message: "Selected contact's phone number must be exactly 10 digits long (excluding spaces or hyphens).")
+            return
+        }
+        
+        contacts[name] = numericPhone
+        saveContactToFirebase(name: name, phoneNumber: numericPhone)
         reloadContactCards()
     }
 }
