@@ -10,6 +10,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     private var userId: String? {
         return Auth.auth().currentUser?.uid
     }
+    private var weatherUpdateTimer: Timer?
     let locationManager = CLLocationManager()
     let mapView = MKMapView()
     var destinationAddress: String?
@@ -24,6 +25,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     private var searchCompleter = MKLocalSearchCompleter()
     private var searchResults: [MKLocalSearchCompletion] = []
     private var suggestionTableView: UITableView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
@@ -31,8 +33,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         setupSOSButton()
         setupSOSOverlay()
         navigationItem.hidesBackButton = true
-        
-
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
@@ -41,34 +41,59 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         searchBar.delegate = self
         mapView.showsUserLocation = true
         mapView.delegate = self
+        
         setupLocationButton()
         setupOtherButton()
         setupToggleView()
         
         mapView.userTrackingMode = .followWithHeading
-        view.bringSubviewToFront(bottomSheetView) // Fixed to bottomSheetView
-        sosOverlayView.translatesAutoresizingMaskIntoConstraints = false
+        view.bringSubviewToFront(bottomSheetView)
+        
         let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
         mapView.addGestureRecognizer(longPressGesture)
+        
         addCompassToMap()
+        
         searchCompleter.delegate = self
+        
         setupSuggestionTableView()
+        
         loadSearchHistoryFromFirestore()
+        
         locationLabel.text = "Fetching location..."
+        
+        startWeatherUpdateTimer()
     }
-
-    // Save the entire recent search list to Firestore
+    
+    private func startWeatherUpdateTimer() {
+        weatherUpdateTimer?.invalidate()
+        
+        weatherUpdateTimer = Timer.scheduledTimer(
+            withTimeInterval: 600,
+            repeats: true
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            if let location = self.locationManager.location {
+                self.fetchWeather(for: location.coordinate) { weatherData in
+                    if let weatherData = weatherData {
+                        print("Weather data fetched: \(weatherData)")
+                    } else {
+                        print("Failed to fetch weather data")
+                    }
+                }
+            }
+        }
+    }
+    
     private func saveRecentSearchesToFirestore() {
         guard let userId = userId else {
             print("User not authenticated")
             return
         }
-
         let searchData: [String: Any] = [
             "recentSearches": recentSearchTitles,
             "timestamp": FieldValue.serverTimestamp()
         ]
-
         db.collection("users").document(userId).setData(searchData, merge: true) { error in
             if let error = error {
                 print("Error saving recent searches to Firestore: \(error.localizedDescription)")
@@ -78,7 +103,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
 
-    // Save all searches to Firestore (including duplicates)
     private func saveAllSearchesToFirestore(_ searchTitle: String) {
         guard let userId = userId else {
             print("User not authenticated")
@@ -100,7 +124,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
 
-    // Load search history from Firestore
     private func loadSearchHistoryFromFirestore() {
         guard let userId = userId else {
             print("User not authenticated")
@@ -117,7 +140,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                let searches = data["recentSearches"] as? [String] {
                 self.recentSearchTitles = searches
             } else {
-                self.recentSearchTitles = [] // Initialize as empty if no data exists
+                self.recentSearchTitles = []
             }
             DispatchQueue.main.async {
                 self.refreshRecentSearches()
@@ -125,7 +148,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
 
-    // MARK: - Search Bar Delegate
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchText.isEmpty {
             suggestionTableView.isHidden = true
@@ -143,10 +165,8 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         
         suggestionTableView?.isHidden = true
         
-        // Save every search to the allSearches collection
         saveAllSearchesToFirestore(cityName)
         
-        // Manage recent searches (only unique, limited to 5)
         if let index = recentSearchTitles.firstIndex(of: cityName) {
             recentSearchTitles.remove(at: index)
             recentSearchTitles.insert(cityName, at: 0)
@@ -158,7 +178,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
         saveRecentSearchesToFirestore()
         refreshRecentSearches()
-        
         locationLabel.text = cityName
         CitySearchHelper.searchForCity(city: cityName, mapView: mapView, locationManager: locationManager) { [weak self] (weatherData, error) in
             guard let self = self else { return }
@@ -210,7 +229,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         detailVC.modalPresentationStyle = .fullScreen
         present(detailVC, animated: true, completion: nil)
     }
-    // MARK: - Search Completer Delegate
+
     func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
         searchResults = completer.results
         suggestionTableView.isHidden = searchResults.isEmpty
@@ -222,7 +241,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         suggestionTableView.isHidden = true
     }
 
-    // MARK: - Table View Delegate/DataSource
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return searchResults.count
     }
@@ -245,7 +263,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         searchBarSearchButtonClicked(searchBar)
     }
 
-    // MARK: - UI Setup Methods
     private func addCompassToMap() {
         let compassButton = MKCompassButton(mapView: mapView)
         compassButton.compassVisibility = .visible
@@ -326,7 +343,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
     
-  
     @objc private func sosButtonTapped() {
         sosTappedButton.toggle()
     }
@@ -504,8 +520,8 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         mapView.showsUserLocation = true
     }
     
-    
     let humidityIcon = UIImageView(image: UIImage(systemName: "drop.fill"))
+    
     let windIcon = UIImageView(image: UIImage(systemName: "wind"))
     
     func updateWeatherUI(with weatherData: WeatherData) {
@@ -630,13 +646,14 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             suggestionTableView.heightAnchor.constraint(equalToConstant: 200)
         ])
     }
+    
     private let bottomSheetView = UIView()
     private func setupBottomSheet() {
         bottomSheetView.backgroundColor = UIColor(hex: "#333333")
         bottomSheetView.layer.cornerRadius = 18
         bottomSheetView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         bottomSheetView.clipsToBounds = true
-        view.addSubview(bottomSheetView) // Fixed to bottomSheetView
+        view.addSubview(bottomSheetView)
         bottomSheetView.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetView.layer.zPosition = 1
         let defaultOffset: CGFloat = 170
@@ -651,9 +668,11 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         bottomSheetView.addGestureRecognizer(panGesture)
         addContentToBottomSheet()
     }
+    
     private let bottomSheetCollapsedHeight: CGFloat = 135
     private let bottomSheetMediumHeight: CGFloat = 300
     private let bottomSheetExpandedHeight: CGFloat = 800
+    
     private func addContentToBottomSheet() {
         let rectangleView = UIView()
         rectangleView.backgroundColor = .systemGray
@@ -661,14 +680,12 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         rectangleView.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetView.addSubview(rectangleView)
         
-        // Create circular background for close button
         let closeCircleView = UIView()
-        closeCircleView.backgroundColor = UIColor(white: 1, alpha: 0.2) // Semi-transparent white
-        closeCircleView.layer.cornerRadius = 15 // Half of the height/width to make it circular
+        closeCircleView.backgroundColor = UIColor(white: 1, alpha: 0.2)
+        closeCircleView.layer.cornerRadius = 15
         closeCircleView.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetView.addSubview(closeCircleView)
         
-        // Add Close Button (Cross) inside the circular background
         let closeButton = UIButton(type: .system)
         closeButton.translatesAutoresizingMaskIntoConstraints = false
         closeButton.setImage(UIImage(systemName: "xmark"), for: .normal)
@@ -676,14 +693,12 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         closeButton.addTarget(self, action: #selector(closeBottomSheet), for: .touchUpInside)
         closeCircleView.addSubview(closeButton)
         
-        // Create circular background for expand button
         let expandCircleView = UIView()
-        expandCircleView.backgroundColor = UIColor(white: 1, alpha: 0.2) // Semi-transparent white
-        expandCircleView.layer.cornerRadius = 15 // Half of the height/width to make it circular
+        expandCircleView.backgroundColor = UIColor(white: 1, alpha: 0.2)
+        expandCircleView.layer.cornerRadius = 15
         expandCircleView.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetView.addSubview(expandCircleView)
         
-        // Add Expand Button inside the circular background
         let expandButton = UIButton(type: .system)
         expandButton.translatesAutoresizingMaskIntoConstraints = false
         expandButton.setImage(UIImage(systemName: "arrow.up.left.and.arrow.down.right"), for: .normal)
@@ -691,35 +706,35 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         expandButton.addTarget(self, action: #selector(expandBottomSheet), for: .touchUpInside)
         expandCircleView.addSubview(expandButton)
         
-        // Constraints for rectangleView (centered horizontally)
         NSLayoutConstraint.activate([
             rectangleView.topAnchor.constraint(equalTo: bottomSheetView.topAnchor, constant: 10),
-            rectangleView.centerXAnchor.constraint(equalTo: bottomSheetView.centerXAnchor), // Center horizontally
+            rectangleView.centerXAnchor.constraint(equalTo: bottomSheetView.centerXAnchor),
             rectangleView.widthAnchor.constraint(equalToConstant: 60),
             rectangleView.heightAnchor.constraint(equalToConstant: 5),
         ])
         
         NSLayoutConstraint.activate([
             closeCircleView.topAnchor.constraint(equalTo: bottomSheetView.topAnchor, constant: 10),
-            closeCircleView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16), // Align to the right
-            closeCircleView.widthAnchor.constraint(equalToConstant: 30), // Larger size
-            closeCircleView.heightAnchor.constraint(equalToConstant: 30), // Larger size
+            closeCircleView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16),
+            closeCircleView.widthAnchor.constraint(equalToConstant: 30),
+            closeCircleView.heightAnchor.constraint(equalToConstant: 30),
             
             closeButton.centerXAnchor.constraint(equalTo: closeCircleView.centerXAnchor),
             closeButton.centerYAnchor.constraint(equalTo: closeCircleView.centerYAnchor),
-            closeButton.widthAnchor.constraint(equalToConstant: 24), // Larger size
-            closeButton.heightAnchor.constraint(equalToConstant: 24), // Larger size
+            closeButton.widthAnchor.constraint(equalToConstant: 24),
+            closeButton.heightAnchor.constraint(equalToConstant: 24),
         ])
+        
         NSLayoutConstraint.activate([
             expandCircleView.topAnchor.constraint(equalTo: bottomSheetView.topAnchor, constant: 10),
-            expandCircleView.trailingAnchor.constraint(equalTo: closeCircleView.leadingAnchor, constant: -10), // Place to the left of closeCircleView
-            expandCircleView.widthAnchor.constraint(equalToConstant: 30), // Larger size
-            expandCircleView.heightAnchor.constraint(equalToConstant: 30), // Larger size
+            expandCircleView.trailingAnchor.constraint(equalTo: closeCircleView.leadingAnchor, constant: -10),
+            expandCircleView.widthAnchor.constraint(equalToConstant: 30),
+            expandCircleView.heightAnchor.constraint(equalToConstant: 30),
             
             expandButton.centerXAnchor.constraint(equalTo: expandCircleView.centerXAnchor),
             expandButton.centerYAnchor.constraint(equalTo: expandCircleView.centerYAnchor),
-            expandButton.widthAnchor.constraint(equalToConstant: 24), // Larger size
-            expandButton.heightAnchor.constraint(equalToConstant: 24), // Larger size
+            expandButton.widthAnchor.constraint(equalToConstant: 24),
+            expandButton.heightAnchor.constraint(equalToConstant: 24),
         ])
     
         searchBar.translatesAutoresizingMaskIntoConstraints = false
@@ -743,7 +758,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             searchBar.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -5),
             searchBar.heightAnchor.constraint(equalToConstant: 44)
         ])
-        
         let suggestionsContainer = UIView()
         suggestionsContainer.translatesAutoresizingMaskIntoConstraints = false
         suggestionsContainer.backgroundColor = UIColor(hex: "#333333")
@@ -855,9 +869,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         ])
     }
 
-    // Action methods for the buttons
     @objc private func closeBottomSheet() {
-        // Collapse the bottom sheet to the collapsed height
         UIView.animate(withDuration: 0.3) {
             self.bottomSheetTopConstraint.constant = -(self.bottomSheetCollapsedHeight)
             self.view.layoutIfNeeded()
@@ -866,7 +878,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     }
 
     @objc private func expandBottomSheet() {
-        // Expand the bottom sheet to the expanded height
         UIView.animate(withDuration: 0.3) {
             self.bottomSheetTopConstraint.constant = -(self.bottomSheetExpandedHeight)
             self.view.layoutIfNeeded()
@@ -954,8 +965,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         searchBarSearchButtonClicked(searchBar)
     }
     
- 
-    
     @objc private func removeRecentSearch(_ sender: UIButton) {
         guard let stackView = sender.superview as? UIStackView,
               let label = stackView.arrangedSubviews.first as? UILabel,
@@ -970,8 +979,23 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     }
     
     @objc private func showDetailedView() {
-
-    }
+            guard let cityName = locationLabel.text, !cityName.isEmpty else {
+                print("Error: City name is empty or nil")
+                return
+            }
+            
+            let detailedVC = DetailedViews()
+            detailedVC.cityName = cityName
+            
+            if let navigationController = navigationController {
+                navigationController.pushViewController(detailedVC, animated: true)
+            } else {
+                print("Warning: navigationController is nil. Presenting modally instead.")
+                let navController = UINavigationController(rootViewController: detailedVC)
+                navController.modalPresentationStyle = .fullScreen
+                present(navController, animated: true, completion: nil)
+            }
+        }
     
     @objc private func handlePanGesture(_ recognizer: UIPanGestureRecognizer) {
         let translation = recognizer.translation(in: view)
@@ -1033,7 +1057,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         ])
     }
     
-    // MARK: - Location Manager Delegate
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         let coordinate = location.coordinate
@@ -1044,17 +1067,26 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         let geocoder = CLGeocoder()
         geocoder.reverseGeocodeLocation(location) { [weak self] (placemarks, error) in
             guard let self = self else { return }
+            
+            if let error = error {
+                print("Reverse geocoding error: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.locationLabel.text = "Location Unknown"
+                }
+                return
+            }
+            
             if let placemark = placemarks?.first {
                 let city = placemark.locality ?? placemark.subAdministrativeArea ?? "Unknown Location"
                 DispatchQueue.main.async {
                     self.locationLabel.text = city
                 }
+                self.fetchWeather(for: coordinate)
             } else {
                 DispatchQueue.main.async {
                     self.locationLabel.text = "Location Unknown"
                 }
             }
-            self.fetchWeather(for: coordinate)
         }
     }
     
@@ -1074,7 +1106,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
     
-    // MARK: - Map View Delegate
     func drawRoute(to destination: CLLocationCoordinate2D) {
         guard let userLocation = locationManager.location?.coordinate else {
             print("User location not available")
@@ -1321,9 +1352,70 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         updateWeatherBackground(for: weatherInfoView, condition: "error")
     }
     
-    private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
-        WeatherService.shared.fetchWeather(for: coordinate) { [weak self] weatherData, error in
+    private var previousWeatherData: WeatherData?
+    private var previousLocation: CLLocationCoordinate2D?
+    
+    private func calculateDistance(_ coord1: CLLocationCoordinate2D, _ coord2: CLLocationCoordinate2D) -> CLLocationDistance {
+        let location1 = CLLocation(latitude: coord1.latitude, longitude: coord1.longitude)
+        let location2 = CLLocation(latitude: coord2.latitude, longitude: coord2.longitude)
+        return location1.distance(from: location2) / 1000 // Convert to kilometers
+    }
+    
+    private func checkForWeatherChanges(weatherData: WeatherData, location: CLLocationCoordinate2D) {
+        guard let previousData = previousWeatherData,
+              let previousLoc = previousLocation else {
+            previousWeatherData = weatherData
+            previousLocation = location
+            return
+        }
+        
+        let distance = calculateDistance(location, previousLoc)
+        
+        if distance <= 30 {
+            let temperatureChange = abs(previousData.temperature - weatherData.temperature)
+            let humidityChange = abs(previousData.humidity - weatherData.humidity)
+            let windSpeedChange = abs(previousData.windSpeed - weatherData.windSpeed)
+            
+            if temperatureChange > 5 || humidityChange > 20 || windSpeedChange > 5 || previousData.description != weatherData.description {
+                showWeatherAlert(weatherData: weatherData, location: location)
+            }
+        }
+        
+        previousWeatherData = weatherData
+        previousLocation = location
+    }
+    
+    private var lastAlertLocationName: String?
+    private func showWeatherAlert(weatherData: WeatherData, location: CLLocationCoordinate2D) {
+        let geocoder = CLGeocoder()
+        let location = CLLocation(latitude: location.latitude, longitude: location.longitude)
+        
+        geocoder.reverseGeocodeLocation(location) { [weak self] (placemarks, error) in
             guard let self = self else { return }
+            let locationName = placemarks?.first?.locality ?? "Unknown Location"
+            
+            if self.lastAlertLocationName == locationName {
+                return
+            }
+            self.lastAlertLocationName = locationName
+            
+            let alert = UIAlertController(
+                title: "Weather Update (30km Radius)",
+                message: "Significant weather change detected at \(locationName): \(weatherData.description), \(Int(weatherData.temperature))°C",
+                preferredStyle: .alert
+            )
+            
+            let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+            alert.addAction(okAction)
+            
+            self.present(alert, animated: true, completion: nil)
+        }
+    }
+    
+    private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
+        WeatherService.shared.fetchWeather(for: coordinate) { [weak self] (weatherData, error) in
+            guard let self = self else { return }
+            
             DispatchQueue.main.async {
                 if let error = error {
                     print("Error fetching weather: \(error.localizedDescription)")
@@ -1331,23 +1423,31 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                     completion(nil)
                     return
                 }
-                if let weatherData = weatherData {
-                    let geocoder = CLGeocoder()
-                    let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-                    geocoder.reverseGeocodeLocation(location) { placemarks, error in
-                        if let error = error {
-                            print("Reverse geocoding error: \(error.localizedDescription)")
-                            self.updateWeatherInfoView(weatherData, locationName: nil)
-                            completion(weatherData)
-                            return
-                        }
-                        let locationName = placemarks?.first?.locality ?? placemarks?.first?.name ?? "Unknown location"
-                        self.updateWeatherInfoView(weatherData, locationName: locationName)
-                        completion(weatherData)
-                    }
-                } else {
+                
+                guard let weatherData = weatherData else {
+                    print("No weather data received")
                     self.updateWeatherInfoViewWithError()
                     completion(nil)
+                    return
+                }
+                
+                let geocoder = CLGeocoder()
+                let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+                
+                geocoder.reverseGeocodeLocation(location) { (placemarks, error) in
+                    if let error = error {
+                        print("Reverse geocoding error: \(error.localizedDescription)")
+                        self.updateWeatherInfoView(weatherData, locationName: nil)
+                        self.checkForWeatherChanges(weatherData: weatherData, location: coordinate)
+                        completion(weatherData)
+                        return
+                    }
+                    
+                    let locationName = placemarks?.first?.locality ?? placemarks?.first?.name ?? "Unknown location"
+                    
+                    self.updateWeatherInfoView(weatherData, locationName: locationName)
+                    self.checkForWeatherChanges(weatherData: weatherData, location: coordinate)
+                    completion(weatherData)
                 }
             }
         }
