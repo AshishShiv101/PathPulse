@@ -52,7 +52,12 @@ PathPulse is designed to be your essential travel companion, providing real-time
 * **Enhanced Safety:** The SOS button and emergency contacts feature provide peace of mind during travel.
 * **Personalized Experience:** Customize your map view and filter search results to suit your needs.
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/488685ea-3465-4ba2-9a3a-ecb8e06fea10" alt="PathPulse Boarding Screen" width="300">
+     <img src="https://github.com/user-attachments/assets/826ca7bb-1b85-4cba-92c7-b319a4bf5c04" alt="PathPulse OTP Verification" width="300">
+
+  <img src="https://github.com/user-attachments/assets/91164839-3e56-4b0c-827b-b75cb8f31192" alt="PathPulse Boarding Screen" width="300">
+  <img src="https://github.com/user-attachments/assets/baaa9422-25fb-40a8-a96a-17abb4120d30" alt="PathPulse Interactive Map" width="300">
+
+   
   <img src="https://github.com/user-attachments/assets/bbf2db2f-d4e6-443d-ad8f-79a51252e943" alt="PathPulse Login Screen" width="300">
 </p>
 
