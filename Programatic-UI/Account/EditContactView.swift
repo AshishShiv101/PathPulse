@@ -91,9 +91,20 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(titleLabel)
         
+        let reminderLabel = UILabel()
+        reminderLabel.text = "Long press a contact to delete"
+        reminderLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
+        reminderLabel.textColor = .lightGray
+        reminderLabel.textAlignment = .center
+        reminderLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(reminderLabel)
+        
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
-            titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor)
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 15),
+            titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            
+            reminderLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10), // Increased space from 4 to 10
+            reminderLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor)
         ])
     }
     
@@ -124,11 +135,56 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         contentView.addSubview(contactsStackView)
         
         NSLayoutConstraint.activate([
-            contactsStackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 60),
+            contactsStackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 80), // Adjusted to account for more space above
             contactsStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             contactsStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             contactsStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
         ])
+    }
+    
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        if gesture.state == .began {
+            guard let cardView = gesture.view,
+                  let mainStack = cardView.subviews.first as? UIStackView,
+                  let topStack = mainStack.arrangedSubviews.first as? UIStackView,
+                  let nameLabel = topStack.arrangedSubviews.first as? UILabel,
+                  let name = nameLabel.text else { return }
+            
+            let alert = UIAlertController(
+                title: "Delete Contact",
+                message: "Are you sure you want to delete \(name)? This action cannot be undone.",
+                preferredStyle: .alert
+            )
+            
+            let titleFont = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18),
+                            NSAttributedString.Key.foregroundColor: UIColor.white]
+            let messageFont = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15),
+                             NSAttributedString.Key.foregroundColor: UIColor.lightGray]
+            
+            let titleAttrString = NSAttributedString(string: "Delete Contact", attributes: titleFont)
+            let messageAttrString = NSAttributedString(string: "Are you sure you want to delete \(name)? This action cannot be undone.",
+                                                     attributes: messageFont)
+            
+            alert.setValue(titleAttrString, forKey: "attributedTitle")
+            alert.setValue(messageAttrString, forKey: "attributedMessage")
+            alert.view.subviews.first?.subviews.first?.subviews.first?.backgroundColor = UIColor(hex: "#1E1E1E")
+            
+            let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
+                self.contacts.removeValue(forKey: name)
+                self.deleteContactFromFirebase(name: name)
+                self.reloadContactCards()
+            }
+            
+            let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+            
+            deleteAction.setValue(UIColor.red, forKey: "titleTextColor")
+            cancelAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
+            
+            alert.addAction(deleteAction)
+            alert.addAction(cancelAction)
+            
+            present(alert, animated: true)
+        }
     }
     
     private func createContactCard(title: String, phoneNumber: String) -> UIView {
@@ -152,9 +208,8 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         
         let callButton = createActionButton(icon: "phone.fill", action: #selector(makeCall), phone: phoneNumber)
         let messageButton = createActionButton(icon: "message.fill", action: #selector(sendMessage), phone: phoneNumber)
-        let deleteButton = createActionButton(icon: "trash.fill", action: #selector(deleteContact), name: title)
         
-        let buttonStack = UIStackView(arrangedSubviews: [callButton, messageButton, deleteButton])
+        let buttonStack = UIStackView(arrangedSubviews: [callButton, messageButton])
         buttonStack.axis = .horizontal
         buttonStack.spacing = 12
         buttonStack.alignment = .trailing
@@ -172,18 +227,21 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         
         cardView.addSubview(mainStack)
         
+        // Add long press gesture
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+        cardView.addGestureRecognizer(longPress)
+        cardView.isUserInteractionEnabled = true
+        
         NSLayoutConstraint.activate([
             mainStack.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
             mainStack.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
             mainStack.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
             mainStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16),
             
-            callButton.widthAnchor.constraint(equalToConstant: 40),
-            callButton.heightAnchor.constraint(equalToConstant: 40),
-            messageButton.widthAnchor.constraint(equalToConstant: 40),
-            messageButton.heightAnchor.constraint(equalToConstant: 40),
-            deleteButton.widthAnchor.constraint(equalToConstant: 40),
-            deleteButton.heightAnchor.constraint(equalToConstant: 40)
+            callButton.widthAnchor.constraint(equalToConstant: 48), // Increased from 40 to 48
+            callButton.heightAnchor.constraint(equalToConstant: 48), // Increased from 40 to 48
+            messageButton.widthAnchor.constraint(equalToConstant: 48), // Increased from 40 to 48
+            messageButton.heightAnchor.constraint(equalToConstant: 48) // Increased from 40 to 48
         ])
         
         return cardView
@@ -206,11 +264,11 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     private func createActionButton(icon: String, action: Selector, phone: String? = nil, name: String? = nil) -> UIButton {
         let button = UIButton(type: .system)
         button.backgroundColor = UIColor(hex: "#40CBD8").withAlphaComponent(0.8)
-        button.layer.cornerRadius = 20
+        button.layer.cornerRadius = 24 // Adjusted corner radius for larger button (half of 48)
         button.tintColor = .white
         button.clipsToBounds = true
         
-        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+        let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .medium) // Increased icon size from 18 to 22
         button.setImage(UIImage(systemName: icon, withConfiguration: config), for: .normal)
         
         button.addTarget(self, action: action, for: .touchUpInside)
@@ -336,45 +394,6 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
               let url = URL(string: "sms:\(phoneNumber)"),
               UIApplication.shared.canOpenURL(url) else { return }
         UIApplication.shared.open(url)
-    }
-    
-    @objc private func deleteContact(_ sender: UIButton) {
-        guard let name = sender.accessibilityLabel else { return }
-        
-        let alert = UIAlertController(
-            title: "Delete Contact",
-            message: "Are you sure you want to delete \(name)? This action cannot be undone.",
-            preferredStyle: .alert
-        )
-        
-        let titleFont = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18),
-                        NSAttributedString.Key.foregroundColor: UIColor.white]
-        let messageFont = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15),
-                         NSAttributedString.Key.foregroundColor: UIColor.lightGray]
-        
-        let titleAttrString = NSAttributedString(string: "Delete Contact", attributes: titleFont)
-        let messageAttrString = NSAttributedString(string: "Are you sure you want to delete \(name)? This action cannot be undone.",
-                                                 attributes: messageFont)
-        
-        alert.setValue(titleAttrString, forKey: "attributedTitle")
-        alert.setValue(messageAttrString, forKey: "attributedMessage")
-        alert.view.subviews.first?.subviews.first?.subviews.first?.backgroundColor = UIColor(hex: "#1E1E1E")
-        
-        let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
-            self.contacts.removeValue(forKey: name)
-            self.deleteContactFromFirebase(name: name)
-            self.reloadContactCards()
-        }
-        
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
-        
-        deleteAction.setValue(UIColor.red, forKey: "titleTextColor")
-        cancelAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
-        
-        alert.addAction(deleteAction)
-        alert.addAction(cancelAction)
-        
-        present(alert, animated: true)
     }
     
     func contactViewController(_ viewController: CNContactViewController, didCompleteWith contact: CNContact?) {
