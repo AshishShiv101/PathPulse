@@ -1,13 +1,12 @@
 import UIKit
+import Firebase
 import FirebaseAuth
 import GoogleSignIn
 import GoogleSignInSwift
-import Firebase
 import AuthenticationServices
 import CryptoKit
 
-// UIColor extension for hex color support
-
+// UIColor extension (assumed to exist elsewhere)
 class LoginPage: UIViewController {
     private let logoStack: UIStackView = {
         let stackView = UIStackView()
@@ -82,6 +81,7 @@ class LoginPage: UIViewController {
         let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 50))
         textField.leftView = paddingView
         textField.leftViewMode = .always
+        textField.translatesAutoresizingMaskIntoConstraints = false
         return textField
     }()
     
@@ -98,6 +98,7 @@ class LoginPage: UIViewController {
         button.layer.shadowRadius = 4
         button.addTarget(self, action: #selector(handleContinueButton), for: .touchUpInside)
         button.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
@@ -184,6 +185,20 @@ class LoginPage: UIViewController {
         setupUI()
         setupGradientBackground()
         navigationItem.hidesBackButton = true
+        // Move auth check to a more controlled point if needed
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Optionally check auth state here, but avoid presenting immediately
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Remove or modify this check to prevent automatic bypass
+        // if Auth.auth().currentUser != nil {
+        //     presentTabBarController()
+        // }
     }
     
     private func setupGradientBackground() {
@@ -282,18 +297,27 @@ class LoginPage: UIViewController {
             return
         }
         
-        let fullPhoneNumber = "+91\(phoneNumber)"
+        guard phoneNumber.count == 10, phoneNumber.allSatisfy({ $0.isNumber }) else {
+            showAlert(message: "Please enter a valid 10-digit phone number.")
+            return
+        }
+        
+        let fullPhoneNumber = "+91\(phoneNumber)" // Adjust country code as needed
         PhoneAuthProvider.provider().verifyPhoneNumber(fullPhoneNumber, uiDelegate: nil) { verificationID, error in
             if let error = error {
-                self.showAlert(message: "Failed to send OTP: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.showAlert(message: "Failed to send OTP: \(error.localizedDescription)")
+                }
                 return
             }
             
-            UserDefaults.standard.set(fullPhoneNumber, forKey: "authPhoneNumber")
+            UserDefaults.standard.set(fullPhoneNumber, forKey: "authPhoneNumber") // Store phone number
             UserDefaults.standard.set(verificationID, forKey: "authVerificationID")
             
-            let otpVC = OTPPage()
-            self.navigationController?.pushViewController(otpVC, animated: true)
+            DispatchQueue.main.async {
+                let otpVC = OTPPage()
+                self.navigationController?.pushViewController(otpVC, animated: true)
+            }
         }
     }
     
@@ -326,8 +350,9 @@ class LoginPage: UIViewController {
                     self.showAlert(message: "Firebase sign-in failed: \(error.localizedDescription)")
                     return
                 }
-                
-                self.presentTabBarController()
+                DispatchQueue.main.async {
+                    self.presentTabBarController()
+                }
             }
         }
     }
@@ -349,10 +374,7 @@ class LoginPage: UIViewController {
     private func sha256(_ input: String) -> String {
         let inputData = Data(input.utf8)
         let hashedData = SHA256.hash(data: inputData)
-        let hashString = hashedData.compactMap {
-            String(format: "%02x", $0)
-        }.joined()
-        
+        let hashString = hashedData.compactMap { String(format: "%02x", $0) }.joined()
         return hashString
     }
     
@@ -373,17 +395,13 @@ class LoginPage: UIViewController {
             }
             
             for random in randoms {
-                if remainingLength == 0 {
-                    break
-                }
-                
+                if remainingLength == 0 { break }
                 if random < charset.count {
                     result.append(charset[Int(random)])
                     remainingLength -= 1
                 }
             }
         }
-        
         return result
     }
     
@@ -411,9 +429,9 @@ class LoginPage: UIViewController {
             let normalColor = UIColor.white
             
             appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
-            appearance.stackedLayoutAppearance.selected.titleTextAttributes = [NSAttributedString.Key.foregroundColor: selectedColor]
+            appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: selectedColor]
             appearance.stackedLayoutAppearance.normal.iconColor = normalColor
-            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: normalColor]
+            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: normalColor]
             
             tabBarController.tabBar.standardAppearance = appearance
             tabBarController.tabBar.scrollEdgeAppearance = appearance
@@ -424,7 +442,13 @@ class LoginPage: UIViewController {
         }
         
         tabBarController.modalPresentationStyle = .fullScreen
-        self.present(tabBarController, animated: true, completion: nil)
+        
+        // Ensure proper navigation flow
+        if let navigationController = self.navigationController {
+            navigationController.setViewControllers([tabBarController], animated: true)
+        } else {
+            present(tabBarController, animated: true, completion: nil)
+        }
     }
     
     private func showAlert(message: String) {
@@ -453,7 +477,9 @@ extension LoginPage: ASAuthorizationControllerDelegate, ASAuthorizationControlle
                     self.showAlert(message: "Apple Sign-In failed: \(error.localizedDescription)")
                     return
                 }
-                self.presentTabBarController()
+                DispatchQueue.main.async {
+                    self.presentTabBarController()
+                }
             }
         }
     }
@@ -463,6 +489,8 @@ extension LoginPage: ASAuthorizationControllerDelegate, ASAuthorizationControlle
     }
     
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return self.view.window!
+        return view.window!
     }
 }
+
+
