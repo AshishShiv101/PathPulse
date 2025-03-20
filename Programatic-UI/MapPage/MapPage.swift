@@ -4,7 +4,6 @@ import CoreLocation
 import Firebase
 import FirebaseFirestore
 import FirebaseAuth
-
 class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate, MKMapViewDelegate, MKLocalSearchCompleterDelegate, UITableViewDelegate, UITableViewDataSource {
     private let db = Firestore.firestore()
     private var userId: String? {
@@ -25,19 +24,27 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     private var searchCompleter = MKLocalSearchCompleter()
     private var searchResults: [MKLocalSearchCompletion] = []
     private var suggestionTableView: UITableView!
-    
+    private var displayedLocationCoordinate: CLLocationCoordinate2D?
+    private var displayedLocationName: String?
+    private var isShowingSearchedLocation = false
+    private var alertView: WeatherAlertView?
+    private var isKeyboardVisible = false
+    private var currentBottomSheetPosition: CGFloat = -135 // Default to collapsed height
+    private var shouldRevertToExpanded = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupKeyboardObservers()
         setupViews()
         setupBottomSheet()
         setupSOSButton()
         setupSOSOverlay()
+        setupAlertButton()
         navigationItem.hidesBackButton = true
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
-        
         searchBar.delegate = self
         mapView.showsUserLocation = true
         mapView.delegate = self
@@ -63,8 +70,71 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         locationLabel.text = "Fetching location..."
         
         startWeatherUpdateTimer()
+        
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+                        view.addGestureRecognizer(tap)
     }
-    
+    @objc private func dismissKeyboard() {
+            view.endEditing(true)
+        }
+    private func setupKeyboardObservers() {
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(keyboardWillShow),
+                name: UIResponder.keyboardWillShowNotification,
+                object: nil
+            )
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(keyboardWillHide),
+                name: UIResponder.keyboardWillHideNotification,
+                object: nil
+            )
+        }
+    @objc private func keyboardWillShow(notification: NSNotification) {
+        guard let userInfo = notification.userInfo,
+              let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+              let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
+            return
+        }
+
+        // Check if bottom sheet is at expanded height
+        if abs(bottomSheetTopConstraint.constant - (-bottomSheetExpandedHeight)) < 1 {
+            shouldRevertToExpanded = true // Mark that we need to revert to expanded later
+            currentBottomSheetPosition = -bottomSheetExpandedHeight
+
+            // Move to medium height
+            UIView.animate(withDuration: duration) {
+                self.bottomSheetTopConstraint.constant = -self.bottomSheetMediumHeight
+                self.view.layoutIfNeeded()
+            }
+        }
+
+        isKeyboardVisible = true
+    }
+
+        @objc private func keyboardWillHide(notification: NSNotification) {
+            guard let userInfo = notification.userInfo,
+                  let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
+                return
+            }
+
+            // If it was at expanded height before keyboard showed, revert to expanded
+            if shouldRevertToExpanded {
+                UIView.animate(withDuration: duration) {
+                    self.bottomSheetTopConstraint.constant = -self.bottomSheetExpandedHeight
+                    self.view.layoutIfNeeded()
+                }
+                shouldRevertToExpanded = false
+            }
+
+            isKeyboardVisible = false
+        }
+
+        // Clean up observers
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
     private func startWeatherUpdateTimer() {
         weatherUpdateTimer?.invalidate()
         
@@ -73,18 +143,17 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             repeats: true
         ) { [weak self] _ in
             guard let self = self else { return }
-            if let location = self.locationManager.location {
+            if !self.isShowingSearchedLocation, let location = self.locationManager.location {
                 self.fetchWeather(for: location.coordinate) { weatherData in
                     if let weatherData = weatherData {
-                        print("Weather data fetched: \(weatherData)")
+                        print("Weather data fetched for current location: \(weatherData)")
                     } else {
-                        print("Failed to fetch weather data")
+                        print("Failed to fetch weather data for current location")
                     }
                 }
             }
         }
     }
-    
     private func saveRecentSearchesToFirestore() {
         guard let userId = userId else {
             print("User not authenticated")
@@ -163,10 +232,9 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             return
         }
         
-        suggestionTableView?.isHidden = true
+        suggestionTableView.isHidden = true
         
         saveAllSearchesToFirestore(cityName)
-        
         if let index = recentSearchTitles.firstIndex(of: cityName) {
             recentSearchTitles.remove(at: index)
             recentSearchTitles.insert(cityName, at: 0)
@@ -179,42 +247,26 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         saveRecentSearchesToFirestore()
         refreshRecentSearches()
         locationLabel.text = cityName
+        isShowingSearchedLocation = true
         CitySearchHelper.searchForCity(city: cityName, mapView: mapView, locationManager: locationManager) { [weak self] (weatherData, error) in
             guard let self = self else { return }
             if let error = error {
-                print("Error: \(error.localizedDescription)")
+                print("Error searching for city: \(error.localizedDescription)")
                 return
             }
             if let weatherData = weatherData {
                 DispatchQueue.main.async {
+                    self.displayedLocationName = cityName
+                    self.displayedLocationCoordinate = CLLocationCoordinate2D(latitude: weatherData.latitude, longitude: weatherData.longitude)
                     self.updateWeatherUI(with: weatherData)
-                    let hasSeenAlert = UserDefaults.standard.bool(forKey: "hasSeenFirstSearchAlert")
-                    if !hasSeenAlert {
-                        let alert = UIAlertController(
-                            title: "For More Details",
-                            message: "Long tap on the route\nPull up the bottom sheet for more Weather and News details",
-                            preferredStyle: .alert
-                        )
-                        let attributedTitle = NSAttributedString(string: "For More Details", attributes: [
-                            .foregroundColor: UIColor.white,
-                            .font: UIFont.boldSystemFont(ofSize: 17)
-                        ])
-                        alert.setValue(attributedTitle, forKey: "attributedTitle")
-                        let attributedMessage = NSAttributedString(string: "Long tap on the route\nPull up the bottom sheet for more Weather and News details", attributes: [
-                            .foregroundColor: UIColor(red: 64/255, green: 203/255, blue: 216/255, alpha: 1),
-                            .font: UIFont.systemFont(ofSize: 13)
-                        ])
-                        alert.setValue(attributedMessage, forKey: "attributedMessage")
-                        let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
-                        okAction.setValue(UIColor.white, forKey: "titleTextColor")
-                        alert.addAction(okAction)
-                        if let subview = alert.view.subviews.first?.subviews.first?.subviews.first {
-                            subview.backgroundColor = UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1)
-                            subview.layer.cornerRadius = 12
-                        }
-                        self.present(alert, animated: true, completion: nil)
-                        UserDefaults.standard.set(true, forKey: "hasSeenFirstSearchAlert")
-                    }
+
+                    let region = MKCoordinateRegion(center: self.displayedLocationCoordinate!, latitudinalMeters: 10000, longitudinalMeters: 10000)
+                    self.mapView.setRegion(region, animated: true)
+                    self.mapView.removeAnnotations(self.mapView.annotations)
+                    let annotation = MKPointAnnotation()
+                    annotation.coordinate = self.displayedLocationCoordinate!
+                    annotation.title = cityName
+                    self.mapView.addAnnotation(annotation)
                 }
             }
         }
@@ -259,8 +311,8 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let selectedSuggestion = searchResults[indexPath.row]
         searchBar.text = selectedSuggestion.title
-        suggestionTableView.isHidden = true
-        searchBarSearchButtonClicked(searchBar)
+        suggestionTableView.isHidden = true // Hide the suggestion table view after selection
+        searchBarSearchButtonClicked(searchBar) // Trigger the search
     }
 
     private func addCompassToMap() {
@@ -338,6 +390,13 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             let coordinate = userLocation.coordinate
             let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
             mapView.setRegion(region, animated: true)
+            isShowingSearchedLocation = false // Reset to current location
+            displayedLocationCoordinate = coordinate
+            fetchWeather(for: coordinate) { [weak self] weatherData in
+                if let weatherData = weatherData {
+                    self?.updateWeatherUI(with: weatherData)
+                }
+            }
         } else {
             print("User location not available")
         }
@@ -409,7 +468,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         otherButton.setBackgroundImage(nil, for: .normal)
         selectButton(standardButton)
     }
-    
     private func createButton(withSystemImage systemImageName: String, action: Selector) -> UIButton {
         let button = UIButton(type: .custom)
         let image = UIImage(systemName: systemImageName)?.withConfiguration(UIImage.SymbolConfiguration(pointSize: 30, weight: .bold)).withTintColor(.white, renderingMode: .alwaysOriginal)
@@ -506,6 +564,141 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         ])
     }
     
+    private let alertButton: UIButton = {
+        let button = UIButton()
+        button.setTitle("!", for: .normal)
+        button.backgroundColor = UIColor(hex: "#333333")
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 29)
+        button.layer.cornerRadius = 35
+        return button
+    }()
+    
+    private func setupAlertButton() {
+        alertButton.addTarget(self, action: #selector(alertButtonTapped), for: .touchUpInside)
+        view.addSubview(alertButton)
+        alertButton.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            alertButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            alertButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -250),
+            alertButton.widthAnchor.constraint(equalToConstant: 70),
+            alertButton.heightAnchor.constraint(equalToConstant: 70)
+        ])
+        alertButton.isHidden = true // Hide by default until an alert is detected
+        alertButton.backgroundColor = UIColor(hex: "#333333") // Default color
+    }
+    @objc private func alertButtonTapped() {
+        if let currentLocation = locationManager.location?.coordinate {
+            fetchWeather(for: currentLocation) { [weak self] weatherData in
+                guard let self = self, let weatherData = weatherData else { return }
+                let geocoder = CLGeocoder()
+                let location = CLLocation(latitude: currentLocation.latitude, longitude: currentLocation.longitude)
+                
+                geocoder.reverseGeocodeLocation(location) { (placemarks, error) in
+                    let locationName = placemarks?.first?.locality ?? "Unknown Location"
+                    self.showAlertView(with: weatherData, locationName: locationName)
+                    
+                    // Update button color based on weather alert
+                    if self.isSignificantWeatherChange(weatherData: weatherData) {
+                        self.alertButton.backgroundColor = UIColor(hex: "#FF0000") // Red for alert
+                    } else {
+                        self.alertButton.backgroundColor = UIColor(hex: "#333333") // Normal color
+                    }
+                }
+            }
+        } else {
+            print("Current location not available")
+            // Set to normal color if location unavailable
+            alertButton.backgroundColor = UIColor(hex: "#333333")
+        }
+    }
+    private func showAlertView(with weatherData: WeatherData, locationName: String) {
+        if alertView != nil {
+            alertView?.removeFromSuperview()
+        }
+        
+        let screenBounds = UIScreen.main.bounds
+        let cardWidth: CGFloat = 300
+        let cardHeight: CGFloat = 200
+        
+        alertView = WeatherAlertView(frame: CGRect(
+            x: (screenBounds.width - cardWidth) / 2,
+            y: (screenBounds.height - cardHeight) / 2 - 100,
+            width: cardWidth,
+            height: cardHeight
+        ))
+        
+        // Check if there's a significant weather change
+        if isSignificantWeatherChange(weatherData: weatherData) {
+            alertView?.configure(with: locationName, temperature: weatherData.temperature, description: weatherData.description)
+        } else {
+            alertView?.configureAsNoAlert()
+        }
+        
+        alertView?.closeButton.addTarget(self, action: #selector(dismissAlertView), for: .touchUpInside)
+        
+        if let alertView = alertView {
+            view.addSubview(alertView)
+            view.bringSubviewToFront(alertView)
+        }
+    }
+
+    private func isSignificantWeatherChange(weatherData: WeatherData) -> Bool {
+        guard let previousData = previousWeatherData else {
+            previousWeatherData = weatherData
+            return false // No previous data to compare, so no alert
+        }
+        
+        let temperatureChange = abs(previousData.temperature - weatherData.temperature)
+        let humidityChange = abs(previousData.humidity - weatherData.humidity)
+        let windSpeedChange = abs(previousData.windSpeed - weatherData.windSpeed)
+        
+        // Define thresholds for significant change
+        return temperatureChange > 5 || humidityChange > 20 || windSpeedChange > 5 || previousData.description != weatherData.description
+    }
+
+    private func checkForWeatherChanges(weatherData: WeatherData, location: CLLocationCoordinate2D) {
+        guard let previousLoc = previousLocation else {
+            previousWeatherData = weatherData
+            previousLocation = location
+            return
+        }
+        
+        let distance = calculateDistance(location, previousLoc)
+        
+        if distance <= 30 { // Within 30km radius
+            if isSignificantWeatherChange(weatherData: weatherData) {
+                showWeatherAlert(weatherData: weatherData, location: location)
+            }
+        }
+        
+        previousWeatherData = weatherData
+        previousLocation = location
+    }
+
+
+    @objc private func dismissAlertView() {
+        alertView?.removeFromSuperview()
+        alertView = nil
+        
+        // Re-check weather to reset button color
+        if let currentLocation = locationManager.location?.coordinate {
+            fetchWeather(for: currentLocation) { [weak self] weatherData in
+                guard let self = self, let weatherData = weatherData else {
+                    self?.alertButton.backgroundColor = UIColor(hex: "#333333")
+                    return
+                }
+                if self.isSignificantWeatherChange(weatherData: weatherData) {
+                    self.alertButton.backgroundColor = UIColor(hex: "#FF0000")
+                } else {
+                    self.alertButton.backgroundColor = UIColor(hex: "#333333")
+                }
+            }
+        } else {
+            alertButton.backgroundColor = UIColor(hex: "#333333")
+        }
+    }
+    
     private func setupViews() {
         mapView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mapView)
@@ -518,10 +711,10 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         mapView.mapType = .standard
         mapView.showsTraffic = true
         mapView.showsUserLocation = true
+        mapView.showsCompass = false
     }
     
     let humidityIcon = UIImageView(image: UIImage(systemName: "drop.fill"))
-    
     let windIcon = UIImageView(image: UIImage(systemName: "wind"))
     
     func updateWeatherUI(with weatherData: WeatherData) {
@@ -668,11 +861,9 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         bottomSheetView.addGestureRecognizer(panGesture)
         addContentToBottomSheet()
     }
-    
     private let bottomSheetCollapsedHeight: CGFloat = 135
     private let bottomSheetMediumHeight: CGFloat = 300
     private let bottomSheetExpandedHeight: CGFloat = 800
-    
     private func addContentToBottomSheet() {
         let rectangleView = UIView()
         rectangleView.backgroundColor = .systemGray
@@ -742,15 +933,14 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         searchBar.barStyle = .default
         searchBar.searchBarStyle = .minimal
         searchBar.placeholder = "Search for Destination..."
-        searchBar.tintColor = .black
-        searchBar.backgroundImage = UIImage()
+        searchBar.tintColor = .black // Sets the cursor and cancel button color
         if let textField = searchBar.value(forKey: "searchField") as? UITextField {
-            textField.backgroundColor = .white
-            textField.layer.cornerRadius = 15
-            textField.clipsToBounds = true
-            textField.textColor = .black
-            textField.font = UIFont.systemFont(ofSize: 16)
-            textField.leftView?.tintColor = .black
+            textField.textColor = .white
+            textField.attributedPlaceholder = NSAttributedString(
+                string: "Search for Destination...",
+                attributes: [NSAttributedString.Key.foregroundColor: UIColor.black]
+            )
+            textField.backgroundColor = .darkGray // Or any other color that fits your design
         }
         NSLayoutConstraint.activate([
             searchBar.topAnchor.constraint(equalTo: rectangleView.bottomAnchor, constant: 40),
@@ -769,14 +959,13 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         suggestionsContainer.layer.shadowOffset = CGSize(width: 0, height: 2)
         suggestionsContainer.layer.shadowRadius = 4
         bottomSheetView.addSubview(suggestionsContainer)
-        
+
         let suggestionsStack = UIStackView()
         suggestionsStack.axis = .vertical
         suggestionsStack.spacing = 12
         suggestionsStack.translatesAutoresizingMaskIntoConstraints = false
         suggestionsStack.backgroundColor = .clear
         suggestionsContainer.addSubview(suggestionsStack)
-        
         NSLayoutConstraint.activate([
             suggestionsContainer.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 12),
             suggestionsContainer.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 10),
@@ -788,11 +977,9 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             suggestionsStack.trailingAnchor.constraint(equalTo: suggestionsContainer.trailingAnchor, constant: -8),
             suggestionsStack.bottomAnchor.constraint(lessThanOrEqualTo: suggestionsContainer.bottomAnchor, constant: -12)
         ])
-        
         weatherView.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showDetailedView))
         weatherView.addGestureRecognizer(tapGesture)
-        
         bottomSheetView.addSubview(weatherView)
         weatherView.addSubview(weatherIcon)
         weatherView.addSubview(temperatureLabel)
@@ -808,21 +995,25 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             weatherView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 16),
             weatherView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -16),
             weatherView.heightAnchor.constraint(equalToConstant: 220),
+
             weatherIcon.leadingAnchor.constraint(equalTo: weatherView.leadingAnchor, constant: 20),
-            weatherIcon.centerYAnchor.constraint(equalTo: weatherView.centerYAnchor),
-            weatherIcon.widthAnchor.constraint(equalToConstant: 120),
-            weatherIcon.heightAnchor.constraint(equalToConstant: 120),
+            weatherIcon.centerYAnchor.constraint(equalTo: weatherView.centerYAnchor, constant: -40),
+            weatherIcon.widthAnchor.constraint(equalToConstant: 160),
+            weatherIcon.heightAnchor.constraint(equalToConstant: 160),
+
             temperatureLabel.topAnchor.constraint(equalTo: weatherView.topAnchor, constant: 20),
-            temperatureLabel.centerXAnchor.constraint(equalTo: weatherView.centerXAnchor),
+            temperatureLabel.centerXAnchor.constraint(equalTo: weatherView.centerXAnchor, constant: 85),
+
             humidityLabel.topAnchor.constraint(equalTo: temperatureLabel.bottomAnchor, constant: 10),
-            humidityLabel.trailingAnchor.constraint(equalTo: weatherView.trailingAnchor, constant: -20),
+            humidityLabel.trailingAnchor.constraint(equalTo: weatherView.trailingAnchor, constant: -105),
+
             windSpeedLabel.topAnchor.constraint(equalTo: humidityLabel.bottomAnchor, constant: 10),
-            windSpeedLabel.trailingAnchor.constraint(equalTo: weatherView.trailingAnchor, constant: -20),
+            windSpeedLabel.trailingAnchor.constraint(equalTo: weatherView.trailingAnchor, constant: -81),
+
             locationLabel.topAnchor.constraint(equalTo: windSpeedLabel.bottomAnchor, constant: 10),
-            locationLabel.leadingAnchor.constraint(equalTo: weatherView.leadingAnchor, constant: 40),
+            locationLabel.leadingAnchor.constraint(equalTo: weatherView.leadingAnchor, constant: 20),
             locationLabel.trailingAnchor.constraint(equalTo: weatherView.trailingAnchor, constant: -40)
         ])
-        
         let additionalCardView = UIView()
         additionalCardView.translatesAutoresizingMaskIntoConstraints = false
         additionalCardView.backgroundColor = UIColor(hex: "#222222")
@@ -960,11 +1151,9 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
               let cityName = entryStack.accessibilityLabel else {
             return
         }
-        
         searchBar.text = cityName
         searchBarSearchButtonClicked(searchBar)
     }
-    
     @objc private func removeRecentSearch(_ sender: UIButton) {
         guard let stackView = sender.superview as? UIStackView,
               let label = stackView.arrangedSubviews.first as? UILabel,
@@ -972,30 +1161,28 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
               let index = recentSearchTitles.firstIndex(of: title) else {
             return
         }
-        
         recentSearchTitles.remove(at: index)
         saveRecentSearchesToFirestore()
         refreshRecentSearches()
     }
-    
     @objc private func showDetailedView() {
-            guard let cityName = locationLabel.text, !cityName.isEmpty else {
-                print("Error: City name is empty or nil")
-                return
-            }
-            
-            let detailedVC = DetailedViews()
-            detailedVC.cityName = cityName
-            
-            if let navigationController = navigationController {
-                navigationController.pushViewController(detailedVC, animated: true)
-            } else {
-                print("Warning: navigationController is nil. Presenting modally instead.")
-                let navController = UINavigationController(rootViewController: detailedVC)
-                navController.modalPresentationStyle = .fullScreen
-                present(navController, animated: true, completion: nil)
-            }
+        guard let cityName = locationLabel.text, !cityName.isEmpty else {
+            print("Error: City name is empty or nil")
+            return
         }
+        
+        let detailedVC = DetailedViews()
+        detailedVC.cityName = cityName
+        
+        if let navigationController = navigationController {
+            navigationController.pushViewController(detailedVC, animated: true)
+        } else {
+            print("Warning: navigationController is nil. Presenting modally instead.")
+            let navController = UINavigationController(rootViewController: detailedVC)
+            navController.modalPresentationStyle = .fullScreen
+            present(navController, animated: true, completion: nil)
+        }
+    }
     
     @objc private func handlePanGesture(_ recognizer: UIPanGestureRecognizer) {
         let translation = recognizer.translation(in: view)
@@ -1057,34 +1244,44 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         ])
     }
     
+    private var isInitialLocationSet = false
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         let coordinate = location.coordinate
         
-        let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
-        mapView.setRegion(region, animated: true)
+        // Only set the region on the first update
+        if !isInitialLocationSet {
+            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+            mapView.setRegion(region, animated: true)
+            isInitialLocationSet = true
+        }
         
-        let geocoder = CLGeocoder()
-        geocoder.reverseGeocodeLocation(location) { [weak self] (placemarks, error) in
-            guard let self = self else { return }
-            
-            if let error = error {
-                print("Reverse geocoding error: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.locationLabel.text = "Location Unknown"
+        // Update weather only if not showing a searched location
+        if !isShowingSearchedLocation {
+            let geocoder = CLGeocoder()
+            geocoder.reverseGeocodeLocation(location) { [weak self] (placemarks, error) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("Reverse geocoding error: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self.locationLabel.text = "Location Unknown"
+                    }
+                    return
                 }
-                return
-            }
-            
-            if let placemark = placemarks?.first {
-                let city = placemark.locality ?? placemark.subAdministrativeArea ?? "Unknown Location"
-                DispatchQueue.main.async {
-                    self.locationLabel.text = city
-                }
-                self.fetchWeather(for: coordinate)
-            } else {
-                DispatchQueue.main.async {
-                    self.locationLabel.text = "Location Unknown"
+                
+                if let placemark = placemarks?.first {
+                    let city = placemark.locality ?? placemark.subAdministrativeArea ?? "Unknown Location"
+                    DispatchQueue.main.async {
+                        self.locationLabel.text = city
+                        self.displayedLocationName = city
+                        self.displayedLocationCoordinate = coordinate
+                    }
+                    self.fetchWeather(for: coordinate)
+                } else {
+                    DispatchQueue.main.async {
+                        self.locationLabel.text = "Location Unknown"
+                    }
                 }
             }
         }
@@ -1130,14 +1327,106 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 return
             }
             guard let response = response else { return }
+            
+            // Remove existing overlays and annotations
             self.mapView.removeOverlays(self.mapView.overlays)
+            self.mapView.removeAnnotations(self.mapView.annotations.filter { $0 is WeatherAnnotation })
+            
             let route = response.routes[0]
             self.mapView.addOverlay(route.polyline, level: .aboveRoads)
             let rect = route.polyline.boundingMapRect
             self.mapView.setRegion(MKCoordinateRegion(rect), animated: true)
+            
+            // Add weather annotations along the route
+            self.addWeatherAnnotationsAlongRoute(route: route)
         }
     }
-    
+    private func addWeatherAnnotationsAlongRoute(route: MKRoute) {
+        let polyline = route.polyline
+        let pointCount = polyline.pointCount
+        let totalDistance = route.distance / 1000
+
+        guard totalDistance > 30 else {
+            let midIndex = pointCount / 2
+            let midCoordinate = polyline.points()[midIndex].coordinate
+            fetchWeather(for: midCoordinate) { [weak self] weatherData in
+                guard let self = self, let weatherData = weatherData else { return }
+                DispatchQueue.main.async {
+                    let annotation = WeatherAnnotation(coordinate: midCoordinate, weatherData: weatherData)
+                    self.mapView.addAnnotation(annotation)
+                }
+            }
+            return
+        }
+        
+        // Calculate points at 30 km intervals
+        let intervalDistance: CLLocationDistance = 30 // 30 km intervals
+        var accumulatedDistance: CLLocationDistance = 0
+        var lastCoordinate = polyline.points()[0].coordinate
+        
+        // Add annotation at the start
+        fetchWeather(for: lastCoordinate) { [weak self] weatherData in
+            guard let self = self, let weatherData = weatherData else { return }
+            DispatchQueue.main.async {
+                let annotation = WeatherAnnotation(coordinate: lastCoordinate, weatherData: weatherData)
+                self.mapView.addAnnotation(annotation)
+            }
+        }
+        
+        // Iterate through route points
+        for i in 1..<pointCount {
+            let currentCoordinate = polyline.points()[i].coordinate
+            let currentLocation = CLLocation(latitude: currentCoordinate.latitude, longitude: currentCoordinate.longitude)
+            let lastLocation = CLLocation(latitude: lastCoordinate.latitude, longitude: lastCoordinate.longitude)
+            
+            accumulatedDistance += currentLocation.distance(from: lastLocation) / 1000 // Distance in km
+            
+            if accumulatedDistance >= intervalDistance {
+                fetchWeather(for: currentCoordinate) { [weak self] weatherData in
+                    guard let self = self, let weatherData = weatherData else { return }
+                    DispatchQueue.main.async {
+                        let annotation = WeatherAnnotation(coordinate: currentCoordinate, weatherData: weatherData)
+                        self.mapView.addAnnotation(annotation)
+                    }
+                }
+                accumulatedDistance = 0 // Reset accumulated distance
+                lastCoordinate = currentCoordinate
+            }
+        }
+        
+        // Add annotation at the end if not too close to the last one
+        let endCoordinate = polyline.points()[pointCount - 1].coordinate
+        let lastAddedLocation = CLLocation(latitude: lastCoordinate.latitude, longitude: lastCoordinate.longitude)
+        let distanceToEnd = lastAddedLocation.distance(from: CLLocation(latitude: endCoordinate.latitude, longitude: endCoordinate.longitude)) / 1000
+        
+        if distanceToEnd >= 15 { // Ensure last annotation isn't too close (e.g., >15 km)
+            fetchWeather(for: endCoordinate) { [weak self] weatherData in
+                guard let self = self, let weatherData = weatherData else { return }
+                DispatchQueue.main.async {
+                    let annotation = WeatherAnnotation(coordinate: endCoordinate, weatherData: weatherData)
+                    self.mapView.addAnnotation(annotation)
+                }
+            }
+        }
+    }
+    class WeatherAnnotation: NSObject, MKAnnotation {
+        let coordinate: CLLocationCoordinate2D
+        let weatherData: WeatherData
+        
+        init(coordinate: CLLocationCoordinate2D, weatherData: WeatherData) {
+            self.coordinate = coordinate
+            self.weatherData = weatherData
+            super.init()
+        }
+        
+        var title: String? {
+            return weatherData.description.capitalized
+        }
+        
+        var subtitle: String? {
+            return "\(Int(weatherData.temperature))°C"
+        }
+    }
     func navigateToAddress(_ address: String, name: String?) {
         let geocoder = CLGeocoder()
         geocoder.geocodeAddressString(address) { [weak self] placemarks, error in
@@ -1157,7 +1446,66 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             self.mapView.addAnnotation(annotation)
         }
     }
-    
+    private func getWeatherIcon(for iconCode: String) -> UIImage? {
+        switch iconCode {
+        case "01d", "01n": // Clear sky
+            return UIImage(systemName: "sun.max.fill")
+        case "02d", "02n": // Few clouds
+            return UIImage(systemName: "cloud.sun.fill")
+        case "03d", "03n", "04d", "04n": // Scattered or broken clouds
+            return UIImage(systemName: "cloud.fill")
+        case "09d", "09n", "10d", "10n": // Rain
+            return UIImage(systemName: "cloud.rain.fill")
+        case "11d", "11n": // Thunderstorm
+            return UIImage(systemName: "cloud.bolt.fill")
+        case "13d", "13n": // Snow
+            return UIImage(systemName: "cloud.snow.fill")
+        case "50d", "50n": // Mist/Fog
+            return UIImage(systemName: "cloud.fog.fill")
+        default:
+            return UIImage(systemName: "questionmark.circle.fill")
+        }
+    }
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        // Skip user location annotation
+        if annotation is MKUserLocation {
+            return nil
+        }
+        
+        // Handle WeatherAnnotation
+        if let weatherAnnotation = annotation as? WeatherAnnotation {
+            let identifier = "WeatherAnnotation"
+            var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+            
+            if annotationView == nil {
+                annotationView = MKAnnotationView(annotation: weatherAnnotation, reuseIdentifier: identifier)
+                annotationView?.canShowCallout = true
+            } else {
+                annotationView?.annotation = weatherAnnotation
+            }
+            
+            // Set weather icon based on weather condition
+            let iconImage = getWeatherIcon(for: weatherAnnotation.weatherData.icon)
+            annotationView?.image = iconImage?.withRenderingMode(.alwaysOriginal)
+            
+            // Adjust size of the icon
+            let iconSize: CGFloat = 40
+            annotationView?.frame = CGRect(x: 0, y: 0, width: iconSize, height: iconSize)
+            
+            return annotationView
+        }
+        
+        // Default annotation handling
+        let identifier = "Pin"
+        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+        if annotationView == nil {
+            annotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: identifier) as MKAnnotationView
+            annotationView?.canShowCallout = true
+        } else {
+            annotationView?.annotation = annotation
+        }
+        return annotationView
+    }
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(polyline: polyline)
@@ -1172,29 +1520,23 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 renderer.strokeColor = .blue
                 print("No subtitle found for polyline")
             }
-            
             return renderer
         }
         return MKOverlayRenderer()
     }
-    
     @objc func handleLongPress(_ gestureRecognizer: UILongPressGestureRecognizer) {
         if gestureRecognizer.state == .ended {
             let location = gestureRecognizer.location(in: mapView)
             let coordinate = mapView.convert(location, toCoordinateFrom: mapView)
-            
             weatherInfoView?.removeFromSuperview()
             weatherInfoView = createWeatherInfoView()
             if let weatherInfoView = weatherInfoView {
                 view.addSubview(weatherInfoView)
             }
-            
             fetchWeather(for: coordinate) { [weak self] weatherData in
-                // Handled in fetchWeather
             }
         }
     }
-    
     private func createWeatherInfoView() -> UIView {
         let screenBounds = UIScreen.main.bounds
         let cardWidth: CGFloat = 220
@@ -1212,7 +1554,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             width: cardWidth,
             height: cardHeight
         )
-        
         let gradientLayer = CAGradientLayer()
         gradientLayer.frame = weatherView.bounds
         gradientLayer.colors = [UIColor(hex: "#333333").cgColor, UIColor(hex: "#222222").cgColor]
@@ -1360,31 +1701,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         let location2 = CLLocation(latitude: coord2.latitude, longitude: coord2.longitude)
         return location1.distance(from: location2) / 1000 // Convert to kilometers
     }
-    
-    private func checkForWeatherChanges(weatherData: WeatherData, location: CLLocationCoordinate2D) {
-        guard let previousData = previousWeatherData,
-              let previousLoc = previousLocation else {
-            previousWeatherData = weatherData
-            previousLocation = location
-            return
-        }
         
-        let distance = calculateDistance(location, previousLoc)
-        
-        if distance <= 30 {
-            let temperatureChange = abs(previousData.temperature - weatherData.temperature)
-            let humidityChange = abs(previousData.humidity - weatherData.humidity)
-            let windSpeedChange = abs(previousData.windSpeed - weatherData.windSpeed)
-            
-            if temperatureChange > 5 || humidityChange > 20 || windSpeedChange > 5 || previousData.description != weatherData.description {
-                showWeatherAlert(weatherData: weatherData, location: location)
-            }
-        }
-        
-        previousWeatherData = weatherData
-        previousLocation = location
-    }
-    
     private var lastAlertLocationName: String?
     private func showWeatherAlert(weatherData: WeatherData, location: CLLocationCoordinate2D) {
         let geocoder = CLGeocoder()
@@ -1411,7 +1728,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             self.present(alert, animated: true, completion: nil)
         }
     }
-    
     private func fetchWeather(for coordinate: CLLocationCoordinate2D, completion: @escaping (WeatherData?) -> Void) {
         WeatherService.shared.fetchWeather(for: coordinate) { [weak self] (weatherData, error) in
             guard let self = self else { return }
@@ -1420,36 +1736,128 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
                 if let error = error {
                     print("Error fetching weather: \(error.localizedDescription)")
                     self.updateWeatherInfoViewWithError()
+                    self.alertButton.isHidden = true
+                    self.alertButton.backgroundColor = UIColor(hex: "#333333")
                     completion(nil)
                     return
                 }
-                
                 guard let weatherData = weatherData else {
                     print("No weather data received")
                     self.updateWeatherInfoViewWithError()
+                    self.alertButton.isHidden = true
+                    self.alertButton.backgroundColor = UIColor(hex: "#333333")
                     completion(nil)
                     return
                 }
-                
                 let geocoder = CLGeocoder()
                 let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-                
                 geocoder.reverseGeocodeLocation(location) { (placemarks, error) in
                     if let error = error {
                         print("Reverse geocoding error: \(error.localizedDescription)")
                         self.updateWeatherInfoView(weatherData, locationName: nil)
                         self.checkForWeatherChanges(weatherData: weatherData, location: coordinate)
+                        if self.isSignificantWeatherChange(weatherData: weatherData) {
+                            self.alertButton.isHidden = false
+                            self.alertButton.backgroundColor = UIColor(hex: "#FF0000")
+                        } else {
+                            self.alertButton.isHidden = true
+                            self.alertButton.backgroundColor = UIColor(hex: "#333333")
+                        }
                         completion(weatherData)
                         return
                     }
-                    
                     let locationName = placemarks?.first?.locality ?? placemarks?.first?.name ?? "Unknown location"
-                    
                     self.updateWeatherInfoView(weatherData, locationName: locationName)
                     self.checkForWeatherChanges(weatherData: weatherData, location: coordinate)
+                    if self.isSignificantWeatherChange(weatherData: weatherData) {
+                        self.alertButton.isHidden = false // Show button
+                        self.alertButton.backgroundColor = UIColor(hex: "#FF0000") // Red for alert
+                    } else {
+                        self.alertButton.isHidden = true // Hide button
+                        self.alertButton.backgroundColor = UIColor(hex: "#333333") // Default color
+                    }
                     completion(weatherData)
                 }
             }
+        }
+    }
+    private class WeatherAlertView: UIView {
+        let gradientLayer = CAGradientLayer()
+        let titleLabel = UILabel()
+        let messageLabel = UILabel()
+        let closeButton = UIButton(type: .system)
+        
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            setupView()
+        }
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+        private func setupView() {
+            layer.cornerRadius = 16
+            layer.shadowColor = UIColor.black.cgColor
+            layer.shadowOpacity = 0.25
+            layer.shadowOffset = CGSize(width: 0, height: 6)
+            layer.shadowRadius = 8
+            backgroundColor = .clear
+            isUserInteractionEnabled = true
+            
+            gradientLayer.frame = bounds
+            gradientLayer.colors = [UIColor(hex: "#333333").cgColor, UIColor(hex: "#222222").cgColor]
+            gradientLayer.startPoint = CGPoint(x: 0.5, y: 0)
+            gradientLayer.endPoint = CGPoint(x: 0.5, y: 1)
+            gradientLayer.cornerRadius = 16
+            layer.insertSublayer(gradientLayer, at: 0)
+            
+            titleLabel.text = "Weather Alert"
+            titleLabel.font = UIFont.boldSystemFont(ofSize: 18)
+            titleLabel.textColor = .white
+            titleLabel.textAlignment = .center
+            titleLabel.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(titleLabel)
+            
+            messageLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+            messageLabel.textColor = UIColor.white.withAlphaComponent(0.9)
+            messageLabel.textAlignment = .center
+            messageLabel.numberOfLines = 0
+            messageLabel.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(messageLabel)
+            
+            closeButton.setTitle("×", for: .normal)
+            closeButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)
+            closeButton.setTitleColor(.white, for: .normal)
+            closeButton.backgroundColor = UIColor(hex: "#444444").withAlphaComponent(0.8)
+            closeButton.layer.cornerRadius = 14
+            closeButton.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(closeButton)
+            
+            NSLayoutConstraint.activate([
+                closeButton.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+                closeButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+                closeButton.widthAnchor.constraint(equalToConstant: 28),
+                closeButton.heightAnchor.constraint(equalToConstant: 28),
+                
+                titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 50),
+                titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+                titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+                
+                messageLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
+                messageLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+                messageLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+                messageLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20)
+            ])
+            configureAsNoAlert()
+        }
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            gradientLayer.frame = bounds
+        }
+        func configureAsNoAlert() {
+            messageLabel.text = "No Alert"
+        }
+        func configure(with locationName: String, temperature: Double, description: String) {
+            messageLabel.text = "Significant weather change detected at \(locationName): \(description), \(Int(temperature))°C"
         }
     }
 }
