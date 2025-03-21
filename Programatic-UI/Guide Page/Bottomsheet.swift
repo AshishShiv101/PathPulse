@@ -37,7 +37,7 @@ class BottomSheetViewController: UIViewController, MKMapViewDelegate, CLLocation
         bottomSheetView.layer.cornerRadius = 18
         bottomSheetView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         bottomSheetView.clipsToBounds = true
-        view.addSubview(bottomSheetView) // TYPO: Should be bottomSheetView (fix below)
+        view.addSubview(bottomSheetView)  // Fixed typo
         
         bottomSheetView.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetTopConstraint = bottomSheetView.topAnchor.constraint(equalTo: view.bottomAnchor, constant: -bottomSheetCollapsedHeight)
@@ -62,17 +62,28 @@ class BottomSheetViewController: UIViewController, MKMapViewDelegate, CLLocation
         ])
         
         let mapView = MKMapView()
-        mapView.translatesAutoresizingMaskIntoConstraints = false
-        mapView.showsUserLocation = true
-        mapView.delegate = self
-        bottomSheetView.addSubview(mapView)
-        
-        NSLayoutConstraint.activate([
-            mapView.topAnchor.constraint(equalTo: dragHandle.bottomAnchor, constant: 10),
-            mapView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 10),
-            mapView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -10),
-            mapView.bottomAnchor.constraint(equalTo: bottomSheetView.bottomAnchor, constant: -10)
-        ])
+            mapView.translatesAutoresizingMaskIntoConstraints = false
+            mapView.showsUserLocation = true
+            mapView.delegate = self
+            mapView.showsCompass = false
+            bottomSheetView.addSubview(mapView)
+
+            NSLayoutConstraint.activate([
+                mapView.topAnchor.constraint(equalTo: dragHandle.bottomAnchor, constant: 10),
+                mapView.leadingAnchor.constraint(equalTo: bottomSheetView.leadingAnchor, constant: 10),
+                mapView.trailingAnchor.constraint(equalTo: bottomSheetView.trailingAnchor, constant: -10),
+                mapView.bottomAnchor.constraint(equalTo: bottomSheetView.bottomAnchor, constant: -10)
+            ])
+
+            let compassButton = MKCompassButton(mapView: mapView)
+            compassButton.compassVisibility = .visible
+            compassButton.translatesAutoresizingMaskIntoConstraints = false
+            bottomSheetView.addSubview(compassButton)
+
+            NSLayoutConstraint.activate([
+                compassButton.topAnchor.constraint(equalTo: mapView.topAnchor, constant: 50),
+                compassButton.trailingAnchor.constraint(equalTo: mapView.trailingAnchor, constant: -16)
+            ])
         
         let closeButton = UIButton(type: .custom)
         closeButton.setTitle("✕", for: .normal)
@@ -91,9 +102,8 @@ class BottomSheetViewController: UIViewController, MKMapViewDelegate, CLLocation
             closeButton.heightAnchor.constraint(equalToConstant: 24)
         ])
         
-        // Fixed: Add gesture recognizer to the view, not as a subview
         let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
-        bottomSheetView.addGestureRecognizer(panGesture) // Corrected line
+        bottomSheetView.addGestureRecognizer(panGesture)
         
         UIView.animate(withDuration: 0.3) {
             self.bottomSheetTopConstraint.constant = -self.bottomSheetExpandedHeight
@@ -188,12 +198,18 @@ class BottomSheetViewController: UIViewController, MKMapViewDelegate, CLLocation
         let geocoder = CLGeocoder()
         geocoder.geocodeAddressString(destinationAddress) { [weak self] placemarks, error in
             guard let self = self else { return }
-            if let error = error {
-                print("Geocoding error: \(error.localizedDescription)")
+            
+            // Check for geocoding error or no placemarks
+            if let error = error as? CLError, error.code == .geocodeFoundNoResult {
+                self.showAlert(message: "Location not found for the provided address")
+                return
+            } else if let error = error {
+                self.showAlert(message: "Geocoding error: \(error.localizedDescription)")
                 return
             }
+            
             guard let placemark = placemarks?.first, let destinationCoordinate = placemark.location?.coordinate else {
-                print("Location not found")
+                self.showAlert(message: "Location not found for the provided address")
                 return
             }
             
@@ -208,11 +224,11 @@ class BottomSheetViewController: UIViewController, MKMapViewDelegate, CLLocation
             let directions = MKDirections(request: directionRequest)
             directions.calculate { response, error in
                 if let error = error {
-                    print("Error calculating directions: \(error.localizedDescription)")
+                    self.showAlert(message: "Error calculating directions: \(error.localizedDescription)")
                     return
                 }
                 guard let response = response, let route = response.routes.first else {
-                    print("No routes found")
+                    self.showAlert(message: "No routes found")
                     return
                 }
                 
@@ -230,7 +246,17 @@ class BottomSheetViewController: UIViewController, MKMapViewDelegate, CLLocation
         }
     }
     
-    // MARK: - MKMapViewDelegate
+    private func showAlert(message: String) {
+        DispatchQueue.main.async { [weak self] in
+            let alert = UIAlertController(title: "Navigation Error", message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+                self?.dismiss(animated: true)
+            })
+            alert.view.tintColor = UIColor(hex: "#40CBD8")
+            self?.present(alert, animated: true)
+        }
+    }
+    
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         if overlay is MKPolyline {
             let renderer = MKPolylineRenderer(overlay: overlay)
@@ -241,4 +267,3 @@ class BottomSheetViewController: UIViewController, MKMapViewDelegate, CLLocation
         return MKOverlayRenderer()
     }
 }
-

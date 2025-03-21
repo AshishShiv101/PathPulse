@@ -1,10 +1,29 @@
 import MapKit
 import CoreLocation
 
-class CitySearchHelper {
+class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
     static let shared = CitySearchHelper()
     private var routeInfoViews: [UIView] = []
-
+    private var currentRoute: MKRoute?
+    private var mapViewReference: MKMapView?
+    private var locationManager: CLLocationManager?
+    private var lastWeatherUpdateLocation: CLLocation?
+    private var distanceTraveled: Double = 0.0
+    private let updateDistanceThreshold: Double = 2.0 // 2 km
+    
+    override init() {
+        super.init()
+        setupLocationManager()
+    }
+    
+    private func setupLocationManager() {
+        locationManager = CLLocationManager()
+        locationManager?.delegate = self
+        locationManager?.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager?.requestWhenInUseAuthorization()
+        locationManager?.startUpdatingLocation()
+    }
+    
     static func searchForCity(
         city: String,
         mapView: MKMapView,
@@ -67,16 +86,26 @@ class CitySearchHelper {
             }
         }
     }
-
+    
     private static func calculateDistance(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D) -> Double {
         let startLocation = CLLocation(latitude: start.latitude, longitude: start.longitude)
         let endLocation = CLLocation(latitude: end.latitude, longitude: end.longitude)
         let distanceInMeters = startLocation.distance(from: endLocation)
-        return distanceInMeters / 1000.0
+        return distanceInMeters / 1000.0 // Distance in km
     }
-
+    
+    private func setupMapDelegate(for mapView: MKMapView) {
+        mapView.delegate = self
+        mapViewReference = mapView
+    }
+    
     private func calculateRoute(from startCoordinate: CLLocationCoordinate2D, to destinationCoordinate: CLLocationCoordinate2D, mapView: MKMapView) {
+        setupMapDelegate(for: mapView)
         mapView.removeOverlays(mapView.overlays)
+        
+        // Reset tracking variables when calculating new route
+        distanceTraveled = 0.0
+        lastWeatherUpdateLocation = nil
         
         let startPlacemark = MKPlacemark(coordinate: startCoordinate)
         let destinationPlacemark = MKPlacemark(coordinate: destinationCoordinate)
@@ -91,7 +120,8 @@ class CitySearchHelper {
         request.requestsAlternateRoutes = true
         
         let directions = MKDirections(request: request)
-        directions.calculate { (response, error) in
+        directions.calculate { [weak self] (response, error) in
+            guard let self = self else { return }
             if let error = error {
                 print("Error calculating directions: \(error.localizedDescription)")
                 return
@@ -102,6 +132,7 @@ class CitySearchHelper {
             }
             
             let sortedRoutes = routes.sorted { $0.distance < $1.distance }
+            self.currentRoute = sortedRoutes.first
             let shortestRoute = sortedRoutes.first
             let longestRoute = sortedRoutes.last
             
@@ -129,10 +160,70 @@ class CitySearchHelper {
             
             if let shortestRoute = shortestRoute {
                 mapView.setVisibleMapRect(shortestRoute.polyline.boundingMapRect, animated: true)
+                self.addFixedWeatherAnnotations(for: shortestRoute, in: mapView)
+                self.lastWeatherUpdateLocation = CLLocation(latitude: startCoordinate.latitude,
+                                                          longitude: startCoordinate.longitude)
             }
         }
     }
-
+    
+    private func addFixedWeatherAnnotations(for route: MKRoute, in mapView: MKMapView) {
+        let weatherAnnotations = mapView.annotations.filter { $0 is MapPage.WeatherAnnotation }
+        mapView.removeAnnotations(weatherAnnotations)
+        
+        let polyline = route.polyline
+        let pointCount = polyline.pointCount
+        let numberOfAnnotations = 5
+        let intervalPoints = pointCount / (numberOfAnnotations - 1)
+        
+        var previousWeatherData: WeatherData? = nil
+        
+        for i in 0..<numberOfAnnotations {
+            let pointIndex = i * intervalPoints
+            let coordinate = polyline.points()[min(pointIndex, pointCount - 1)].coordinate
+            
+            fetchWeatherAndAddAnnotation(coordinate: coordinate, mapView: mapView) { weatherData in
+                if let prevWeather = previousWeatherData, let newWeather = weatherData {
+                    if self.isSignificantWeatherChange(previous: prevWeather, current: newWeather) {
+                        let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: newWeather)
+                        DispatchQueue.main.async {
+                            mapView.addAnnotation(annotation)
+                        }
+                    }
+                }
+                previousWeatherData = weatherData
+            }
+        }
+    }
+    
+    private func fetchWeatherAndAddAnnotation(coordinate: CLLocationCoordinate2D, mapView: MKMapView, completion: ((WeatherData?) -> Void)? = nil) {
+        WeatherService.shared.fetchWeather(for: coordinate) { (weatherData, error) in
+            if let error = error {
+                print("Error fetching weather for coordinate \(coordinate): \(error.localizedDescription)")
+                completion?(nil)
+                return
+            }
+            guard let weatherData = weatherData else {
+                print("No weather data received for coordinate \(coordinate)")
+                completion?(nil)
+                return
+            }
+            let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: weatherData)
+            DispatchQueue.main.async {
+                mapView.addAnnotation(annotation)
+            }
+            completion?(weatherData)
+        }
+    }
+    
+    private func isSignificantWeatherChange(previous: WeatherData, current: WeatherData) -> Bool {
+        let temperatureChange = abs(previous.temperature - current.temperature)
+        let humidityChange = abs(previous.humidity - current.humidity)
+        let windSpeedChange = abs(previous.windSpeed - current.windSpeed)
+        
+        return temperatureChange > 5 || humidityChange > 20 || windSpeedChange > 5 || previous.description != current.description
+    }
+    
     private func displayRouteInfoView(for route: MKRoute, at index: Int, mapView: MKMapView, isShortest: Bool, isLongest: Bool) {
         let routeInfoView = UIView()
         routeInfoView.backgroundColor = UIColor(hex: "#222222")
@@ -168,10 +259,6 @@ class CitySearchHelper {
         closeButton.frame = CGRect(x: routeInfoView.frame.width - 32, y: 12, width: 24, height: 24)
         closeButton.addAction(UIAction { [weak self] _ in
             guard let self = self else { return }
-            
-            print("Close button tapped for route index: \(index), isShortest: \(isShortest)")
-            
-          
             if let overlayToRemove = mapView.overlays.first(where: { overlay in
                 guard let polyline = overlay as? MKPolyline,
                       let userInfo = polyline.userInfo as? [String: Any],
@@ -179,16 +266,12 @@ class CitySearchHelper {
                 return overlayIndex == index
             }) {
                 mapView.removeOverlay(overlayToRemove)
-                print("Removed overlay for route index: \(index)")
-            } else {
-                print("Failed to find overlay for route index: \(index)")
             }
             routeInfoView.removeFromSuperview()
             if let viewIndex = self.routeInfoViews.firstIndex(of: routeInfoView) {
                 self.routeInfoViews.remove(at: viewIndex)
             }
             
-            // Reposition remaining views
             UIView.animate(withDuration: 0.3) {
                 for (newIndex, view) in self.routeInfoViews.enumerated() {
                     let newY = topMargin + (newIndex * 70)
@@ -206,13 +289,12 @@ class CitySearchHelper {
         mapView.superview?.addSubview(routeInfoView)
         self.routeInfoViews.append(routeInfoView)
     }
-
+    
     @objc private func handleRouteSelection(_ sender: UITapGestureRecognizer) {
         guard let selectedView = sender.view, let mapView = selectedView.superview?.subviews.compactMap({ $0 as? MKMapView }).first else { return }
         
         let selectedIndex = selectedView.tag
         
-        // Remove other routes from the map
         let overlaysToRemove = mapView.overlays.filter { overlay in
             if let polyline = overlay as? MKPolyline, let userInfo = polyline.userInfo as? [String: Any], let index = userInfo["index"] as? Int {
                 return index != selectedIndex
@@ -221,22 +303,105 @@ class CitySearchHelper {
         }
         mapView.removeOverlays(overlaysToRemove)
         
-        // Remove other route info views and animate the selected view to the top
         var indicesToRemove: [Int] = []
         for (index, view) in routeInfoViews.enumerated() {
             if view.tag != selectedIndex {
                 view.removeFromSuperview()
                 indicesToRemove.append(index)
             } else {
-                UIView.animate(withDuration: 0.3, animations: {
+                UIView.animate(withDuration: 0.3) {
                     view.frame = CGRect(x: 10, y: 70, width: view.frame.width, height: view.frame.height)
-                })
+                }
             }
         }
         
         for index in indicesToRemove.reversed() {
             routeInfoViews.remove(at: index)
         }
+        
+        if let selectedRoute = currentRoute {
+            addFixedWeatherAnnotations(for: selectedRoute, in: mapView)
+        }
+    }
+    
+    // MARK: - CLLocationManagerDelegate
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let currentLocation = locations.last,
+              let route = currentRoute,
+              let lastLocation = lastWeatherUpdateLocation,
+              let mapView = mapViewReference else { return }
+        
+        let distanceFromLastUpdate = currentLocation.distance(from: lastLocation) / 1000.0 // Convert to km
+        distanceTraveled += distanceFromLastUpdate
+        
+        if distanceTraveled >= updateDistanceThreshold {
+            updateWeatherAnnotationsAlongRoute(route: route, in: mapView)
+            distanceTraveled = 0.0
+            lastWeatherUpdateLocation = currentLocation
+        } else {
+            lastWeatherUpdateLocation = currentLocation
+        }
+    }
+    
+    private func updateWeatherAnnotationsAlongRoute(route: MKRoute, in mapView: MKMapView) {
+        let polyline = route.polyline
+        let pointCount = polyline.pointCount
+        let numberOfAnnotations = 5
+        let intervalPoints = pointCount / (numberOfAnnotations - 1)
+        
+        mapView.removeAnnotations(mapView.annotations.filter { $0 is MapPage.WeatherAnnotation })
+        
+        var previousWeatherData: WeatherData? = nil
+        
+        for i in 0..<numberOfAnnotations {
+            let pointIndex = i * intervalPoints
+            let coordinate = polyline.points()[min(pointIndex, pointCount - 1)].coordinate
+            
+            fetchWeatherAndAddAnnotation(coordinate: coordinate, mapView: mapView) { weatherData in
+                if let prevWeather = previousWeatherData, let newWeather = weatherData {
+                    if self.isSignificantWeatherChange(previous: prevWeather, current: newWeather) {
+                        let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: newWeather)
+                        DispatchQueue.main.async {
+                            mapView.addAnnotation(annotation)
+                        }
+                    }
+                }
+                previousWeatherData = weatherData
+            }
+        }
+    }
+    
+    // MARK: - MKMapViewDelegate
+    
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        guard annotation is MapPage.WeatherAnnotation else { return nil }
+        
+        let identifier = "WeatherAnnotation"
+        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+        
+        if annotationView == nil {
+            annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+            annotationView?.canShowCallout = true
+            annotationView?.image = UIImage(systemName: "cloud.fill")
+        } else {
+            annotationView?.annotation = annotation
+        }
+        
+        return annotationView
+    }
+    
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        if let polyline = overlay as? MKPolyline,
+           let userInfo = polyline.userInfo as? [String: Any],
+           let isShortest = userInfo["isShortest"] as? Bool {
+            
+            let renderer = MKPolylineRenderer(polyline: polyline)
+            renderer.strokeColor = isShortest ? .blue : UIColor(red: 0.3, green: 0.6, blue: 0.9, alpha: 1.0)
+            renderer.lineWidth = 5.0
+            return renderer
+        }
+        return MKOverlayRenderer(overlay: overlay)
     }
 }
 
@@ -253,3 +418,5 @@ extension MKPolyline {
         }
     }
 }
+
+// Assuming this extension exists somewhere in your code
