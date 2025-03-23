@@ -1436,23 +1436,25 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
     class WeatherAnnotation: NSObject, MKAnnotation {
-        let coordinate: CLLocationCoordinate2D
-        let weatherData: WeatherData
-        
-        init(coordinate: CLLocationCoordinate2D, weatherData: WeatherData) {
-            self.coordinate = coordinate
-            self.weatherData = weatherData
-            super.init()
+            let coordinate: CLLocationCoordinate2D
+            let weatherData: WeatherData
+            let routeIndex: Int
+            
+            init(coordinate: CLLocationCoordinate2D, weatherData: WeatherData, routeIndex: Int = 0) {
+                self.coordinate = coordinate
+                self.weatherData = weatherData
+                self.routeIndex = routeIndex
+                super.init()
+            }
+            
+            var title: String? {
+                return weatherData.description.capitalized
+            }
+            
+            var subtitle: String? {
+                return "\(Int(weatherData.temperature))°C"
+            }
         }
-        
-        var title: String? {
-            return weatherData.description.capitalized
-        }
-        
-        var subtitle: String? {
-            return "\(Int(weatherData.temperature))°C"
-        }
-    }
     func navigateToAddress(_ address: String, name: String?) {
         let geocoder = CLGeocoder()
         geocoder.geocodeAddressString(address) { [weak self] placemarks, error in

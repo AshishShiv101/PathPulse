@@ -9,7 +9,7 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
     private var locationManager: CLLocationManager?
     private var lastWeatherUpdateLocation: CLLocation?
     private var distanceTraveled: Double = 0.0
-    private let updateDistanceThreshold: Double = 2.0 // 2 km
+    private let updateDistanceThreshold: Double = 2.0
     
     override init() {
         super.init()
@@ -102,6 +102,7 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
     private func calculateRoute(from startCoordinate: CLLocationCoordinate2D, to destinationCoordinate: CLLocationCoordinate2D, mapView: MKMapView) {
         setupMapDelegate(for: mapView)
         mapView.removeOverlays(mapView.overlays)
+        mapView.removeAnnotations(mapView.annotations.filter { $0 is MapPage.WeatherAnnotation })
         
         // Reset tracking variables when calculating new route
         distanceTraveled = 0.0
@@ -155,22 +156,19 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
                 
                 mapView.addOverlay(route.polyline, level: .aboveRoads)
                 self.displayRouteInfoView(for: route, at: index, mapView: mapView, isShortest: isShortest, isLongest: isLongest)
+                self.addFixedWeatherAnnotations(for: route, in: mapView, routeIndex: index)
                 print("Route \(index): isShortest=\(isShortest), isLongest=\(isLongest), distance=\(route.distance), userInfo=\(routeInfo)")
             }
             
             if let shortestRoute = shortestRoute {
                 mapView.setVisibleMapRect(shortestRoute.polyline.boundingMapRect, animated: true)
-                self.addFixedWeatherAnnotations(for: shortestRoute, in: mapView)
                 self.lastWeatherUpdateLocation = CLLocation(latitude: startCoordinate.latitude,
                                                           longitude: startCoordinate.longitude)
             }
         }
     }
     
-    private func addFixedWeatherAnnotations(for route: MKRoute, in mapView: MKMapView) {
-        let weatherAnnotations = mapView.annotations.filter { $0 is MapPage.WeatherAnnotation }
-        mapView.removeAnnotations(weatherAnnotations)
-        
+    private func addFixedWeatherAnnotations(for route: MKRoute, in mapView: MKMapView, routeIndex: Int) {
         let polyline = route.polyline
         let pointCount = polyline.pointCount
         let numberOfAnnotations = 5
@@ -182,10 +180,10 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
             let pointIndex = i * intervalPoints
             let coordinate = polyline.points()[min(pointIndex, pointCount - 1)].coordinate
             
-            fetchWeatherAndAddAnnotation(coordinate: coordinate, mapView: mapView) { weatherData in
+            fetchWeatherAndAddAnnotation(coordinate: coordinate, mapView: mapView, routeIndex: routeIndex) { weatherData in
                 if let prevWeather = previousWeatherData, let newWeather = weatherData {
                     if self.isSignificantWeatherChange(previous: prevWeather, current: newWeather) {
-                        let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: newWeather)
+                        let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: newWeather, routeIndex: routeIndex)
                         DispatchQueue.main.async {
                             mapView.addAnnotation(annotation)
                         }
@@ -196,7 +194,7 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
         }
     }
     
-    private func fetchWeatherAndAddAnnotation(coordinate: CLLocationCoordinate2D, mapView: MKMapView, completion: ((WeatherData?) -> Void)? = nil) {
+    private func fetchWeatherAndAddAnnotation(coordinate: CLLocationCoordinate2D, mapView: MKMapView, routeIndex: Int, completion: ((WeatherData?) -> Void)? = nil) {
         WeatherService.shared.fetchWeather(for: coordinate) { (weatherData, error) in
             if let error = error {
                 print("Error fetching weather for coordinate \(coordinate): \(error.localizedDescription)")
@@ -208,7 +206,7 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
                 completion?(nil)
                 return
             }
-            let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: weatherData)
+            let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: weatherData, routeIndex: routeIndex)
             DispatchQueue.main.async {
                 mapView.addAnnotation(annotation)
             }
@@ -250,7 +248,7 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
         distanceAndTimeLabel.text = String(format: "%.2f km • %.0fh %.0fm", route.distance / 1000, timeInHours, timeInMinutes)
         distanceAndTimeLabel.textColor = .white
         distanceAndTimeLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        distanceAndTimeLabel.frame = CGRect(x: 38, y: 15, width: 200, height: 30)
+        distanceAndTimeLabel.frame = CGRect(x: 38, y: 15, width: 140, height: 30)
         routeInfoView.addSubview(distanceAndTimeLabel)
         
         let closeButton = UIButton(type: .system)
@@ -266,6 +264,11 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
                 return overlayIndex == index
             }) {
                 mapView.removeOverlay(overlayToRemove)
+                let annotationsToRemove = mapView.annotations.filter { annotation in
+                    guard let weatherAnnotation = annotation as? MapPage.WeatherAnnotation else { return false }
+                    return weatherAnnotation.routeIndex == index
+                }
+                mapView.removeAnnotations(annotationsToRemove)
             }
             routeInfoView.removeFromSuperview()
             if let viewIndex = self.routeInfoViews.firstIndex(of: routeInfoView) {
@@ -291,17 +294,31 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
     }
     
     @objc private func handleRouteSelection(_ sender: UITapGestureRecognizer) {
-        guard let selectedView = sender.view, let mapView = selectedView.superview?.subviews.compactMap({ $0 as? MKMapView }).first else { return }
+        guard let selectedView = sender.view,
+              let mapView = selectedView.superview?.subviews.compactMap({ $0 as? MKMapView }).first else { return }
         
         let selectedIndex = selectedView.tag
         
         let overlaysToRemove = mapView.overlays.filter { overlay in
-            if let polyline = overlay as? MKPolyline, let userInfo = polyline.userInfo as? [String: Any], let index = userInfo["index"] as? Int {
+            if let polyline = overlay as? MKPolyline,
+               let userInfo = polyline.userInfo as? [String: Any],
+               let index = userInfo["index"] as? Int {
                 return index != selectedIndex
             }
             return true
         }
-        mapView.removeOverlays(overlaysToRemove)
+        
+        for overlay in overlaysToRemove {
+            if let polyline = overlay as? MKPolyline,
+               let routeIndex = Int(polyline.title ?? "") {
+                let annotationsToRemove = mapView.annotations.filter { annotation in
+                    guard let weatherAnnotation = annotation as? MapPage.WeatherAnnotation else { return false }
+                    return weatherAnnotation.routeIndex == routeIndex
+                }
+                mapView.removeAnnotations(annotationsToRemove)
+            }
+            mapView.removeOverlay(overlay)
+        }
         
         var indicesToRemove: [Int] = []
         for (index, view) in routeInfoViews.enumerated() {
@@ -320,7 +337,7 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
         }
         
         if let selectedRoute = currentRoute {
-            addFixedWeatherAnnotations(for: selectedRoute, in: mapView)
+            mapView.setVisibleMapRect(selectedRoute.polyline.boundingMapRect, animated: true)
         }
     }
     
@@ -332,7 +349,7 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
               let lastLocation = lastWeatherUpdateLocation,
               let mapView = mapViewReference else { return }
         
-        let distanceFromLastUpdate = currentLocation.distance(from: lastLocation) / 1000.0 // Convert to km
+        let distanceFromLastUpdate = currentLocation.distance(from: lastLocation) / 1000.0
         distanceTraveled += distanceFromLastUpdate
         
         if distanceTraveled >= updateDistanceThreshold {
@@ -350,7 +367,12 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
         let numberOfAnnotations = 5
         let intervalPoints = pointCount / (numberOfAnnotations - 1)
         
-        mapView.removeAnnotations(mapView.annotations.filter { $0 is MapPage.WeatherAnnotation })
+        let routeIndex = Int(polyline.title ?? "0") ?? 0
+        let annotationsToRemove = mapView.annotations.filter { annotation in
+            guard let weatherAnnotation = annotation as? MapPage.WeatherAnnotation else { return false }
+            return weatherAnnotation.routeIndex == routeIndex
+        }
+        mapView.removeAnnotations(annotationsToRemove)
         
         var previousWeatherData: WeatherData? = nil
         
@@ -358,10 +380,10 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
             let pointIndex = i * intervalPoints
             let coordinate = polyline.points()[min(pointIndex, pointCount - 1)].coordinate
             
-            fetchWeatherAndAddAnnotation(coordinate: coordinate, mapView: mapView) { weatherData in
+            fetchWeatherAndAddAnnotation(coordinate: coordinate, mapView: mapView, routeIndex: routeIndex) { weatherData in
                 if let prevWeather = previousWeatherData, let newWeather = weatherData {
                     if self.isSignificantWeatherChange(previous: prevWeather, current: newWeather) {
-                        let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: newWeather)
+                        let annotation = MapPage.WeatherAnnotation(coordinate: coordinate, weatherData: newWeather, routeIndex: routeIndex)
                         DispatchQueue.main.async {
                             mapView.addAnnotation(annotation)
                         }
@@ -375,7 +397,7 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
     // MARK: - MKMapViewDelegate
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        guard annotation is MapPage.WeatherAnnotation else { return nil }
+        guard let weatherAnnotation = annotation as? MapPage.WeatherAnnotation else { return nil }
         
         let identifier = "WeatherAnnotation"
         var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
@@ -383,11 +405,27 @@ class CitySearchHelper: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
         if annotationView == nil {
             annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
             annotationView?.canShowCallout = true
-            annotationView?.image = UIImage(systemName: "cloud.fill")
         } else {
             annotationView?.annotation = annotation
         }
         
+        let weatherDesc = weatherAnnotation.weatherData.description.lowercased()
+        switch weatherDesc {
+        case let str where str.contains("clear"):
+            annotationView?.image = UIImage(systemName: "sun.max.fill")?.withTintColor(.yellow)
+        case let str where str.contains("cloud"):
+            annotationView?.image = UIImage(systemName: "cloud.fill")?.withTintColor(.gray)
+        case let str where str.contains("rain"):
+            annotationView?.image = UIImage(systemName: "cloud.rain.fill")?.withTintColor(.blue)
+        case let str where str.contains("snow"):
+            annotationView?.image = UIImage(systemName: "snowflake")?.withTintColor(.white)
+        case let str where str.contains("night"):
+            annotationView?.image = UIImage(systemName: "moon.fill")?.withTintColor(.purple)
+        default:
+            annotationView?.image = UIImage(systemName: "cloud.fill")?.withTintColor(.gray)
+        }
+        
+        annotationView?.frame.size = CGSize(width: 30, height: 30)
         return annotationView
     }
     
@@ -419,4 +457,3 @@ extension MKPolyline {
     }
 }
 
-// Assuming this extension exists somewhere in your code
