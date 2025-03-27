@@ -39,6 +39,7 @@ struct NewsDataModel: Decodable {
 }
 
 
+
 // MARK: - NewsViewController
 class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollViewDelegate {
     // MARK: - Properties
@@ -57,6 +58,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
     private var displayedArticleCount = 0
     private let articlesPerPage = 20
     private var currentQuery: String?
+    private let noNewsLabel = UILabel()
     
     public var searchedCity: String? {
         didSet {
@@ -129,17 +131,16 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             button.layer.cornerRadius = 5
             button.clipsToBounds = true
             
-            // Set fixed colors irrespective of dark/light mode
             switch index {
             case 0:
-                button.backgroundColor = UIColor(hex: "#40cbd8") // Cyan
+                button.backgroundColor = UIColor(hex: "#40cbd8")
                 button.setTitleColor(.black, for: .normal)
             case 1:
-                button.backgroundColor = UIColor(hex: "#555555") // Dark Gray
+                button.backgroundColor = UIColor(hex: "#555555")
             case 2:
-                button.backgroundColor = UIColor(hex: "#555555") // Dark Gray
+                button.backgroundColor = UIColor(hex: "#555555")
             default:
-                button.backgroundColor = UIColor(hex: "#555555") // Dark Gray
+                button.backgroundColor = UIColor(hex: "#555555")
             }
             
             button.addTarget(self, action: #selector(buttonPressed), for: .touchUpInside)
@@ -157,6 +158,13 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         stackView.alignment = .fill
         stackView.distribution = .fill
         scrollView.addSubview(stackView)
+        
+        noNewsLabel.translatesAutoresizingMaskIntoConstraints = false
+        noNewsLabel.text = "No news available at this time"
+        noNewsLabel.textColor = .white
+        noNewsLabel.font = .systemFont(ofSize: 16, weight: .regular)
+        noNewsLabel.textAlignment = .center
+        noNewsLabel.isHidden = true
         
         NSLayoutConstraint.activate([
             backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -233,7 +241,9 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
                 print("Current location: \(city)")
                 let initialQuery = "\"\(city)\" (\"road accident\" OR weather OR news)"
                 self.currentQuery = initialQuery
-                self.cityLabel.text = city
+                DispatchQueue.main.async {
+                    self.cityLabel.text = city
+                }
                 self.fetchNewsData(query: initialQuery, fromDate: nil, toDate: nil) { success in
                     if !success {
                         self.fetchNewsForNearbyCities(location: location, originalCity: city)
@@ -258,12 +268,14 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             if let placemark = placemarks?.first, let location = placemark.location {
                 self.currentCoordinates = location
                 let city = placemark.locality ?? placemark.administrativeArea ?? placemark.country ?? searchedCity
-                let initialQuery = "\"\(searchedCity)\" (\"road accident\" OR weather OR news)"
+                let initialQuery = "\"\(city)\" (\"road accident\" OR weather OR news)"
                 self.currentQuery = initialQuery
-                self.cityLabel.text = searchedCity
+                DispatchQueue.main.async {
+                    self.cityLabel.text = searchedCity
+                }
                 self.fetchNewsData(query: initialQuery, fromDate: nil, toDate: nil) { success in
                     if !success {
-                        print("No news found for searched city: \(searchedCity) or broader city: \(city)")
+                        print("No news found for searched city: \(searchedCity)")
                         self.fetchNewsForNearbyCities(location: location, originalCity: searchedCity)
                     }
                 }
@@ -353,7 +365,9 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
                 let nearbyCity = nearbyCitiesArray[currentIndex]
                 let nearbyQuery = "\"\(nearbyCity)\" (\"road accident\" OR weather OR news)"
                 self.currentQuery = nearbyQuery
-                self.cityLabel.text = "\(originalCity) (near \(nearbyCity))"
+                DispatchQueue.main.async {
+                    self.cityLabel.text = "\(originalCity) (near \(nearbyCity))"
+                }
                 self.fetchNewsData(query: nearbyQuery, fromDate: nil, toDate: nil) { success in
                     if success {
                         newsFound = true
@@ -363,7 +377,6 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
                     }
                 }
             }
-            
             tryNextCity()
         }
     }
@@ -377,10 +390,15 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             print("Fallback location: \(fallbackLocation)")
             let fallbackQuery = "\"\(fallbackLocation)\" (\"road accident\" OR weather OR news)"
             self.currentQuery = fallbackQuery
-            self.cityLabel.text = fallbackLocation
+            DispatchQueue.main.async {
+                self.cityLabel.text = fallbackLocation
+            }
             self.fetchNewsData(query: fallbackQuery, fromDate: nil, toDate: nil) { success in
                 if !success {
                     print("No news found for fallback location: \(fallbackLocation)")
+                    DispatchQueue.main.async {
+                        self.showNoNewsMessage()
+                    }
                 }
             }
         }
@@ -388,12 +406,8 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
     
     // MARK: - Fetch News Data
     private func fetchNewsData(query: String, fromDate: String?, toDate: String?, completion: @escaping (Bool) -> Void) {
-        let apiKey = "ef3f5b6117554343b74330a70065576d"
+        let apiKey = "30e36402849c414a9a78de022db36455"
         var urlString = "https://newsapi.org/v2/everything?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query)&apiKey=\(apiKey)&language=en&sortBy=relevancy"
-        
-        // Add date parameters if provided
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
         
         if let from = fromDate {
             urlString += "&from=\(from)"
@@ -412,14 +426,25 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         
         let session = URLSession.shared
         let task = session.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self else {
+                completion(false)
+                return
+            }
+            
             if let error = error {
                 print("Error fetching news: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.showNoNewsMessage()
+                }
                 completion(false)
                 return
             }
             
             guard let data = data else {
                 print("No data received")
+                DispatchQueue.main.async {
+                    self.showNoNewsMessage()
+                }
                 completion(false)
                 return
             }
@@ -427,16 +452,23 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             do {
                 let decoder = JSONDecoder()
                 let response = try decoder.decode(NewsResponse.self, from: data)
+                let filteredArticles = self.filterRelevantArticles(response.articles, query: query, fromDate: fromDate)
                 DispatchQueue.main.async {
-                    // Filter articles to ensure they match the time range and query
-                    let filteredArticles = self?.filterRelevantArticles(response.articles, query: query, fromDate: fromDate) ?? []
-                    self?.updateNewsData(with: filteredArticles)
+                    self.updateNewsData(with: filteredArticles)
+                    if filteredArticles.isEmpty {
+                        self.showNoNewsMessage()
+                    } else {
+                        self.hideNoNewsMessage()
+                    }
                     completion(!filteredArticles.isEmpty)
                 }
             } catch {
                 print("Error parsing JSON: \(error)")
                 if let jsonString = String(data: data, encoding: .utf8) {
                     print("Raw JSON: \(jsonString)")
+                }
+                DispatchQueue.main.async {
+                    self.showNoNewsMessage()
                 }
                 completion(false)
             }
@@ -447,10 +479,23 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
     private func filterRelevantArticles(_ articles: [NewsDataModel], query: String, fromDate: String?) -> [NewsDataModel] {
         let dateFormatter = ISO8601DateFormatter()
         let queryComponents = query.lowercased().components(separatedBy: " ")
+        guard let locationComponent = queryComponents.first(where: { $0.hasPrefix("\"") && $0.hasSuffix("\"") }) else {
+            return []
+        }
+        let location = String(locationComponent.dropFirst().dropLast()).lowercased()
         
         return articles.filter { article in
             let title = article.headline.lowercased()
-            let containsQueryTerms = queryComponents.contains { title.contains($0) }
+            let publisher = article.publisher.lowercased()
+            let containsLocation = title.contains(location) || publisher.contains(location)
+            
+            if !containsLocation {
+                return false
+            }
+            
+            let containsQueryTerms = queryComponents.dropFirst().contains { term in
+                title.contains(term.replacingOccurrences(of: "\"", with: ""))
+            }
             
             if let from = fromDate,
                let articleDate = dateFormatter.date(from: article.publishedAt),
@@ -468,6 +513,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         displayNextArticles()
     }
+    
     private func displayNextArticles() {
         let startIndex = displayedArticleCount
         let endIndex = min(startIndex + articlesPerPage, newsArticles.count)
@@ -482,7 +528,14 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             setupShowMoreButton()
             stackView.addArrangedSubview(showMoreButton)
         }
+        
+        if newsArticles.isEmpty {
+            showNoNewsMessage()
+        } else {
+            hideNoNewsMessage()
+        }
     }
+    
     private func setupShowMoreButton() {
         showMoreButton.translatesAutoresizingMaskIntoConstraints = false
         showMoreButton.setTitle("Show More", for: .normal)
@@ -496,6 +549,22 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             showMoreButton.heightAnchor.constraint(equalToConstant: 44),
             showMoreButton.widthAnchor.constraint(equalToConstant: 120)
         ])
+    }
+    
+    // MARK: - No News Message
+    private func showNoNewsMessage() {
+        if noNewsLabel.superview == nil {
+            scrollView.addSubview(noNewsLabel)
+            NSLayoutConstraint.activate([
+                noNewsLabel.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor),
+                noNewsLabel.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor)
+            ])
+        }
+        noNewsLabel.isHidden = false
+    }
+    
+    private func hideNoNewsMessage() {
+        noNewsLabel.isHidden = true
     }
     
     // MARK: - Actions
@@ -579,26 +648,26 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         var toDate: String?
         
         switch buttonIndex {
-        case 0: // Last 1 month - Road Accidents
-                if let lastMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentDate) {
-                    fromDate = dateFormatter.string(from: lastMonth)
-                    toDate = dateFormatter.string(from: currentDate)
-                    query = "\"\(location) local\" (\"road accident\" OR \"traffic accident\" OR \"car crash\")"
-                }
-                
-            case 1: // Last 1 month - Riots and Rail Accidents
-                if let lastMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentDate) {
-                    fromDate = dateFormatter.string(from: lastMonth)
-                    toDate = dateFormatter.string(from: currentDate)
-                    query = "\"\(location) local\" (\"riot\" OR \"protest\" OR \"rail accident\" OR \"train crash\") "
-                }
-                
-            case 2: // Last 1 month - Weather Specific
-                if let lastMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentDate) {
-                    fromDate = dateFormatter.string(from: lastMonth)
-                    toDate = dateFormatter.string(from: currentDate)
-                    query = "\"\(location) weather\" (\"temperature\" OR \"storm\" OR \"precipitation\" OR \"weather forecast\")"
-                }
+        case 0: // Last 7 days - Road Accidents
+            if let lastWeek = Calendar.current.date(byAdding: .day, value: -7, to: currentDate) {
+                fromDate = dateFormatter.string(from: lastWeek)
+                toDate = dateFormatter.string(from: currentDate)
+                query = "\"\(location)\" (\"road accident\" OR \"traffic accident\" OR \"car crash\")"
+            }
+            
+        case 1: // Last 24 hours - Riots and Rail Accidents
+            if let lastDay = Calendar.current.date(byAdding: .hour, value: -24, to: currentDate) {
+                fromDate = dateFormatter.string(from: lastDay)
+                toDate = dateFormatter.string(from: currentDate)
+                query = "\"\(location)\" (\"riot\" OR \"protest\" OR \"rail accident\" OR \"train crash\")"
+            }
+            
+        case 2: // Weather Specific
+            if let lastWeek = Calendar.current.date(byAdding: .day, value: -7, to: currentDate) {
+                fromDate = dateFormatter.string(from: lastWeek)
+                toDate = dateFormatter.string(from: currentDate)
+                query = "\"\(location)\" (\"temperature\" OR \"storm\" OR \"precipitation\" OR \"weather forecast\")"
+            }
             
         default:
             return
@@ -652,11 +721,10 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         
         let infoStack = UIStackView()
         infoStack.translatesAutoresizingMaskIntoConstraints = false
-        contentStack.axis = .vertical
-        contentStack.spacing = 8
-        contentStack.alignment = .leading
+        infoStack.axis = .vertical
+        infoStack.spacing = 8
+        infoStack.alignment = .leading
         
-   
         let publisherLabel = UILabel()
         publisherLabel.text = newsData.publisher
         publisherLabel.font = UIFont.systemFont(ofSize: 12, weight: .regular)
@@ -803,7 +871,9 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         let frameHeight = scrollView.frame.size.height
         if offsetY > contentHeight - frameHeight - 100 && displayedArticleCount >= articlesPerPage {
             if showMoreButton.superview == nil && displayedArticleCount < newsArticles.count {
-                stackView.addArrangedSubview(showMoreButton)
+                DispatchQueue.main.async { [weak self] in
+                    self?.stackView.addArrangedSubview(self?.showMoreButton ?? UIView())
+                }
             }
         }
     }
@@ -814,10 +884,14 @@ extension UIImageView {
         guard let url = URL(string: urlString) else { return }
         
         if let cachedImage = ImageNewsCache.shared.getImage(for: url) {
-            self.image = cachedImage
+            DispatchQueue.main.async { [weak self] in
+                self?.image = cachedImage
+            }
             return
         }
-        URLSession.shared.dataTask(with: url) { data, _, _ in
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+            guard let self = self else { return }
             if let data = data, let image = UIImage(data: data) {
                 DispatchQueue.main.async {
                     self.image = image
@@ -827,3 +901,5 @@ extension UIImageView {
         }.resume()
     }
 }
+
+
