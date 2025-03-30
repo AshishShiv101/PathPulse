@@ -38,8 +38,6 @@ struct NewsDataModel: Decodable {
     }
 }
 
-
-
 // MARK: - NewsViewController
 class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollViewDelegate {
     // MARK: - Properties
@@ -121,28 +119,9 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         buttonStackView.distribution = .fillEqually
         view.addSubview(buttonStackView)
         
-        let buttonTitles = ["Last 7 days", "Last 24 hours", "Weather"]
+        let buttonTitles = ["General News", "Weather"]
         for (index, title) in buttonTitles.enumerated() {
-            let button = UIButton()
-            button.translatesAutoresizingMaskIntoConstraints = false
-            button.setTitle(title, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
-            button.setTitleColor(.white, for: .normal)
-            button.layer.cornerRadius = 5
-            button.clipsToBounds = true
-            
-            switch index {
-            case 0:
-                button.backgroundColor = UIColor(hex: "#40cbd8")
-                button.setTitleColor(.black, for: .normal)
-            case 1:
-                button.backgroundColor = UIColor(hex: "#555555")
-            case 2:
-                button.backgroundColor = UIColor(hex: "#555555")
-            default:
-                button.backgroundColor = UIColor(hex: "#555555")
-            }
-            
+            let button = createStyledButton(title: title, isSelected: index == 0)
             button.addTarget(self, action: #selector(buttonPressed), for: .touchUpInside)
             buttonStackView.addArrangedSubview(button)
         }
@@ -206,6 +185,27 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         ])
     }
     
+    private func createStyledButton(title: String, isSelected: Bool) -> UIButton {
+        var config = UIButton.Configuration.filled()
+        config.title = title
+        config.baseBackgroundColor = isSelected ? UIColor(hex: "#40cbd8") : UIColor(hex: "#555555")
+        config.baseForegroundColor = isSelected ? .black : .white
+        config.cornerStyle = .medium
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+        
+        let button = UIButton(configuration: config, primaryAction: nil)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        
+        // Add subtle shadow for iOS-like elevation
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.2
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 4
+        
+        return button
+    }
+    
     func setGradientBackground() {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [UIColor(hex: "#222222").cgColor, UIColor(hex: "#222222").cgColor]
@@ -239,7 +239,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             if let city = placemark.locality {
                 self.currentLocation = city
                 print("Current location: \(city)")
-                let initialQuery = "\"\(city)\" (\"road accident\" OR weather OR news)"
+                let initialQuery = "\"\(city)\" (\"road accident\" OR \"traffic jam\" OR \"road closure\" OR \"protest\" OR \"riot\" OR \"strike\" OR \"public event\" OR \"festival\" OR \"parade\" OR \"construction\" OR \"bridge collapse\" OR \"train derailment\" OR \"flight delay\" OR \"airport closure\" OR \"natural disaster\" OR \"flood\" OR \"earthquake\" OR \"landslide\")"
                 self.currentQuery = initialQuery
                 DispatchQueue.main.async {
                     self.cityLabel.text = city
@@ -268,7 +268,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             if let placemark = placemarks?.first, let location = placemark.location {
                 self.currentCoordinates = location
                 let city = placemark.locality ?? placemark.administrativeArea ?? placemark.country ?? searchedCity
-                let initialQuery = "\"\(city)\" (\"road accident\" OR weather OR news)"
+                let initialQuery = "\"\(city)\" (\"road accident\" OR \"traffic jam\" OR \"road closure\" OR \"protest\" OR \"riot\" OR \"strike\" OR \"public event\" OR \"festival\" OR \"parade\" OR \"construction\" OR \"bridge collapse\" OR \"train derailment\" OR \"flight delay\" OR \"airport closure\" OR \"natural disaster\" OR \"flood\" OR \"earthquake\" OR \"landslide\")"
                 self.currentQuery = initialQuery
                 DispatchQueue.main.async {
                     self.cityLabel.text = searchedCity
@@ -280,7 +280,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
                     }
                 }
             } else {
-                let fallbackQuery = "\"\(searchedCity)\" (\"road accident\" OR weather OR news)"
+                let fallbackQuery = "\"\(searchedCity)\" (\"road accident\" OR \"traffic jam\" OR \"road closure\" OR \"protest\" OR \"riot\" OR \"strike\" OR \"public event\" OR \"festival\" OR \"parade\" OR \"construction\" OR \"bridge collapse\" OR \"train derailment\" OR \"flight delay\" OR \"airport closure\" OR \"natural disaster\" OR \"flood\" OR \"earthquake\" OR \"landslide\")"
                 self.currentQuery = fallbackQuery
                 self.fetchNewsData(query: fallbackQuery, fromDate: nil, toDate: nil) { success in
                     if !success {
@@ -363,7 +363,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
                 }
                 
                 let nearbyCity = nearbyCitiesArray[currentIndex]
-                let nearbyQuery = "\"\(nearbyCity)\" (\"road accident\" OR weather OR news)"
+                let nearbyQuery = "\"\(nearbyCity)\" (\"road accident\" OR \"traffic jam\" OR \"road closure\" OR \"protest\" OR \"riot\" OR \"strike\" OR \"public event\" OR \"festival\" OR \"parade\" OR \"construction\" OR \"bridge collapse\" OR \"train derailment\" OR \"flight delay\" OR \"airport closure\" OR \"natural disaster\" OR \"flood\" OR \"earthquake\" OR \"landslide\")"
                 self.currentQuery = nearbyQuery
                 DispatchQueue.main.async {
                     self.cityLabel.text = "\(originalCity) (near \(nearbyCity))"
@@ -388,7 +388,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             
             let fallbackLocation = placemark.administrativeArea ?? placemark.country ?? "Unknown"
             print("Fallback location: \(fallbackLocation)")
-            let fallbackQuery = "\"\(fallbackLocation)\" (\"road accident\" OR weather OR news)"
+            let fallbackQuery = "\"\(fallbackLocation)\" (\"road accident\" OR \"traffic jam\" OR \"road closure\" OR \"protest\" OR \"riot\" OR \"strike\" OR \"public event\" OR \"festival\" OR \"parade\" OR \"construction\" OR \"bridge collapse\" OR \"train derailment\" OR \"flight delay\" OR \"airport closure\" OR \"natural disaster\" OR \"flood\" OR \"earthquake\" OR \"landslide\")"
             self.currentQuery = fallbackQuery
             DispatchQueue.main.async {
                 self.cityLabel.text = fallbackLocation
@@ -626,12 +626,19 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
     @objc private func buttonPressed(sender: UIButton) {
         buttonStackView.arrangedSubviews.forEach { view in
             if let button = view as? UIButton {
-                button.backgroundColor = UIColor(hex: "#555555")
-                button.setTitleColor(.white, for: .normal)
+                var config = button.configuration ?? UIButton.Configuration.filled()
+                config.baseBackgroundColor = UIColor(hex: "#555555")
+                config.baseForegroundColor = .white
+                button.configuration = config
+                button.layer.shadowOpacity = 0.2 // Reset shadow for unselected
             }
         }
-        sender.backgroundColor = UIColor(hex: "#40cbd8")
-        sender.setTitleColor(.black, for: .normal)
+        
+        var selectedConfig = sender.configuration ?? UIButton.Configuration.filled()
+        selectedConfig.baseBackgroundColor = UIColor(hex: "#40cbd8")
+        selectedConfig.baseForegroundColor = .black
+        sender.configuration = selectedConfig
+        sender.layer.shadowOpacity = 0.4 // Slightly stronger shadow for selected
         
         guard let buttonIndex = buttonStackView.arrangedSubviews.firstIndex(of: sender),
               let location = searchedCity ?? currentLocation else {
@@ -639,35 +646,14 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             return
         }
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let currentDate = Date()
-        
         var query = ""
-        var fromDate: String?
-        var toDate: String?
         
         switch buttonIndex {
-        case 0: // Last 7 days - Road Accidents
-            if let lastWeek = Calendar.current.date(byAdding: .day, value: -7, to: currentDate) {
-                fromDate = dateFormatter.string(from: lastWeek)
-                toDate = dateFormatter.string(from: currentDate)
-                query = "\"\(location)\" (\"road accident\" OR \"traffic accident\" OR \"car crash\")"
-            }
+        case 0: // General News (Travel Disruptions)
+            query = "\"\(location)\" (\"road accident\" OR \"traffic jam\" OR \"road closure\" OR \"protest\" OR \"riot\" OR \"strike\" OR \"public event\" OR \"festival\" OR \"parade\" OR \"construction\" OR \"bridge collapse\" OR \"train derailment\" OR \"flight delay\" OR \"airport closure\" OR \"natural disaster\" OR \"flood\" OR \"earthquake\" OR \"landslide\")"
             
-        case 1: // Last 24 hours - Riots and Rail Accidents
-            if let lastDay = Calendar.current.date(byAdding: .hour, value: -24, to: currentDate) {
-                fromDate = dateFormatter.string(from: lastDay)
-                toDate = dateFormatter.string(from: currentDate)
-                query = "\"\(location)\" (\"riot\" OR \"protest\" OR \"rail accident\" OR \"train crash\")"
-            }
-            
-        case 2: // Weather Specific
-            if let lastWeek = Calendar.current.date(byAdding: .day, value: -7, to: currentDate) {
-                fromDate = dateFormatter.string(from: lastWeek)
-                toDate = dateFormatter.string(from: currentDate)
-                query = "\"\(location)\" (\"temperature\" OR \"storm\" OR \"precipitation\" OR \"weather forecast\")"
-            }
+        case 1: // Weather
+            query = "\"\(location)\" (\"temperature\" OR \"storm\" OR \"precipitation\" OR \"weather forecast\")"
             
         default:
             return
@@ -676,7 +662,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         guard !query.isEmpty else { return }
         
         currentQuery = query
-        fetchNewsData(query: query, fromDate: fromDate, toDate: toDate) { [weak self] success in
+        fetchNewsData(query: query, fromDate: nil, toDate: nil) { [weak self] success in
             guard let self = self else { return }
             if !success && self.currentCoordinates != nil {
                 self.fetchNewsForNearbyCities(location: self.currentCoordinates!, originalCity: location)
@@ -722,7 +708,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         let infoStack = UIStackView()
         infoStack.translatesAutoresizingMaskIntoConstraints = false
         infoStack.axis = .vertical
-        infoStack.spacing = 8
+        contentStack.spacing = 8
         infoStack.alignment = .leading
         
         let publisherLabel = UILabel()
@@ -901,5 +887,4 @@ extension UIImageView {
         }.resume()
     }
 }
-
 
