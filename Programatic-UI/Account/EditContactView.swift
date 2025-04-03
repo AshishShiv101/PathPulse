@@ -25,9 +25,17 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         setupUI()
         loadContactsFromFirebase()
         setupNavigationBarAppearance()
+<<<<<<< HEAD
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
+=======
+        
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+        
+>>>>>>> 87dd8a50f805e2a4ff76bd6540d3917c596494da
         scrollView.keyboardDismissMode = .onDrag
         if #available(iOS 11.0, *) {
             scrollView.contentInsetAdjustmentBehavior = .never
@@ -35,6 +43,10 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
             automaticallyAdjustsScrollViewInsets = false
         }
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 87dd8a50f805e2a4ff76bd6540d3917c596494da
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
@@ -333,7 +345,11 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         db.collection("users").document(userId).collection("contacts").document(name)
             .setData(["name": name, "phone": phoneNumber]) { error in
                 if let error = error {
+<<<<<<< HEAD
                     
+=======
+                    print("Error saving contact: \(error.localizedDescription)")
+>>>>>>> 87dd8a50f805e2a4ff76bd6540d3917c596494da
                 }
             }
     }
@@ -344,7 +360,11 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
         db.collection("users").document(userId).collection("contacts").document(name)
             .delete { error in
                 if let error = error {
+<<<<<<< HEAD
                    
+=======
+                    print("Error deleting contact: \(error.localizedDescription)")
+>>>>>>> 87dd8a50f805e2a4ff76bd6540d3917c596494da
                 }
             }
     }
@@ -427,6 +447,7 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     
     func contactViewController(_ viewController: CNContactViewController, didCompleteWith contact: CNContact?) {
         dismiss(animated: true)
+<<<<<<< HEAD
     }
     
     private func createDarkModeAlert(title: String, message: String?) -> UIAlertController {
@@ -454,6 +475,35 @@ class EditContactViewController: UIViewController, CNContactViewControllerDelega
     private func showValidationAlert(message: String) {
         let alert = createDarkModeAlert(title: "Invalid Contact", message: message)
         
+=======
+    }
+    
+    private func createDarkModeAlert(title: String, message: String?) -> UIAlertController {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        
+        let titleFont = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18),
+                        NSAttributedString.Key.foregroundColor: UIColor.white]
+        let messageFont = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15),
+                         NSAttributedString.Key.foregroundColor: UIColor.lightGray]
+        
+        let titleAttrString = NSAttributedString(string: title, attributes: titleFont)
+        let messageAttrString = message.map { NSAttributedString(string: $0, attributes: messageFont) }
+        
+        alert.setValue(titleAttrString, forKey: "attributedTitle")
+        if let messageAttrString = messageAttrString {
+            alert.setValue(messageAttrString, forKey: "attributedMessage")
+        }
+        
+        alert.view.subviews.first?.subviews.first?.subviews.first?.backgroundColor = UIColor(hex: "#1E1E1E")
+        alert.overrideUserInterfaceStyle = .dark
+        
+        return alert
+    }
+    
+    private func showValidationAlert(message: String) {
+        let alert = createDarkModeAlert(title: "Invalid Contact", message: message)
+        
+>>>>>>> 87dd8a50f805e2a4ff76bd6540d3917c596494da
         let okAction = UIAlertAction(title: "OK", style: .default)
         okAction.setValue(UIColor(hex: "#40CBD8"), forKey: "titleTextColor")
         alert.addAction(okAction)
@@ -523,6 +573,239 @@ extension EditContactViewController: CNContactPickerDelegate {
         } else {
             showValidationAlert(message: "Please enter a valid phone number (8-15 digits).")
         }
+<<<<<<< HEAD
+=======
+    }
+}
+
+class CustomContactPickerViewController: CNContactPickerViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
+
+        disableContentInsetAdjustment(for: view)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if #available(iOS 11.0, *) {
+            navigationController?.navigationBar.prefersLargeTitles = false
+        }
+    }
+
+    private func disableContentInsetAdjustment(for view: UIView) {
+        if #available(iOS 11.0, *) {
+            if let scrollView = view as? UIScrollView {
+                scrollView.contentInsetAdjustmentBehavior = .never
+            }
+        }
+        for subview in view.subviews {
+            disableContentInsetAdjustment(for: subview)
+        }
+    }
+}
+
+protocol ManualEntryViewControllerDelegate: AnyObject {
+    func didAddContact(name: String, phoneNumber: String)
+    func didCancel()
+}
+
+class ManualEntryViewController: UIViewController {
+    weak var delegate: ManualEntryViewControllerDelegate?
+    
+    private let backgroundView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
+    private let containerView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor(hex: "#1E1E1E")
+        view.layer.cornerRadius = 15
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Add New Contact"
+        label.font = UIFont.boldSystemFont(ofSize: 18)
+        label.textColor = .white
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let nameTextField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = "Name"
+        textField.textColor = .white
+        textField.backgroundColor = UIColor(hex: "#2E2E2E")
+        textField.layer.cornerRadius = 8
+        textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 0))
+        textField.leftViewMode = .always
+        textField.returnKeyType = .next
+        textField.clearButtonMode = .whileEditing
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        return textField
+    }()
+    
+    private let phoneTextField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = "Phone Number"
+        textField.keyboardType = .phonePad
+        textField.textColor = .white
+        textField.backgroundColor = UIColor(hex: "#2E2E2E")
+        textField.layer.cornerRadius = 8
+        textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 0))
+        textField.leftViewMode = .always
+        textField.returnKeyType = .done
+        textField.clearButtonMode = .whileEditing
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        return textField
+    }()
+    
+    private let cancelButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Cancel", for: .normal)
+        button.setTitleColor(.red, for: .normal)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
+    private let addButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Add", for: .normal)
+        button.setTitleColor(UIColor(hex: "#40CBD8"), for: .normal)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+        setupKeyboardHandling()
+        nameTextField.delegate = self
+        phoneTextField.delegate = self
+    }
+    
+    private func setupUI() {
+        view.addSubview(backgroundView)
+        view.addSubview(containerView)
+        containerView.addSubview(titleLabel)
+        containerView.addSubview(nameTextField)
+        containerView.addSubview(phoneTextField)
+        containerView.addSubview(cancelButton)
+        containerView.addSubview(addButton)
+        
+        cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
+        addButton.addTarget(self, action: #selector(addTapped), for: .touchUpInside)
+        
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        backgroundView.addGestureRecognizer(tap)
+        
+        NSLayoutConstraint.activate([
+            backgroundView.topAnchor.constraint(equalTo: view.topAnchor),
+            backgroundView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            backgroundView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            backgroundView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            containerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            containerView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            containerView.widthAnchor.constraint(equalToConstant: 300),
+            
+            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+            
+            nameTextField.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
+            nameTextField.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            nameTextField.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+            nameTextField.heightAnchor.constraint(equalToConstant: 40),
+            
+            phoneTextField.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 15),
+            phoneTextField.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            phoneTextField.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+            phoneTextField.heightAnchor.constraint(equalToConstant: 40),
+            
+            cancelButton.topAnchor.constraint(equalTo: phoneTextField.bottomAnchor, constant: 20),
+            cancelButton.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            cancelButton.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -20),
+            
+            addButton.topAnchor.constraint(equalTo: phoneTextField.bottomAnchor, constant: 20),
+            addButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+            addButton.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -20)
+        ])
+    }
+    
+    private func setupKeyboardHandling() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
+    @objc private func keyboardWillShow(notification: NSNotification) {
+        guard let userInfo = notification.userInfo,
+              let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        
+        let keyboardHeight = keyboardFrame.height
+        let containerBottom = containerView.frame.maxY
+        let visibleHeight = view.frame.height - keyboardHeight
+        
+        if containerBottom > visibleHeight {
+            let offset = containerBottom - visibleHeight + 20
+            containerView.transform = CGAffineTransform(translationX: 0, y: -offset)
+        }
+    }
+    
+    @objc private func keyboardWillHide(notification: NSNotification) {
+        containerView.transform = .identity
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
+    @objc private func cancelTapped() {
+        dismiss(animated: true) {
+            self.delegate?.didCancel()
+        }
+    }
+    
+    @objc private func addTapped() {
+        guard let name = nameTextField.text, !name.isEmpty,
+              let phone = phoneTextField.text, !phone.isEmpty else {
+            let alert = UIAlertController(title: "Invalid Contact", message: "Both name and phone number are required.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        
+        let numericPhone = phone.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        if numericPhone.count >= 8 && numericPhone.count <= 15 {
+            dismiss(animated: true) {
+                self.delegate?.didAddContact(name: name, phoneNumber: numericPhone)
+            }
+        } else {
+            let alert = UIAlertController(title: "Invalid Contact", message: "Please enter a valid phone number (8-15 digits).", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+        }
+    }
+}
+
+extension ManualEntryViewController: UITextFieldDelegate {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        if textField == nameTextField {
+            phoneTextField.becomeFirstResponder()
+        } else {
+            textField.resignFirstResponder()
+        }
+        return true
+>>>>>>> 87dd8a50f805e2a4ff76bd6540d3917c596494da
     }
 }
 

@@ -32,6 +32,11 @@ struct NewsDataModel: Decodable {
         publisher = try sourceContainer.decode(String.self, forKey: .name)
     }
 }
+<<<<<<< HEAD
+=======
+
+// MARK: - NewsViewController
+>>>>>>> 87dd8a50f805e2a4ff76bd6540d3917c596494da
 class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollViewDelegate {
     private let scrollView = UIScrollView()
     private let stackView = UIStackView()
@@ -879,3 +884,4 @@ extension UIImageView {
         }.resume()
     }
 }
+
