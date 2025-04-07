@@ -9,7 +9,6 @@ extension UITextField {
         self.leftViewMode = .always
     }
 }
-
 class AccountPage: UIViewController, UITextFieldDelegate {
     private let scrollView = UIScrollView()
     private let contentView = UIView()

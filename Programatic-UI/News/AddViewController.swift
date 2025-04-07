@@ -59,7 +59,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         }
     }
     
-    // MARK: - Lifecycle
+   
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
@@ -71,7 +71,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         }
     }
     
-    // MARK: - Setup Methods
+
     private func setupView() {
         let backButton = UIButton()
         let backImage = UIImage(systemName: "chevron.left")
