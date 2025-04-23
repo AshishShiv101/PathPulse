@@ -4,7 +4,7 @@
 "Welcome to **PathPulse** – the all-in-one smart travel assistant that keeps you informed, safe, and in control of your journey!"
 
 ## Introduction
-
+ 
 PathPulse is designed to be your essential travel companion, providing real-time information and safety features to enhance your travel experience. From navigating unfamiliar routes to staying updated with critical weather and news, PathPulse ensures you're always prepared.
 
 ## Key Features
