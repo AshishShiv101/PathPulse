@@ -1,9 +1,11 @@
 import UIKit
 import WebKit
 import CoreLocation
+
 struct NewsResponse: Decodable {
     let articles: [NewsDataModel]
 }
+
 struct NewsDataModel: Decodable {
     let headline: String
     let link: String
@@ -32,6 +34,7 @@ struct NewsDataModel: Decodable {
         publisher = try sourceContainer.decode(String.self, forKey: .name)
     }
 }
+
 class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollViewDelegate {
     private let scrollView = UIScrollView()
     private let stackView = UIStackView()
@@ -59,7 +62,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         }
     }
     
-   
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
@@ -71,8 +74,15 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         }
     }
     
-
+    // MARK: - Setup Methods
     private func setupView() {
+        let isIpad = UIDevice.current.userInterfaceIdiom == .pad
+        
+        // Define font sizes based on device type
+        let titleFontSize: CGFloat = isIpad ? 28 : 20
+        let cityFontSize: CGFloat = isIpad ? 20 : 16
+        let buttonFontSize: CGFloat = isIpad ? 18 : 16
+        
         let backButton = UIButton()
         let backImage = UIImage(systemName: "chevron.left")
         backButton.setImage(backImage, for: .normal)
@@ -86,13 +96,13 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Latest News Updates"
         titleLabel.textColor = .white
-        titleLabel.font = .boldSystemFont(ofSize: 20)
+        titleLabel.font = .boldSystemFont(ofSize: titleFontSize)
         titleLabel.textAlignment = .center
         view.addSubview(titleLabel)
         
         cityLabel.translatesAutoresizingMaskIntoConstraints = false
         cityLabel.textColor = .white
-        cityLabel.font = .systemFont(ofSize: 16, weight: .regular)
+        cityLabel.font = .systemFont(ofSize: cityFontSize, weight: .regular)
         cityLabel.textAlignment = .center
         cityLabel.text = searchedCity ?? currentLocation ?? "City"
         view.addSubview(cityLabel)
@@ -113,7 +123,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         
         let buttonTitles = ["General News", "Weather"]
         for (index, title) in buttonTitles.enumerated() {
-            let button = createStyledButton(title: title, isSelected: index == 0)
+            let button = createStyledButton(title: title, isSelected: index == 0, fontSize: buttonFontSize)
             button.addTarget(self, action: #selector(buttonPressed), for: .touchUpInside)
             buttonStackView.addArrangedSubview(button)
         }
@@ -133,7 +143,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         noNewsLabel.translatesAutoresizingMaskIntoConstraints = false
         noNewsLabel.text = "No news available at this time"
         noNewsLabel.textColor = .white
-        noNewsLabel.font = .systemFont(ofSize: 16, weight: .regular)
+        noNewsLabel.font = .systemFont(ofSize: isIpad ? 18 : 16, weight: .regular)
         noNewsLabel.textAlignment = .center
         noNewsLabel.isHidden = true
         
@@ -146,12 +156,12 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
             titleLabel.trailingAnchor.constraint(equalTo: filterButton.leadingAnchor, constant: -20),
-            titleLabel.heightAnchor.constraint(equalToConstant: 40),
+            titleLabel.heightAnchor.constraint(equalToConstant: isIpad ? 50 : 40),
             
             cityLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
             cityLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             cityLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            cityLabel.heightAnchor.constraint(equalToConstant: 20),
+            cityLabel.heightAnchor.constraint(equalToConstant: isIpad ? 25 : 20),
             
             filterButton.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
             filterButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
@@ -160,7 +170,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             
             buttonStackView.topAnchor.constraint(equalTo: cityLabel.bottomAnchor, constant: 12),
             buttonStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            buttonStackView.heightAnchor.constraint(equalToConstant: 40),
+            buttonStackView.heightAnchor.constraint(equalToConstant: isIpad ? 50 : 40),
             buttonStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             buttonStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             
@@ -175,9 +185,16 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
             stackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
         ])
+        
+        // Add noNewsLabel to scrollView
+        scrollView.addSubview(noNewsLabel)
+        NSLayoutConstraint.activate([
+            noNewsLabel.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor),
+            noNewsLabel.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor)
+        ])
     }
     
-    private func createStyledButton(title: String, isSelected: Bool) -> UIButton {
+    private func createStyledButton(title: String, isSelected: Bool, fontSize: CGFloat) -> UIButton {
         var config = UIButton.Configuration.filled()
         config.title = title
         config.baseBackgroundColor = isSelected ? UIColor(hex: "#40cbd8") : UIColor(hex: "#555555")
@@ -187,7 +204,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         
         let button = UIButton(configuration: config, primaryAction: nil)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        button.titleLabel?.font = .systemFont(ofSize: fontSize, weight: .semibold)
         
         // Add subtle shadow for iOS-like elevation
         button.layer.shadowColor = UIColor.black.cgColor
@@ -529,17 +546,18 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
     }
     
     private func setupShowMoreButton() {
+        let isIpad = UIDevice.current.userInterfaceIdiom == .pad
         showMoreButton.translatesAutoresizingMaskIntoConstraints = false
         showMoreButton.setTitle("Show More", for: .normal)
         showMoreButton.setTitleColor(.black, for: .normal)
         showMoreButton.backgroundColor = UIColor(hex: "#40cbd8")
         showMoreButton.layer.cornerRadius = 8
-        showMoreButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        showMoreButton.titleLabel?.font = .systemFont(ofSize: isIpad ? 18 : 16, weight: .medium)
         showMoreButton.addTarget(self, action: #selector(showMoreTapped), for: .touchUpInside)
         
         NSLayoutConstraint.activate([
-            showMoreButton.heightAnchor.constraint(equalToConstant: 44),
-            showMoreButton.widthAnchor.constraint(equalToConstant: 120)
+            showMoreButton.heightAnchor.constraint(equalToConstant: isIpad ? 50 : 44),
+            showMoreButton.widthAnchor.constraint(equalToConstant: isIpad ? 140 : 120)
         ])
     }
     
@@ -579,12 +597,12 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         alertController.addAction(descendingAction)
         alertController.addAction(cancelAction)
         if UIDevice.current.userInterfaceIdiom == .pad {
-         if let popoverController = alertController.popoverPresentationController {
-            popoverController.sourceView = filterButton
-            popoverController.sourceRect = filterButton.bounds
-            popoverController.permittedArrowDirections = [.up, .right] // Allow up or right arrow based on position
-                }
+            if let popoverController = alertController.popoverPresentationController {
+                popoverController.sourceView = filterButton
+                popoverController.sourceRect = filterButton.bounds
+                popoverController.permittedArrowDirections = [.up, .right]
             }
+        }
         present(alertController, animated: true, completion: nil)
     }
     
@@ -629,7 +647,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
                 config.baseBackgroundColor = UIColor(hex: "#555555")
                 config.baseForegroundColor = .white
                 button.configuration = config
-                button.layer.shadowOpacity = 0.2 // Reset shadow for unselected
+                button.layer.shadowOpacity = 0.2
             }
         }
         
@@ -637,7 +655,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         selectedConfig.baseBackgroundColor = UIColor(hex: "#40cbd8")
         selectedConfig.baseForegroundColor = .black
         sender.configuration = selectedConfig
-        sender.layer.shadowOpacity = 0.4 // Slightly stronger shadow for selected
+        sender.layer.shadowOpacity = 0.4
         
         guard let buttonIndex = buttonStackView.arrangedSubviews.firstIndex(of: sender),
               let location = searchedCity ?? currentLocation else {
@@ -670,6 +688,13 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
     }
     
     private func createNewsCard(newsData: NewsDataModel) -> UIView {
+        let isIpad = UIDevice.current.userInterfaceIdiom == .pad
+        
+        // Define font sizes based on device type
+        let titleFontSize: CGFloat = isIpad ? 20 : 16
+        let infoFontSize: CGFloat = isIpad ? 14 : 12
+        let statusFontSize: CGFloat = isIpad ? 12 : 10
+        
         let card = UIView()
         card.translatesAutoresizingMaskIntoConstraints = false
         card.backgroundColor = UIColor(hex: "#333333")
@@ -699,7 +724,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = newsData.headline
-        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        titleLabel.font = UIFont.systemFont(ofSize: titleFontSize, weight: .medium)
         titleLabel.textColor = .white
         titleLabel.numberOfLines = 2
         titleLabel.lineBreakMode = .byTruncatingTail
@@ -712,12 +737,12 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         
         let publisherLabel = UILabel()
         publisherLabel.text = newsData.publisher
-        publisherLabel.font = UIFont.systemFont(ofSize: 12, weight: .regular)
+        publisherLabel.font = UIFont.systemFont(ofSize: infoFontSize, weight: .regular)
         publisherLabel.textColor = .lightGray
         
         let timeLabel = UILabel()
         timeLabel.text = formatDate(newsData.publishedAt)
-        timeLabel.font = UIFont.systemFont(ofSize: 12, weight: .regular)
+        timeLabel.font = UIFont.systemFont(ofSize: infoFontSize, weight: .regular)
         timeLabel.textColor = .lightGray
         
         let readStatusTag = UIView()
@@ -727,7 +752,7 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         
         let readStatusLabel = UILabel()
         readStatusLabel.translatesAutoresizingMaskIntoConstraints = false
-        readStatusLabel.font = UIFont.systemFont(ofSize: 10, weight: .medium)
+        readStatusLabel.font = UIFont.systemFont(ofSize: statusFontSize, weight: .medium)
         readStatusLabel.textAlignment = .center
         
         if readArticles.contains(newsData.link) {
@@ -770,22 +795,22 @@ class NewsViewController: UIViewController, CLLocationManagerDelegate, UIScrollV
         card.isUserInteractionEnabled = true
         
         NSLayoutConstraint.activate([
-            imageView.widthAnchor.constraint(equalToConstant: 60),
-            imageView.heightAnchor.constraint(equalToConstant: 60),
+            imageView.widthAnchor.constraint(equalToConstant: isIpad ? 80 : 60),
+            imageView.heightAnchor.constraint(equalToConstant: isIpad ? 80 : 60),
             
-            readStatusTag.widthAnchor.constraint(equalToConstant: 40),
-            readStatusTag.heightAnchor.constraint(equalToConstant: 20),
+            readStatusTag.widthAnchor.constraint(equalToConstant: isIpad ? 50 : 40),
+            readStatusTag.heightAnchor.constraint(equalToConstant: isIpad ? 25 : 20),
             
             readStatusLabel.centerXAnchor.constraint(equalTo: readStatusTag.centerXAnchor),
             readStatusLabel.centerYAnchor.constraint(equalTo: readStatusTag.centerYAnchor),
             
-            arrowImageView.widthAnchor.constraint(equalToConstant: 20),
-            arrowImageView.heightAnchor.constraint(equalToConstant: 20),
+            arrowImageView.widthAnchor.constraint(equalToConstant: isIpad ? 25 : 20),
+            arrowImageView.heightAnchor.constraint(equalToConstant: isIpad ? 25 : 20),
             
-            horizontalStackView.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
-            horizontalStackView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 12),
-            horizontalStackView.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
-            horizontalStackView.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12)
+            horizontalStackView.topAnchor.constraint(equalTo: card.topAnchor, constant: isIpad ? 15 : 12),
+            horizontalStackView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: isIpad ? 15 : 12),
+            horizontalStackView.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: isIpad ? -15 : -12),
+            horizontalStackView.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: isIpad ? -15 : -12)
         ])
         
         return card

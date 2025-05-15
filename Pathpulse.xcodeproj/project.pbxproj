@@ -326,7 +326,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Your message to the user when requesting always-on location permission";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your message to the user when requesting location permission";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to dispatch emergency services and guide you to safety.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -358,7 +358,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Your message to the user when requesting always-on location permission";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your message to the user when requesting location permission";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to dispatch emergency services and guide you to safety.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

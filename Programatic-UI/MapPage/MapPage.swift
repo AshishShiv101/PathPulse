@@ -19,8 +19,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     var weatherInfoView: UIView?
     let searchBar = UISearchBar()
     private var bottomSheetTopConstraint: NSLayoutConstraint!
-    let sosButton = UIButton()
-    private let sosOverlayView = SOSOverlayView()
     private let otherButton = UIButton()
     var recentSearchTitles: [String] = []
     private var searchCompleter = MKLocalSearchCompleter()
@@ -35,13 +33,12 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     private var shouldRevertToExpanded = false
     private let motionManager = CMMotionManager()
     private var lastRotationRate: CMRotationRate?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardObservers()
         setupViews()
         setupBottomSheet()
-        setupSOSButton()
-        setupSOSOverlay()
         setupAlertButton()
         navigationItem.hidesBackButton = true
         locationManager.delegate = self
@@ -71,16 +68,13 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     
     // MARK: - Gyroscope Setup
     private func setupGyroscope() {
-        // Check if gyroscope is available
         guard motionManager.isGyroAvailable else {
             print("Gyroscope is not available on this device.")
             return
         }
         
-        // Configure update interval (e.g., 0.1 seconds = 10 Hz)
         motionManager.gyroUpdateInterval = 0.1
         
-        // Start gyroscope updates
         motionManager.startGyroUpdates(to: .main) { [weak self] (gyroData, error) in
             guard let self = self else { return }
             if let error = error {
@@ -89,7 +83,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             }
             guard let gyroData = gyroData else { return }
             
-            // Process gyroscope data
             self.handleGyroscopeData(gyroData)
         }
         
@@ -97,46 +90,34 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
     }
 
     private func handleGyroscopeData(_ gyroData: CMGyroData) {
-        let rotationRate = gyroData.rotationRate // Rotation rate in radians per second (x, y, z axes)
+        let rotationRate = gyroData.rotationRate
         
-        // If this is the first update, store it as the baseline
         if lastRotationRate == nil {
             lastRotationRate = rotationRate
             return
         }
         
-        // Calculate the change in rotation rate
         let deltaX = abs(rotationRate.x - lastRotationRate!.x)
         let deltaY = abs(rotationRate.y - lastRotationRate!.y)
         let deltaZ = abs(rotationRate.z - lastRotationRate!.z)
         
-        // Define a threshold for significant movement (adjust as needed)
-        let threshold: Double = 0.5 // Radians per second
+        let threshold: Double = 0.5
         
-        // Detect significant change in orientation
         if deltaX > threshold || deltaY > threshold || deltaZ > threshold {
             print("Significant orientation change detected - X: \(rotationRate.x), Y: \(rotationRate.y), Z: \(rotationRate.z)")
-            
-            // Example: Update map orientation or UI based on gyroscope data
             self.updateMapOrientationBasedOnGyro(rotationRate)
         }
         
-        // Update last rotation rate
         lastRotationRate = rotationRate
     }
 
     private func updateMapOrientationBasedOnGyro(_ rotationRate: CMRotationRate) {
-        // Example: Adjust map rotation based on Z-axis rotation (yaw)
-        let rotationAngle = rotationRate.z * motionManager.gyroUpdateInterval // Approximate angle change in radians
-        
-        // Get current map region
+        let rotationAngle = rotationRate.z * motionManager.gyroUpdateInterval
         var region = mapView.region
         
-        // Update the map's center coordinate (optional) or rotate the map
         let currentRotation = mapView.camera.heading
-        let newRotation = currentRotation + (rotationAngle * 180 / .pi) // Convert radians to degrees
+        let newRotation = currentRotation + (rotationAngle * 180 / .pi)
         
-        // Create a new camera with updated heading
         let camera = MKMapCamera(
             lookingAtCenter: region.center,
             fromDistance: mapView.camera.altitude,
@@ -144,12 +125,10 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             heading: newRotation
         )
         
-        // Apply the new camera to the map
         mapView.setCamera(camera, animated: true)
-        
-        // Optional: Trigger additional UI updates
         print("Map rotated to heading: \(newRotation)")
     }
+    
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
@@ -168,6 +147,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             object: nil
         )
     }
+    
     @objc private func keyboardWillShow(notification: NSNotification) {
         guard let userInfo = notification.userInfo,
               let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
@@ -175,33 +155,57 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             return
         }
         
-        if abs(bottomSheetTopConstraint.constant - (-bottomSheetExpandedHeight)) < 1 {
+        let keyboardHeight = keyboardFrame.height
+        let currentPosition = bottomSheetTopConstraint.constant
+        
+        // Define the target height when the keyboard is visible
+        let targetHeightWhenKeyboardVisible = -self.bottomSheetMediumHeight - (keyboardHeight / 2) // Adjust upward from medium height
+        
+        if abs(currentPosition - (-bottomSheetExpandedHeight)) < 1 {
+            // If fully expanded, move to target height and mark for reversion
             shouldRevertToExpanded = true
             currentBottomSheetPosition = -bottomSheetExpandedHeight
-            
+            UIView.animate(withDuration: duration) {
+                self.bottomSheetTopConstraint.constant = targetHeightWhenKeyboardVisible
+                self.view.layoutIfNeeded()
+            }
+        } else if abs(currentPosition - (-bottomSheetMediumHeight)) < 1 || currentPosition > -bottomSheetMediumHeight {
+            // If at medium height or higher (initial state), move to target height
+            UIView.animate(withDuration: duration) {
+                self.bottomSheetTopConstraint.constant = targetHeightWhenKeyboardVisible
+                self.view.layoutIfNeeded()
+            }
+            shouldRevertToExpanded = false
+        }
+        
+        isKeyboardVisible = true
+    }
+
+    @objc private func keyboardWillHide(notification: NSNotification) {
+        guard let userInfo = notification.userInfo,
+              let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
+            return
+        }
+        
+        let currentPosition = bottomSheetTopConstraint.constant
+        
+        if shouldRevertToExpanded {
+            // Revert to expanded height if it was expanded before
+            UIView.animate(withDuration: duration) {
+                self.bottomSheetTopConstraint.constant = -self.bottomSheetExpandedHeight
+                self.view.layoutIfNeeded()
+            }
+            shouldRevertToExpanded = false
+        } else if currentPosition < -self.bottomSheetMediumHeight || currentPosition > -bottomSheetMediumHeight {
+            // Revert to medium height if it was adjusted from medium or higher
             UIView.animate(withDuration: duration) {
                 self.bottomSheetTopConstraint.constant = -self.bottomSheetMediumHeight
                 self.view.layoutIfNeeded()
             }
         }
         
-        isKeyboardVisible = true
-    }
-    @objc private func keyboardWillHide(notification: NSNotification) {
-        guard let userInfo = notification.userInfo,
-              let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double else {
-            return
-        }
-        if shouldRevertToExpanded {
-            UIView.animate(withDuration: duration) {
-                self.bottomSheetTopConstraint.constant = -self.bottomSheetExpandedHeight
-                self.view.layoutIfNeeded()
-            }
-            shouldRevertToExpanded = false
-        }
         isKeyboardVisible = false
     }
-    
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -297,6 +301,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             searchCompleter.queryFragment = searchText
         }
     }
+    
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let cityName = searchBar.text, !cityName.isEmpty else {
             return
@@ -304,7 +309,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         suggestionTableView.isHidden = true
         saveAllSearchesToFirestore(cityName)
         
-        // Check if this is the first search ever after app download
         let isFirstEverSearch = !UserDefaults.standard.bool(forKey: "hasPerformedSearchBefore")
         
         if let index = recentSearchTitles.firstIndex(of: cityName) {
@@ -380,6 +384,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
         searchBar.resignFirstResponder()
     }
+    
     @objc private func openAdditionalView() {
         let detailVC = NewsViewController()
         if let cityName = locationLabel.text {
@@ -503,16 +508,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         }
     }
     
-    @objc private func sosButtonTapped() {
-        sosTappedButton.toggle()
-    }
-    
-    private var sosTappedButton: Bool = false {
-        didSet {
-            sosOverlayView.isHidden = !sosTappedButton
-        }
-    }
-    
     private func setupOtherButton() {
         otherButton.layer.cornerRadius = 30
         otherButton.clipsToBounds = true
@@ -632,39 +627,6 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         selectedButton = button
     }
     
-    private func setupSOSButton() {
-        sosButton.setTitle("SOS", for: .normal)
-        sosButton.backgroundColor = UIColor(hex: "#333333")
-        sosButton.setTitleColor(.white, for: .normal)
-        sosButton.titleLabel?.font = UIFont.boldSystemFont(ofSize: 18)
-        sosButton.layer.cornerRadius = 30
-        sosButton.addTarget(self, action: #selector(sosButtonTapped), for: .touchUpInside)
-        view.addSubview(sosButton)
-        sosButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            sosButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            sosButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -250),
-            sosButton.widthAnchor.constraint(equalToConstant: 60),
-            sosButton.heightAnchor.constraint(equalToConstant: 60)
-        ])
-    }
-    
-    private func setupSOSOverlay() {
-        sosOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        sosOverlayView.isHidden = true
-        view.addSubview(sosOverlayView)
-        sosOverlayView.addContactIcon(iconName: "cross.circle.fill", label: "Ambulance", number: "102")
-        sosOverlayView.addContactIcon(iconName: "shield.fill", label: "Police", number: "100")
-        sosOverlayView.addContactIcon(iconName: "figure.stand.dress", label: "Helpline", number: "1091")
-        sosOverlayView.layer.zPosition = 0
-        NSLayoutConstraint.activate([
-            sosOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            sosOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            sosOverlayView.topAnchor.constraint(equalTo: view.topAnchor, constant: 220),
-            sosOverlayView.heightAnchor.constraint(equalToConstant: 140)
-        ])
-    }
-    
     private let alertButton: UIButton = {
         let button = UIButton()
         button.setTitle("!", for: .normal)
@@ -755,7 +717,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         
         let distance = calculateDistance(location, previousLoc)
         
-        if distance <= 30 { // Within 30km radius
+        if distance <= 30 {
             if isSignificantWeatherChange(weatherData: weatherData) {
                 alertButton.isHidden = false
                 alertButton.backgroundColor = UIColor(hex: "#FF0000")
@@ -960,17 +922,19 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         bottomSheetView.layer.cornerRadius = 18
         bottomSheetView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         bottomSheetView.clipsToBounds = true
-        view.addSubview(bottomSheetView)
+        view.addSubview(bottomSheetView) // Ensure customSheetView is defined elsewhere
         bottomSheetView.translatesAutoresizingMaskIntoConstraints = false
         bottomSheetView.layer.zPosition = 1
-        let defaultOffset: CGFloat = 170
-        bottomSheetTopConstraint = bottomSheetView.topAnchor.constraint(equalTo: view.bottomAnchor, constant: -(bottomSheetCollapsedHeight + defaultOffset))
+        
+        // Set initial position to medium height instead of collapsed
+        bottomSheetTopConstraint = bottomSheetView.topAnchor.constraint(equalTo: view.bottomAnchor, constant: -bottomSheetMediumHeight)
         NSLayoutConstraint.activate([
             bottomSheetView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomSheetView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomSheetView.heightAnchor.constraint(equalToConstant: bottomSheetExpandedHeight),
             bottomSheetTopConstraint
         ])
+        
         let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
         bottomSheetView.addGestureRecognizer(panGesture)
         addContentToBottomSheet()
@@ -1372,6 +1336,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
             expandCircleView.backgroundColor = UIColor(white: 1, alpha: 0.1)
         }
     }
+    
     private func setupLocationButton() {
         let locationButton = UIButton(type: .system)
         let largeConfig = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular, scale: .medium)
@@ -1382,13 +1347,17 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         locationButton.addTarget(self, action: #selector(locationButtonTapped), for: .touchUpInside)
         view.addSubview(locationButton)
         locationButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        let topConstant: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 850 : 420
+        
         NSLayoutConstraint.activate([
             locationButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            locationButton.bottomAnchor.constraint(equalTo: sosButton.topAnchor, constant: -20),
+            locationButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: topConstant),
             locationButton.widthAnchor.constraint(equalToConstant: 60),
             locationButton.heightAnchor.constraint(equalToConstant: 60)
         ])
     }
+    
     private var isInitialLocationSet = false
     private var lastUpdatedLocation: CLLocation?
     
@@ -1751,6 +1720,7 @@ class MapPage: UIViewController, CLLocationManagerDelegate, UISearchBarDelegate,
         weatherView.addSubview(titleLabel)
         
         let descriptionLabel = UILabel()
+       
         descriptionLabel.text = ""
         descriptionLabel.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         descriptionLabel.textAlignment = .center
